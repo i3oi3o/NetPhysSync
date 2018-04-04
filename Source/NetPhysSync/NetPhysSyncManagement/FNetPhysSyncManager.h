@@ -37,6 +37,10 @@ class NETPHYSSYNC_API FNetPhysSyncManager
 	private:
 		TArray<INetPhysSyncPtr> INetPhysSyncPtrList;
 		
+		TArray<INetPhysSyncPtr> DeferedRegister;
+
+		TArray<INetPhysSyncPtr> DeferedUnregister;
+
 		/**
 		 * To check if UWorld owning FPhysScene is not destroyed yet.
 		 * Is this necessary?
@@ -47,12 +51,9 @@ class NETPHYSSYNC_API FNetPhysSyncManager
 
 		uint32 LocalNetPhysTicks;
 
-		bool StartTickPostPhysicSubstep;
+		bool StartTickPostPhysicSubstepYet;
 
-		/**
-		 * No Adding or Removing INetPhysSync during PhysicsTick.
-		 */
-		bool ForAssertDataRace;
+		bool StartPhysicYet;
 
 		float CachStartDeltaTime;
 
@@ -64,15 +65,17 @@ class NETPHYSSYNC_API FNetPhysSyncManager
 
 		FDelegateHandle TickStepPhysHandle;
 
-	private:
 		/**
 		 * Register to FPhysScene's delegate.
 		 */
 		void TickStartPhys(FPhysScene* PhysScene, uint32 SceneType, float StartDeltaTime);
+		
 		/**
 		 * Register to FPhysScene's delegate.
 		 */
 		void TickStepPhys(FPhysScene* PhysScene, uint32 SceneType, float StepDeltaTime);
 
 		INetPhysSync* TryGetTickableINetPhysSync(const INetPhysSyncPtr& TargetPrt);
+
+		void FlushDeferedRegisteeAndCleanNull();
 };

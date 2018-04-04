@@ -9,8 +9,8 @@ FNetPhysSyncManager::FNetPhysSyncManager()
 	, WorldOwningPhysScene(nullptr)
 	, LocalNetPhysTicks(0)
 	, INetPhysSyncPtrList()
-	, StartTickPostPhysicSubstep(false)
-	, ForAssertDataRace(false)
+	, StartTickPostPhysicSubstepYet(false)
+	, StartPhysicYet(false)
 {
 }
 
@@ -36,18 +36,40 @@ void FNetPhysSyncManager::Initialize(FPhysScene* PhysScene)
 
 void FNetPhysSyncManager::RegisterINetPhysSync(INetPhysSyncPtr iNetPhysSyncPtr)
 {
-	checkf(!ForAssertDataRace, TEXT("No Adding or Removing during Start, Substep, PostSubstep, End."));
-	INetPhysSyncPtrList.Add(iNetPhysSyncPtr);
+	if (!DeferedRegister.Contains(iNetPhysSyncPtr))
+	{
+		DeferedRegister.Add(iNetPhysSyncPtr);
+	}
+
+	int ToRemoveIndex;
+	if (DeferedUnregister.Find(iNetPhysSyncPtr, ToRemoveIndex))
+	{
+		DeferedUnregister.RemoveAt(ToRemoveIndex, 1, false);
+	}
 }
 
 void FNetPhysSyncManager::UnregisterINetPhysSync(INetPhysSyncPtr iNetPhysSyncPtr)
 {
-	checkf(!ForAssertDataRace, TEXT("No Adding or Removing during Start, Substep, PostSubstep, End."))
-	INetPhysSyncPtrList.Remove(iNetPhysSyncPtr);
+	int ToRemoveIndex;
+	if (DeferedRegister.Find(iNetPhysSyncPtr, ToRemoveIndex))
+	{
+		DeferedRegister.RemoveAt(iNetPhysSyncPtr, 1, false);
+	}
+	
+	if (!DeferedRegister.Contains(iNetPhysSyncPtr))
+	{
+		DeferedUnregister.Add(iNetPhysSyncPtr);
+	}
 }
 
 void FNetPhysSyncManager::OnTickPostPhysic()
 {
+	if (!StartPhysicYet)
+	{
+		return;
+	}
+
+	StartPhysicYet = false;
 	FPostPhysStepParam PostStepParam(PhysScene, CachSceneType, CachStepDeltaTime, LocalNetPhysTicks);
 	for (auto It = INetPhysSyncPtrList.CreateIterator(); It; ++It)
 	{
@@ -68,16 +90,16 @@ void FNetPhysSyncManager::OnTickPostPhysic()
 		}
 	}
 
-	ForAssertDataRace = false;
-
 }
 
 void FNetPhysSyncManager::TickStartPhys(FPhysScene* PhysScene, uint32 SceneType, float StartDeltaTime)
 {
-	ForAssertDataRace = true;
-	StartTickPostPhysicSubstep = false;
+	StartPhysicYet = true;
+	StartTickPostPhysicSubstepYet = false;
 	CachStartDeltaTime = StartDeltaTime;
 	CachSceneType = SceneType;
+
+	FlushDeferedRegisteeAndCleanNull();
 
 	FStartPhysParam StartParam(PhysScene, SceneType, StartDeltaTime);
 	for (auto It = INetPhysSyncPtrList.CreateIterator(); It; ++It)
@@ -92,7 +114,7 @@ void FNetPhysSyncManager::TickStartPhys(FPhysScene* PhysScene, uint32 SceneType,
 
 void FNetPhysSyncManager::TickStepPhys(FPhysScene* PhysScene, uint32 SceneType, float StepDeltaTime)
 {
-	if (StartTickPostPhysicSubstep)
+	if (StartTickPostPhysicSubstepYet)
 	{
 		FPostPhysStepParam PostStepParam(PhysScene, SceneType, StepDeltaTime, LocalNetPhysTicks);
 		for (auto It = INetPhysSyncPtrList.CreateIterator(); It; ++It)
@@ -103,13 +125,13 @@ void FNetPhysSyncManager::TickStepPhys(FPhysScene* PhysScene, uint32 SceneType, 
 				Interface->TickPostPhysStep(PostStepParam);
 			}
 		}
+
+		++LocalNetPhysTicks;
 	}
 	else
 	{
 		CachStepDeltaTime = StepDeltaTime;
 	}
-
-	++LocalNetPhysTicks;
 
 	FPhysStepParam StepParam(PhysScene, SceneType, StepDeltaTime);
 
@@ -122,12 +144,12 @@ void FNetPhysSyncManager::TickStepPhys(FPhysScene* PhysScene, uint32 SceneType, 
 		}
 	}
 
-	StartTickPostPhysicSubstep = true;
+	StartTickPostPhysicSubstepYet = true;
 }
 
 INetPhysSync* FNetPhysSyncManager::TryGetTickableINetPhysSync(const INetPhysSyncPtr& TargetPtr)
 {
-	INetPhysSync* ToReturn = (INetPhysSync*)TargetPtr.GetInterface();
+	INetPhysSync* ToReturn = static_cast<INetPhysSync*>(TargetPtr.GetInterface());
 
 	if (ToReturn != nullptr && ToReturn->IsTickEnabled())
 	{
@@ -138,4 +160,35 @@ INetPhysSync* FNetPhysSyncManager::TryGetTickableINetPhysSync(const INetPhysSync
 		return nullptr;
 	}
 	
+}
+
+void FNetPhysSyncManager::FlushDeferedRegisteeAndCleanNull()
+{
+	INetPhysSyncPtrList.Append(DeferedRegister);
+
+	DeferedRegister.Empty();
+
+	for (auto It = DeferedUnregister.CreateIterator(); It; ++It)
+	{
+		int ToRemoveIndex;
+		if (INetPhysSyncPtrList.Find(*It, ToRemoveIndex))
+		{
+			INetPhysSyncPtrList.RemoveAt(ToRemoveIndex, 1, false);
+		}
+	}
+
+	DeferedUnregister.Empty();
+
+	int idx = 0;
+	while (idx < INetPhysSyncPtrList.Num())
+	{
+		if (INetPhysSyncPtrList[idx] == nullptr)
+		{
+			INetPhysSyncPtrList.RemoveAt(idx, 1, false);
+		}
+		else
+		{
+			++idx;
+		}
+	}
 }

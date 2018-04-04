@@ -103,7 +103,6 @@ void UNPS_MovementComponent::TickEndPhysic(const FEndPhysParam& param)
 	FVector CurrentVelocity = P2UVector(RigidBody->getLinearVelocity());
 	if (GEngine != nullptr)
 	{
-		UE_LOG(LogTemp, Log, TEXT("Velocity=%f"), CurrentVelocity.Size2D());
 		GEngine->AddOnScreenDebugMessage(0, 1.0f, FColor::Cyan,
 			FString::Printf(TEXT("Velocity=%f"), CurrentVelocity.Size2D()));
 	}
