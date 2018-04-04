@@ -17,9 +17,10 @@ UNPS_MovementComponent::UNPS_MovementComponent()
 	// Set this component to be initialized when the game starts, and to be ticked every frame.  You can turn these features
 	// off to improve performance if you don't need them.
 	PrimaryComponentTick.bCanEverTick = false;
-	Speed = 10.0f;
-	ForceSize = 20.0f;
+	Speed = 1000.0f;
+	MaxVelocityChange = 500.0f;
 	ApplyForceLocalPos = FVector(0.0f, 0.0f, 10.0f);
+	MaxAngularVelocityDegree = 90.0f;
 }
 
 
@@ -35,6 +36,7 @@ void UNPS_MovementComponent::BeginPlay()
 		UpdatedComponent = Owner->GetPhysRootComp();
 		UpdatedPrimitive = Cast<UPrimitiveComponent>(UpdatedComponent);
 		ForSmoothVisualComponent = Owner->GetForSmoothingVisualComp();
+		UpdatedPrimitive->SetPhysicsMaxAngularVelocityInDegrees(MaxAngularVelocityDegree);
 	}
 }
 
@@ -78,15 +80,23 @@ void UNPS_MovementComponent::TickPhysStep(const FPhysStepParam& param)
 		FVector DiffVector = MoveSpeedVec - CurrentVelocity;
 		
 		
-		float DiffSize = DiffVector.Size();
-		if (DiffSize > 0.01f)
+		float DiffSizeSqr = DiffVector.SizeSquared2D();
+		if (DiffSizeSqr > 0.01f)
 		{
-			float ForceScale = DiffSize*InvMoveSpeed;
-			ForceScale = ForceScale > 1.0f ? 1.0f : ForceScale;
-			FVector ToAddForce = ForceScale*ForceSize*DiffVector / DiffSize;
-
-			PxRigidBodyExt::addForceAtLocalPos(*RigidBody, U2PVector(ToAddForce),
-				U2PVector(ApplyForceLocalPos));
+			float Mass = RigidBody->getMass();
+			FVector ToAddImpulse;
+			DiffVector.Z = 0;
+			if (DiffSizeSqr < MaxVelocityChange*MaxVelocityChange)
+			{
+				ToAddImpulse = Mass*DiffVector;
+			}
+			else
+			{
+				ToAddImpulse = Mass*MaxVelocityChange*DiffVector / FMath::Sqrt(DiffSizeSqr);
+			}
+			
+			PxRigidBodyExt::addForceAtLocalPos(*RigidBody, U2PVector(ToAddImpulse),
+				U2PVector(ApplyForceLocalPos), PxForceMode::eIMPULSE);
 		}
 	}
 }

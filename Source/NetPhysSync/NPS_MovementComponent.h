@@ -44,10 +44,13 @@ protected:
 	float Speed;
 
 	UPROPERTY(EditDefaultsOnly, Category=Movement)
-	float ForceSize;
+	float MaxVelocityChange;
+
+	UPROPERTY(EditDefaultsOnly, Category=Movement)
+	FVector ApplyForceLocalPos;
 
 	UPROPERTY(EditDefaultsOnly, Category = Movement)
-	FVector ApplyForceLocalPos;
+	float MaxAngularVelocityDegree;
 
 	// Called when the game starts
 	virtual void BeginPlay() override;
