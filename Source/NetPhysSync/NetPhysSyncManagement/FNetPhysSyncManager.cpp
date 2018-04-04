@@ -90,6 +90,7 @@ void FNetPhysSyncManager::OnTickPostPhysic()
 		}
 	}
 
+	++LocalNetPhysTicks;
 }
 
 void FNetPhysSyncManager::TickStartPhys(FPhysScene* PhysScene, uint32 SceneType, float StartDeltaTime)
@@ -145,6 +146,7 @@ void FNetPhysSyncManager::TickStepPhys(FPhysScene* PhysScene, uint32 SceneType, 
 	}
 
 	StartTickPostPhysicSubstepYet = true;
+	
 }
 
 INetPhysSync* FNetPhysSyncManager::TryGetTickableINetPhysSync(const INetPhysSyncPtr& TargetPtr)
