@@ -2,7 +2,7 @@
 # NetPhysSync
 Unreal Project for Network Physic Synchronization Sample.
 
-This project is in progress.
+This project is in progress. This project use git-lfs to store binary file such .uasset etc.
 
 This project requires modified Unreal Engine Source Code with following feature.
  - Physic need to be fixed steps not semi-fixed step.
