@@ -1,7 +1,7 @@
 // This is licensed under the BSD License 2.0 found in the LICENSE file in project's root directory.
 
 #include "NPS_MovementComponent.h"
-#include "NPS_Pawn.h"
+#include "NPS_BoxPawn.h"
 #include <Engine/World.h>
 #include "NPSGameState.h"
 #include <Components/PrimitiveComponent.h>
@@ -30,7 +30,7 @@ void UNPS_MovementComponent::BeginPlay()
 	Super::BeginPlay();
 	AutoRegisterTick.StartAutoRegister(this);
 	// ...
-	ANPS_Pawn* Owner = Cast<ANPS_Pawn>(GetOwner());
+	ANPS_BoxPawn* Owner = Cast<ANPS_BoxPawn>(GetOwner());
 	if (Owner != nullptr)
 	{
 		UpdatedComponent = Owner->GetPhysRootComp();

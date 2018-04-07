@@ -4,22 +4,20 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Pawn.h"
-#include "NPS_Pawn.generated.h"
+#include "NPS_PawnBase.generated.h"
 
 UCLASS()
-class NETPHYSSYNC_API ANPS_Pawn : public APawn
+class NETPHYSSYNC_API ANPS_PawnBase : public APawn
 {
 	GENERATED_BODY()
 
 public:
 	// Sets default values for this pawn's properties
-	ANPS_Pawn();
+	ANPS_PawnBase(const FObjectInitializer& OI);
 
 protected:
 	UPROPERTY(VisibleAnywhere, Category = Physics)
 	UPrimitiveComponent* PhysRootComp;
-	UPROPERTY(VisibleAnywhere, Category = Visual)
-	UStaticMeshComponent* VisualComp;
 	UPROPERTY(VisibleAnywhere, Category = Camera)
 	class USpringArmComponent* SpringArmComp;
 	UPROPERTY(VisibleAnywhere, Category = Camera)
@@ -28,15 +26,5 @@ protected:
 	USceneComponent* ForSmoothingVisualComp;
 	UPROPERTY(VisibleAnywhere, Category = MovementComponent)
 	class UNPS_MovementComponent* MovementComponent;
-
-protected:
-	// Called when the game starts or when spawned
-	virtual void BeginPlay() override;
-
-public:	
-	// Called every frame
-	virtual void Tick(float DeltaTime) override;
-	UPrimitiveComponent* GetPhysRootComp() const;
-	USceneComponent* GetForSmoothingVisualComp() const;
-
+	
 };
