@@ -3,21 +3,31 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "FSavedInput.generated.h"
 
 /**
  * 
  */
+USTRUCT()
 struct NETPHYSSYNC_API FSavedInput
 {
+	GENERATED_BODY()
 public:
-	FSavedInput(FVector TargetSpeedParam);
-	~FSavedInput();
+	FSavedInput(): TickCount(0)
+		, TargetSpeed()
+	{
+	
+	}
 
+	FSavedInput(FVector TargetSpeedParam, uint8 TickCount = 1);
+	~FSavedInput();
+	
 	FVector GetTargetSpeed() const { return TargetSpeed; }
 	uint8 GetTickCount() const { return TickCount; }
-	uint8 ReduceTickCount(uint8 ReduceAmount);
 
 private:
+	UPROPERTY()
 	uint8 TickCount;
+	UPROPERTY()
 	FVector TargetSpeed;
 };
