@@ -26,13 +26,15 @@ public:
 
 	}
 
-	FReplicatedRigidBodyState(physx::PxRigidDynamic* const RigidDynamic);
+	FReplicatedRigidBodyState(const physx::PxRigidDynamic* const RigidDynamic);
 	~FReplicatedRigidBodyState();
 
-	const FVector& GetLinearVelocity() { return LinearVelocity; }
-	const FVector& GetLinearAngularVelocity() { return LinearAngularVelocity;}
-	const FVector& GetWorldPos() { return WorldPos; }
-	const FQuat& GetWorldRotation() { return WorldRotation; }
+	const FVector& GetLinearVelocity() const { return LinearVelocity; }
+	const FVector& GetLinearAngularVelocity() const { return LinearAngularVelocity;}
+	const FVector& GetWorldPos() const { return WorldPos; }
+	const FQuat& GetWorldRotation() const { return WorldRotation; }
+	const bool& IsSleep() const { return bIsSleep; }
+	void RetrivedRigidBodyState(physx::PxRigidDynamic* const RigidDynamic);
 
 private:
 	UPROPERTY()
@@ -43,4 +45,6 @@ private:
 	FVector WorldPos;
 	UPROPERTY()
 	FQuat WorldRotation;
+	UPROPERTY()
+	bool bIsSleep;
 };
