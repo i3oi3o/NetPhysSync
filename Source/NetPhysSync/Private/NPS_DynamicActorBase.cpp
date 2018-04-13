@@ -8,6 +8,7 @@
 #include "Engine/CollisionProfile.h"
 #include "Engine/World.h"
 #include "NPSGameState.h"
+#include "NPS_StaticHelperFunction.h"
 
 using namespace physx;
 
@@ -45,6 +46,7 @@ void ANPS_DynamicActorBase::BeginPlay()
 	if (UpdatedPrimitive != nullptr && 
 		UpdatedPrimitive->GetBodyInstance()->IsDynamic())
 	{
+		// Is there better way than this?
 		AutoRegisterINetPhysSync.StartAutoRegister(this);
 		
 		//UE_LOG(LogTemp, Log, TEXT("Listen collision."));
@@ -66,17 +68,7 @@ void ANPS_DynamicActorBase::BeginDestroy()
 {
 	Super::BeginDestroy();
 	AutoRegisterINetPhysSync.StopAutoRegister();
-
-	UWorld* World = GetWorld();
-	if (World != nullptr)
-	{
-		ANPSGameState* GameState = World->GetGameState<ANPSGameState>();
-
-		if (GameState != nullptr)
-		{
-			GameState->UnregisterINetPhysSync(this);
-		}
-	}
+	NPS_StaticHelperFunction::UnregisterINetPhySync(this);
 }
 
 bool ANPS_DynamicActorBase::IsTickEnabled() const

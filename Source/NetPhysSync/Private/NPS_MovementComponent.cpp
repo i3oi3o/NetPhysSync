@@ -8,6 +8,7 @@
 #include "PhysXPublic.h"
 #include <Engine/Engine.h>
 #include <Color.h>
+#include "NPS_StaticHelperFunction.h"
 
 using namespace physx;
 
@@ -28,11 +29,13 @@ UNPS_MovementComponent::UNPS_MovementComponent()
 void UNPS_MovementComponent::BeginPlay()
 {
 	Super::BeginPlay();
-	AutoRegisterTick.StartAutoRegister(this);
+
 	// ...
 	ANPS_BoxPawn* Owner = Cast<ANPS_BoxPawn>(GetOwner());
 	if (Owner != nullptr)
 	{
+		// Is there better way than this?
+		AutoRegisterTick.StartAutoRegister(this);
 		UpdatedComponent = Owner->GetPhysRootComp();
 		UpdatedPrimitive = Cast<UPrimitiveComponent>(UpdatedComponent);
 		ForSmoothVisualComponent = Owner->GetForSmoothingVisualComp();
@@ -122,18 +125,7 @@ void UNPS_MovementComponent::BeginDestroy()
 {
 	Super::BeginDestroy();
 	AutoRegisterTick.StopAutoRegister();
-	
-	UWorld* World = GetWorld();
-
-	if (World != nullptr)
-	{
-		ANPSGameState* GameState = World->GetGameState<ANPSGameState>();
-		if (GameState != nullptr)
-		{
-			GameState->UnregisterINetPhysSync(this);
-		}
-	}
-	
+	NPS_StaticHelperFunction::UnregisterINetPhySync(this);
 }
 
 // Called every frame
