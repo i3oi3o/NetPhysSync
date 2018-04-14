@@ -10,7 +10,7 @@ class INetPhysSync;
 /**
  * 
  */
-class NETPHYSSYNC_API NPS_StaticHelperFunction
+class NETPHYSSYNC_API FNPS_StaticHelperFunction
 {
 public:
 	/**

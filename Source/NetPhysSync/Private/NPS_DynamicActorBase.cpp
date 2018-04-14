@@ -8,7 +8,7 @@
 #include "Engine/CollisionProfile.h"
 #include "Engine/World.h"
 #include "NPSGameState.h"
-#include "NPS_StaticHelperFunction.h"
+#include "FNPS_StaticHelperFunction.h"
 
 using namespace physx;
 
@@ -68,7 +68,7 @@ void ANPS_DynamicActorBase::BeginDestroy()
 {
 	Super::BeginDestroy();
 	AutoRegisterINetPhysSync.StopAutoRegister();
-	NPS_StaticHelperFunction::UnregisterINetPhySync(this);
+	FNPS_StaticHelperFunction::UnregisterINetPhySync(this);
 }
 
 bool ANPS_DynamicActorBase::IsTickEnabled() const

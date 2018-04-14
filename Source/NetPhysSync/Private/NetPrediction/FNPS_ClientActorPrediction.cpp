@@ -1,7 +1,7 @@
 // This is licensed under the BSD License 2.0 found in the LICENSE file in project's root directory.
 
 #include "FNPS_ClientActorPrediction.h"
-#include "NPS_StaticHelperFunction.h"
+#include "FNPS_StaticHelperFunction.h"
 
 FNPS_ClientActorPrediction::FNPS_ClientActorPrediction()
 {
@@ -19,7 +19,7 @@ void FNPS_ClientActorPrediction::SaveRigidBodyState(physx::PxRigidDynamic* PxRig
 void FNPS_ClientActorPrediction::RetrieveRigidBodyState(physx::PxRigidDynamic* PxRigidDynamic, uint32 ClientTickIndex) const
 {
 	int32 OutArrayIndex;
-	NPS_StaticHelperFunction::CalculateBufferArrayIndex(ClientBufferStartTickIndex, ClientTickIndex, 
+	FNPS_StaticHelperFunction::CalculateBufferArrayIndex(ClientBufferStartTickIndex, ClientTickIndex, 
 		OutArrayIndex);
 
 	if (OutArrayIndex >= 0 && OutArrayIndex < ClientStateBuffers.Num())
@@ -31,7 +31,7 @@ void FNPS_ClientActorPrediction::RetrieveRigidBodyState(physx::PxRigidDynamic* P
 void FNPS_ClientActorPrediction::ServerCorrectState(const FReplicatedRigidBodyState& CorrectState, uint32 ClientTickIndex)
 {
 	int32 OutArrayIndex;
-	NPS_StaticHelperFunction::CalculateBufferArrayIndex(ClientBufferStartTickIndex, ClientTickIndex, OutArrayIndex);
+	FNPS_StaticHelperFunction::CalculateBufferArrayIndex(ClientBufferStartTickIndex, ClientTickIndex, OutArrayIndex);
 	if (OutArrayIndex >= 0 && OutArrayIndex < ClientStateBuffers.Num())
 	{
 		ClientStateBuffers[OutArrayIndex].SaveReplicatedRigidBodyState(CorrectState);
@@ -75,7 +75,7 @@ void FNPS_ClientActorPrediction::SetClientBuffsState(const FSavedClientRigidBody
 	if (HasClientBufferYet())
 	{
 		int32 OutArrayIndex;
-		NPS_StaticHelperFunction::CalculateBufferArrayIndex(ClientBufferStartTickIndex, ClientTickIndex, OutArrayIndex);
+		FNPS_StaticHelperFunction::CalculateBufferArrayIndex(ClientBufferStartTickIndex, ClientTickIndex, OutArrayIndex);
 
 		if (OutArrayIndex >= 0 && OutArrayIndex < ClientStateBuffers.Num())
 		{

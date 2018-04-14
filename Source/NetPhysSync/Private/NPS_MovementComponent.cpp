@@ -8,7 +8,7 @@
 #include "PhysXPublic.h"
 #include <Engine/Engine.h>
 #include <Color.h>
-#include "NPS_StaticHelperFunction.h"
+#include "FNPS_StaticHelperFunction.h"
 
 using namespace physx;
 
@@ -125,7 +125,7 @@ void UNPS_MovementComponent::BeginDestroy()
 {
 	Super::BeginDestroy();
 	AutoRegisterTick.StopAutoRegister();
-	NPS_StaticHelperFunction::UnregisterINetPhySync(this);
+	FNPS_StaticHelperFunction::UnregisterINetPhySync(this);
 }
 
 // Called every frame
