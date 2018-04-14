@@ -5,7 +5,7 @@
 #include <GameFramework/Actor.h>
 #include <Engine/World.h>
 #include <Components/ActorComponent.h>
-#include "NPSGameState.h"
+#include "ANPSGameState.h"
 
 
 FAutoRegisterINetPhysSyncTick::FAutoRegisterINetPhysSyncTick()

@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/PlayerController.h"
-#include "NPS_PlayerController.generated.h"
+#include "ANPS_PlayerController.generated.h"
 
 /**
  * 

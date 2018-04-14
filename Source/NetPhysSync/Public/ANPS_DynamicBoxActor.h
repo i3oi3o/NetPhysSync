@@ -3,8 +3,8 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "NPS_DynamicActorBase.h"
-#include "NPS_DynamicBoxActor.generated.h"
+#include "ANPS_DynamicActorBase.h"
+#include "ANPS_DynamicBoxActor.generated.h"
 
 /**
  * 

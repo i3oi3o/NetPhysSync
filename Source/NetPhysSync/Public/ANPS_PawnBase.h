@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Pawn.h"
-#include "NPS_PawnBase.generated.h"
+#include "ANPS_PawnBase.generated.h"
 
 UCLASS()
 class NETPHYSSYNC_API ANPS_PawnBase : public APawn

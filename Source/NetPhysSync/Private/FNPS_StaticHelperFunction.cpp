@@ -3,7 +3,7 @@
 #include "FNPS_StaticHelperFunction.h"
 #include "ScriptInterface.h"
 #include "INetPhysSync.h"
-#include "NPSGameState.h"
+#include "ANPSGameState.h"
 #include "Engine/World.h"
 
 

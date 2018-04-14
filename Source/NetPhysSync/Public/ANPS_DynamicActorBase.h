@@ -6,7 +6,7 @@
 #include "GameFramework/Actor.h"
 #include "NetPhysSyncManagement/INetPhysSync.h"
 #include "NetPhysSyncManagement/FAutoRegisterINetPhysSyncTick.h"
-#include "NPS_DynamicActorBase.generated.h"
+#include "ANPS_DynamicActorBase.generated.h"
 
 class UPrimitiveComponent;
 class USceneComponent;

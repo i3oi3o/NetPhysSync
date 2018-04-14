@@ -1,13 +1,13 @@
 // This is licensed under the BSD License 2.0 found in the LICENSE file in project's root directory.
 
-#include "NPS_DynamicActorBase.h"
+#include "ANPS_DynamicActorBase.h"
 #include "Components/PrimitiveComponent.h"
 #include "PxRigidDynamic.h"
 #include "PhysXPublic.h"
 #include "Components/BoxComponent.h"
 #include "Engine/CollisionProfile.h"
 #include "Engine/World.h"
-#include "NPSGameState.h"
+#include "ANPSGameState.h"
 #include "FNPS_StaticHelperFunction.h"
 
 using namespace physx;

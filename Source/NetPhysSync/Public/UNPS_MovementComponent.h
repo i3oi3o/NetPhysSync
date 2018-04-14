@@ -7,7 +7,7 @@
 #include "NetPhysSyncManagement/INetPhysSync.h"
 #include "NetPhysSyncManagement/FAutoRegisterINetPhysSyncTick.h"
 #include <GameFramework/PawnMovementComponent.h>
-#include "NPS_MovementComponent.generated.h"
+#include "UNPS_MovementComponent.generated.h"
 
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )

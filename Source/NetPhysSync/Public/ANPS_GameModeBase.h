@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/GameModeBase.h"
-#include "NPS_GameModeBase.generated.h"
+#include "ANPS_GameModeBase.generated.h"
 
 /**
  * 

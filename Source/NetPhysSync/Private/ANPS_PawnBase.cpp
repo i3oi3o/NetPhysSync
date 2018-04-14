@@ -1,10 +1,10 @@
 
 // This is licensed under the BSD License 2.0 found in the LICENSE file in project's root directory.
 
-#include "NPS_PawnBase.h"
+#include "ANPS_PawnBase.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "Camera/CameraComponent.h"
-#include "NPS_MovementComponent.h"
+#include "UNPS_MovementComponent.h"
 
 
 // Sets default values

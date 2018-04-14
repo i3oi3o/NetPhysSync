@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/GameStateBase.h"
-#include "NPSGameState.generated.h"
+#include "ANPSGameState.generated.h"
 
 USTRUCT()
 struct FNPSGameStatePostPhysicsTickFunction : public FTickFunction

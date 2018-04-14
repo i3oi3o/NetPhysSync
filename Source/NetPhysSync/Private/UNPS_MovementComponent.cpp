@@ -1,9 +1,9 @@
 // This is licensed under the BSD License 2.0 found in the LICENSE file in project's root directory.
 
-#include "NPS_MovementComponent.h"
-#include "NPS_BoxPawn.h"
+#include "UNPS_MovementComponent.h"
+#include "ANPS_BoxPawn.h"
 #include <Engine/World.h>
-#include "NPSGameState.h"
+#include "ANPSGameState.h"
 #include <Components/PrimitiveComponent.h>
 #include "PhysXPublic.h"
 #include <Engine/Engine.h>
