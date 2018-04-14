@@ -20,7 +20,7 @@ FReplicatedRigidBodyState::~FReplicatedRigidBodyState()
 {
 }
 
-void FReplicatedRigidBodyState::RetrivedRigidBodyState(PxRigidDynamic* const RigidDynamic)
+void FReplicatedRigidBodyState::RetrivedRigidBodyState(PxRigidDynamic* const RigidDynamic) const
 {
 	const PxVec3 PxWorldPos = U2PVector(WorldPos);
 	const PxQuat PxWorldRot = U2PQuat(WorldRotation);

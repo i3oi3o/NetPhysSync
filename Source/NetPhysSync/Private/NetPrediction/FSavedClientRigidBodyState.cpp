@@ -14,6 +14,13 @@ FSavedClientRigidBodyState::FSavedClientRigidBodyState(const physx::PxRigidDynam
 
 }
 
+FSavedClientRigidBodyState::FSavedClientRigidBodyState(const FReplicatedRigidBodyState& ReplicatedStateParam)
+	: bIsReplicatedStateValid(true)
+	, ReplicatedRigidBodyStateState(ReplicatedStateParam)
+{
+
+}
+
 FSavedClientRigidBodyState::~FSavedClientRigidBodyState()
 {
 }
@@ -30,7 +37,7 @@ void FSavedClientRigidBodyState::SaveReplicatedRigidBodyState(const FReplicatedR
 	this->ReplicatedRigidBodyStateState = ReplicatedState;
 }
 
-void FSavedClientRigidBodyState::RetriveRigidBodyState(physx::PxRigidDynamic* const RigidDynamic)
+void FSavedClientRigidBodyState::RetriveRigidBodyState(physx::PxRigidDynamic* const RigidDynamic) const
 {
 	if (bIsReplicatedStateValid)
 	{

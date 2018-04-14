@@ -34,7 +34,7 @@ public:
 	const FVector& GetWorldPos() const { return WorldPos; }
 	const FQuat& GetWorldRotation() const { return WorldRotation; }
 	const bool& IsSleep() const { return bIsSleep; }
-	void RetrivedRigidBodyState(physx::PxRigidDynamic* const RigidDynamic);
+	void RetrivedRigidBodyState(physx::PxRigidDynamic* const RigidDynamic) const;
 
 private:
 	UPROPERTY()
