@@ -7,9 +7,9 @@
 /**
  * 
  */
-class NETPHYSSYNC_API FNPS_NetPredictClientBase
+class NETPHYSSYNC_API FNPS_ClientPredictionBase
 {
 public:
-	FNPS_NetPredictClientBase();
-	~FNPS_NetPredictClientBase();
+	FNPS_ClientPredictionBase();
+	virtual ~FNPS_ClientPredictionBase();
 };

@@ -11,5 +11,5 @@ class NETPHYSSYNC_API NPS_NetServerPredictBase
 {
 public:
 	NPS_NetServerPredictBase();
-	~NPS_NetServerPredictBase();
+	virtual ~NPS_NetServerPredictBase();
 };
