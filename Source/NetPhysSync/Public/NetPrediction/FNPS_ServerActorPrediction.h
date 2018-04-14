@@ -7,9 +7,9 @@
 /**
  * 
  */
-class NETPHYSSYNC_API NPS_NetServerPredictBase
+class NETPHYSSYNC_API FNPS_ServerActorPrediction
 {
 public:
-	NPS_NetServerPredictBase();
-	virtual ~NPS_NetServerPredictBase();
+	FNPS_ServerActorPrediction();
+	virtual ~FNPS_ServerActorPrediction();
 };
