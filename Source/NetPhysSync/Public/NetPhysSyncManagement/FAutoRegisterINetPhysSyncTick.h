@@ -7,7 +7,8 @@
 #include "FAutoRegisterINetPhysSyncTick.generated.h"
 
 /**
- * 
+ * Investigate if we need this. A pawn probably not exist until Map is loaded.
+ * When BeginPlay is called on client, GameState and PlayerController is probably ready.
  */
 USTRUCT()
 struct NETPHYSSYNC_API FAutoRegisterINetPhysSyncTick : public FTickFunction
