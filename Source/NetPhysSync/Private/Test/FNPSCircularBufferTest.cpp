@@ -176,7 +176,7 @@ bool FCircularBufferInsertTest::RunTest(const FString& Parameters)
 {
 	TestCircularBuffer Test(10);
 
-	for (uint32 i = 0; i < 8U; ++i)
+	for (uint32 i = 1U; i <= 8U; ++i)
 	{
 		Test.Add(i);
 	}
@@ -193,7 +193,7 @@ bool FCircularBufferInsertTest::RunTest(const FString& Parameters)
 		}
 		else
 		{
-			TestEqual(TEXT("Insert default to head buffer, value:"), Test[i], i - 2U);
+			TestEqual(TEXT("Insert default to head buffer, value:"), Test[i], i - 1U);
 		}
 	}
 
@@ -209,28 +209,35 @@ bool FCircularBufferInsertTest::RunTest(const FString& Parameters)
 		}
 		else
 		{
-			TestEqual(TEXT("Insert default To head buffer value:"), Test[i], i - 4U);
+			TestEqual(TEXT("Insert default To head buffer value:"), Test[i], i - 3U);
 		}
+	}
+
+	Test.Empty();
+
+	for (uint32 i = 1U; i <= 5U; ++i)
+	{
+		Test.Add(i);
 	}
 
 	Test.InsertDefault(0U, 11U);
 
 	TestEqual(TEXT("Insert default to head overflow buffer, size:"), Test.Num(), 10U);
-	for (uint32 i = 0; i < Test.Num(); ++i)
+	for (uint32 i = 0U; i < Test.Num(); ++i)
 	{
-		TestEqual(TEXT("Insert default to head overflow, size:"), Test[i], uint32());
+		TestEqual(TEXT("Insert default to head overflow, size:"), Test[i], uint32());	
 	}
 
 	Test.Empty();
 
-	for (uint32 i = 0; i < 10U; ++i)
+	for (uint32 i = 1; i <= 10U; ++i)
 	{
 		Test.Add(i);
 	}
 
 	for (uint32 i = 0; i < Test.Num(); ++i)
 	{
-		TestEqual(TEXT("Current Buffer Value"), Test[i], i);
+		TestEqual(TEXT("Current Buffer Value"), Test[i], i+1U);
 	}
 
 	Test.InsertDefault(0U, 10U);
@@ -242,7 +249,7 @@ bool FCircularBufferInsertTest::RunTest(const FString& Parameters)
 
 	Test.Empty();
 
-	for (uint32 i = 0; i < 10U; ++i)
+	for (uint32 i = 1U; i <= 10U; ++i)
 	{
 		Test.Add(i);
 	}
@@ -255,7 +262,7 @@ bool FCircularBufferInsertTest::RunTest(const FString& Parameters)
 	{
 		if (i == 0U)
 		{
-			TestEqual(TEXT("Insert default to near-head buffer, overflow size, value:"), Test[i], 0U);
+			TestEqual(TEXT("Insert default to near-head buffer, overflow size, value:"), Test[i], 1U);
 		}
 		else
 		{
@@ -266,7 +273,7 @@ bool FCircularBufferInsertTest::RunTest(const FString& Parameters)
 
 	Test.Empty();
 
-	for (uint32 i = 0; i < 5U; ++i)
+	for (uint32 i = 1U; i <= 5U; ++i)
 	{
 		Test.Add(i);
 	}
@@ -276,23 +283,50 @@ bool FCircularBufferInsertTest::RunTest(const FString& Parameters)
 
 	for (uint32 i = 0; i < Test.Num(); ++i)
 	{
-		if (i == 0U)
+		if (i < 1U)
 		{
-			TestEqual(TEXT("Insert default to near-head buffer, value:"), Test[i], 0U);
+			TestEqual(TEXT("Insert default to near-head buffer, value:"), Test[i], 1U);
 		}
-		else if ( i == 1U || i ==2U)
+		else if ( i < 3U)
 		{
 			TestEqual(TEXT("Insert default to near-head buffer, value:"), Test[i], uint32());
 		}
 		else
 		{
-			TestEqual(TEXT("Insert default to near-head buffer, value:"), Test[i], i-2U);
+			TestEqual(TEXT("Insert default to near-head buffer, value:"), Test[i], i-1U);
 		}
 	}
 
 	Test.Empty();
 
-	for (uint32 i = 0; i < 8U; ++i)
+	for (uint32 i = 1U; i <= 5U; ++i)
+	{
+		Test.Add(i);
+	}
+	Test.InsertDefault(1U, 5U);
+
+	TestEqual(TEXT("Insert default to near-head buffer, size:"), Test.Num(), 10U);
+
+	for (uint32 i = 0; i < Test.Num(); ++i)
+	{
+		if (i < 1U)
+		{
+			TestEqual(TEXT("Insert default to near-head buffer2, value:"), Test[i], 1U);
+		}
+		else if (i < 6U)
+		{
+			TestEqual(TEXT("Insert default to near-head buffer2, value:"), Test[i], uint32());
+		}
+		else
+		{
+			TestEqual(TEXT("Insert default to near-head buffer2, value:"), Test[i], i - 4U);
+		}
+	}
+
+
+	Test.Empty();
+
+	for (uint32 i = 1U; i <= 8U; ++i)
 	{
 		Test.Add(i);
 	}
@@ -305,7 +339,7 @@ bool FCircularBufferInsertTest::RunTest(const FString& Parameters)
 	{
 		if (i < 6U)
 		{
-			TestEqual(TEXT("Insert default to near-tail buffer, value:"), Test[i], i);
+			TestEqual(TEXT("Insert default to near-tail buffer, value:"), Test[i], i+1U);
 		}
 		else if (i < 8U)
 		{
@@ -313,7 +347,7 @@ bool FCircularBufferInsertTest::RunTest(const FString& Parameters)
 		}
 		else
 		{
-			TestEqual(TEXT("Insert default to near-tail buffer, value:"), Test[i], i - 2U);
+			TestEqual(TEXT("Insert default to near-tail buffer, value:"), Test[i], i - 1U);
 		}
 	}
 
@@ -325,7 +359,7 @@ bool FCircularBufferInsertTest::RunTest(const FString& Parameters)
 	{
 		if (i < 6U)
 		{
-			TestEqual(TEXT("Insert default to near-tail buffer till overflow, value:"), Test[i], i);
+			TestEqual(TEXT("Insert default to near-tail buffer till overflow, value:"), Test[i], i+1U);
 		}
 		else
 		{
