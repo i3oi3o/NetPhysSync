@@ -326,6 +326,33 @@ bool FCircularBufferInsertTest::RunTest(const FString& Parameters)
 
 	Test.Empty();
 
+	for (uint32 i = 1U; i <= 10U; ++i)
+	{
+		Test.Add(i);
+	}
+	Test.InsertDefault(2U, 4U);
+
+	TestEqual(TEXT("Insert default to near-head buffer3, size:"), Test.Num(), 10U);
+
+	for (uint32 i = 0; i < Test.Num(); ++i)
+	{
+		if (i < 2U)
+		{
+			TestEqual(TEXT("Insert default to near-head buffer2, value:"), Test[i], i+1U);
+		}
+		else if (i < 6U)
+		{
+			TestEqual(TEXT("Insert default to near-head buffer2, value:"), Test[i], uint32());
+		}
+		else
+		{
+			TestEqual(TEXT("Insert default to near-head buffer2, value:"), Test[i], i - 3U);
+		}
+	}
+
+
+	Test.Empty();
+
 	for (uint32 i = 1U; i <= 8U; ++i)
 	{
 		Test.Add(i);
