@@ -4,6 +4,7 @@
 #include "FNPS_StaticHelperFunction.h"
 
 FNPS_ClientPawnPrediction::FNPS_ClientPawnPrediction()
+	: ClientInputBuffers(20)
 {
 }
 
@@ -35,15 +36,6 @@ FVector FNPS_ClientPawnPrediction::GetSavedInput(uint32 ClientTick) const
 	}
 }
 
-const TArray<FSavedInput, TInlineAllocator<20>>& FNPS_ClientPawnPrediction::GetInputBuffers() const
-{
-	return ClientInputBuffers;
-}
-
-uint32 FNPS_ClientPawnPrediction::GetInputClientStartTickIndex() const
-{
-	return ClientInputBuffersStartTickIndex;
-}
 
 void FNPS_ClientPawnPrediction::ShiftStartBufferIndex(int32 ShiftAmount)
 {

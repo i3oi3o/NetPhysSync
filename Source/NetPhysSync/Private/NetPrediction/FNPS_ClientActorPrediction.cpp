@@ -3,7 +3,8 @@
 #include "FNPS_ClientActorPrediction.h"
 #include "FNPS_StaticHelperFunction.h"
 
-FNPS_ClientActorPrediction::FNPS_ClientActorPrediction()
+FNPS_ClientActorPrediction::FNPS_ClientActorPrediction() 
+	: ClientStateBuffers(20)
 {
 }
 

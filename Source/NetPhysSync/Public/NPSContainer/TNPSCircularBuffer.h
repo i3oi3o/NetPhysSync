@@ -11,7 +11,7 @@ template<typename ElementType, typename AllocatorType=FDefaultAllocator>
 class NETPHYSSYNC_API TNPSCircularBuffer
 {
 public:
-	TNPSCircularBuffer(uint32 MaxCapacityParam)
+	TNPSCircularBuffer(int32 MaxCapacityParam)
 		: MaxCapacity(MaxCapacityParam)
 		, CurrentStartIndex(0)
 		, ElementCount(0)
@@ -26,16 +26,16 @@ public:
 
 	}
 
-	FORCEINLINE ElementType& operator[](uint32 Index)
+	FORCEINLINE ElementType& operator[](int32 Index)
 	{
-		uint32 CalculateIndex = 0;
+		int32 CalculateIndex = 0;
 		CalculateArrayIndex(Index, CalculateIndex);
 		return Elements[CalculateIndex];
 	}
 
-	FORCEINLINE const ElementType& operator[](uint32 Index) const
+	FORCEINLINE const ElementType& operator[](int32 Index) const
 	{
-		uint32 CalculateIndex = 0;
+		int32 CalculateIndex = 0;
 		CalculateArrayIndex(Index, CalculateIndex);
 		return Elements[CalculateIndex];
 	}
@@ -95,8 +95,13 @@ public:
 		RemoveAt(0, Capacity(), SetUnOccupliedSlotToDefault);
 	}
 
-	void RemoveAt(uint32 Index, uint32 Count=1, bool SetUnOccupliedSlotToDefault=true)
+	void RemoveAt(int32 Index, int32 Count=1, bool SetUnOccupliedSlotToDefault=true)
 	{
+		if (Count <= 0)
+		{
+			return;
+		}
+
 		checkf(IsIndexInRange(Index), TEXT("Index Argument is out of range."));
 		if (Index + Count >= ElementCount) // If we only remove tail, Just update element count instead.
 		{
@@ -114,10 +119,10 @@ public:
 		else if(Num() - Index - Count < Index) // Choose between relocating direction.
 		{
 			// Relocate from tail to head.
-			uint32 ReplaceIndex = Index;
-			uint32 ToMoveIndex = Index + Count;
+			int32 ReplaceIndex = Index;
+			int32 ToMoveIndex = Index + Count;
 
-			for (uint32 i = 0; i < Num() - ToMoveIndex; ++i)
+			for (int32 i = 0; i < Num() - ToMoveIndex; ++i)
 			{
 				(*this)[ReplaceIndex + i] = (*this)[ToMoveIndex + i];
 			}
@@ -128,10 +133,10 @@ public:
 		else
 		{
 			// Relocate from head to tail.
-			uint32 ReplaceIndex = Index + Count - 1;
-			uint32 ToMoveIndex = Index - 1;
+			int32 ReplaceIndex = Index + Count - 1;
+			int32 ToMoveIndex = Index - 1;
 
-			for (uint32 i = 0; i < Index; ++i)
+			for (int32 i = 0; i < Index; ++i)
 			{
 				(*this)[ReplaceIndex - i] = (*this)[ToMoveIndex - i];
 			}
@@ -150,7 +155,7 @@ public:
 		if (SetUnOccupliedSlotToDefault)
 		{
 			ElementType DefaultValue = ElementType();
-			for (uint32 i = 0; i < Capacity(); ++i)
+			for (int32 i = 0; i < Capacity(); ++i)
 			{
 				bool IsInRange =
 					(
@@ -177,8 +182,13 @@ public:
 	 * Default element is created using default constructor.
 	 * The shifted overflow tail element is discarded.
 	 */
-	void InsertDefaulted(uint32 Index, uint32 Count=1)
+	void InsertDefaulted(int32 Index, int32 Count=1)
 	{
+		if (Count <= 0)
+		{
+			return;
+		}
+
 		checkf(IsIndexInRange(Index), TEXT("Index is out of range."));
 		ElementType DefaultElement = ElementType();
 		if (Index == 0) // Insert in front of head.
@@ -199,7 +209,7 @@ public:
 				CurrentStartIndex = Capacity() + CurrentStartIndex - Count;
 			}
 
-			for (uint32 i = 0; i < Count && i < ElementCount; ++i)
+			for (int32 i = 0; i < Count && i < ElementCount; ++i)
 			{
 				(*this)[i] = DefaultElement;
 			}
@@ -219,7 +229,7 @@ public:
 			// Handle overflow case
 			if (Index + 1 + Count >= Capacity())
 			{
-				for (uint32 i = Index + 1; i < ElementCount; ++i)
+				for (int32 i = Index + 1; i < ElementCount; ++i)
 				{
 					(*this)[i] = DefaultElement;
 				}
@@ -237,13 +247,13 @@ public:
 				}
 
 				// Move old element first
-				for (uint32 i = 0; i < Index; ++i)
+				for (int32 i = 0; i < Index; ++i)
 				{
 					(*this)[i] = (*this)[i + Count];
 				}
 
 				// Insert Default
-				for (uint32 i = Index; i < Index + Count && i < ElementCount; ++i)
+				for (int32 i = Index; i < Index + Count && i < ElementCount; ++i)
 				{
 					(*this)[i] = DefaultElement;
 				}
@@ -263,28 +273,28 @@ public:
 				ElementCount = Capacity();				
 			}
 
-			uint32 ToReplaceIndex = ElementCount - 1;
+			int32 ToReplaceIndex = ElementCount - 1;
 
-			uint32 ToMoveIndex = 0;
+			int32 ToMoveIndex = 0;
 			
 			if (ElementCount >= Count + 1) // Handle overflow.
 			{
 				ToMoveIndex = ElementCount - 1 - Count;
 			}
 
-			uint32 NumMoveElement = 0;
+			int32 NumMoveElement = 0;
 			
 			if (ToMoveIndex+1 > Index) // Handle overflow.
 			{
 				NumMoveElement = ToMoveIndex - Index + 1;
 			}
 
-			for (uint32 i = 0; i < NumMoveElement; ++i)
+			for (int32 i = 0; i < NumMoveElement; ++i)
 			{
 				(*this)[ToReplaceIndex - i] = (*this)[ToMoveIndex - i];
 			}
 
-			for (uint32 i = Index; i < Index+Count && i < ElementCount; ++i)
+			for (int32 i = Index; i < Index+Count && i < ElementCount; ++i)
 			{
 				(*this)[i] = DefaultElement;
 			}
@@ -292,28 +302,33 @@ public:
 
 	}
 
-	FORCEINLINE uint32 Num() const
+	FORCEINLINE int32 Num() const
 	{
 		return ElementCount;
 	}
 
-	FORCEINLINE uint32 Capacity() const
+	FORCEINLINE int32 Capacity() const
 	{
 		return MaxCapacity;
 	}
 
-	FORCEINLINE bool IsIndexInRange(uint32 Index)
+	FORCEINLINE bool IsIndexInRange(int32 Index) const
 	{
 		return Index >= 0 && Index < Num();
 	}
 
+	FORCEINLINE bool IsFull() const
+	{
+		return Num() == Capacity();
+	}
+
 private:
 	TArray<ElementType, AllocatorType> Elements;
-	uint32 CurrentStartIndex;
-	uint32 ElementCount;
-	uint32 MaxCapacity;
+	int32 CurrentStartIndex;
+	int32 ElementCount;
+	int32 MaxCapacity;
 
-	FORCEINLINE void CalculateArrayIndex(uint32 Index, uint32& OutCalculatedIndex)
+	FORCEINLINE void CalculateArrayIndex(int32 Index, int32& OutCalculatedIndex) const
 	{
 		checkf(IsIndexInRange(Index), TEXT("Index %u is out of bound from size %u"), Index, Num());
 		OutCalculatedIndex = CurrentStartIndex + Index;

@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "FNPS_ClientPredictionBase.h"
 #include "FSavedClientRigidBodyState.h"
+#include "TNPSCircularBuffer.h"
 
 namespace physx
 {
@@ -35,7 +36,7 @@ protected:
 	* For 200 ms round trip time, We need array of 10 slot.
 	* Use 20 slot to avoid overflow.
 	*/
-	TArray<FSavedClientRigidBodyState, TInlineAllocator<20>> ClientStateBuffers;
+	TNPSCircularBuffer<FSavedClientRigidBodyState, TInlineAllocator<20>> ClientStateBuffers;
 	uint32 ClientStateBufferStartsTickIndex;
 	uint32 ReplayTickIndex;
 	bool bHasReplayTickIndex;

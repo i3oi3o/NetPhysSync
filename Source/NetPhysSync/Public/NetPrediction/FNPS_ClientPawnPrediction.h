@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "FNPS_ClientActorPrediction.h"
 #include "NetPrediction/FSavedInput.h"
+#include "TNPSCircularBuffer.h"
 
 /**
  * 
@@ -19,14 +20,6 @@ public:
 
 	void SaveInput(FVector TargetWorldSpeed, uint32 ClientTickIndex);
 	FVector GetSavedInput(uint32 ClientTick) const;
-	/**
-	 * For copying to replication. Is there better way?
-	 */
-	const TArray<FSavedInput, TInlineAllocator<20>>& GetInputBuffers() const;
-	/*
-	* For copying to replication. Is there better way?
-	*/
-	uint32 GetInputClientStartTickIndex() const;
 	virtual void ShiftStartBufferIndex(int32 ShiftAmount) override;
 
 	bool HasClientInputBuffers() const;
@@ -37,6 +30,6 @@ protected:
 	 * The number is based of 20 ms physic tick duration and 200 ms round trip time.
 	 * This give us buffer length with 10 slots. To avoid overflow making it 20 slots.
 	 */
-	TArray<FSavedInput, TInlineAllocator<20>> ClientInputBuffers;
+	TNPSCircularBuffer<FSavedInput, TInlineAllocator<20>> ClientInputBuffers;
 	uint32 ClientInputBuffersStartTickIndex;
 };
