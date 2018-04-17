@@ -177,7 +177,7 @@ public:
 	 * Default element is created using default constructor.
 	 * The shifted overflow tail element is discarded.
 	 */
-	void InsertDefault(uint32 Index, uint32 Count=1)
+	void InsertDefaulted(uint32 Index, uint32 Count=1)
 	{
 		checkf(IsIndexInRange(Index), TEXT("Index is out of range."));
 		ElementType DefaultElement = ElementType();
