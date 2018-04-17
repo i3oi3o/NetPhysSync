@@ -249,17 +249,17 @@ bool FCircularBufferInsertTest::RunTest(const FString& Parameters)
 
 	Test.InsertDefault(1U, 11U);
 
-	TestEqual(TEXT("Insert default to buffer till overflow, size:"), Test.Num(), 10U);
+	TestEqual(TEXT("Insert default to near-head buffer till overflow, size:"), Test.Num(), 10U);
 
 	for (uint32 i = 0; i < Test.Num(); ++i)
 	{
 		if (i == 0U)
 		{
-			TestEqual(TEXT("Insert default to buffer, overflow size, value:"), Test[i], 0U);
+			TestEqual(TEXT("Insert default to near-head buffer, overflow size, value:"), Test[i], 0U);
 		}
 		else
 		{
-			TestEqual(TEXT("Insert default to buffer, overflow size, value:"), Test[i], uint32());
+			TestEqual(TEXT("Insert default to near-head buffer, overflow size, value:"), Test[i], uint32());
 		}
 	}
 
@@ -272,21 +272,64 @@ bool FCircularBufferInsertTest::RunTest(const FString& Parameters)
 	}
 	Test.InsertDefault(1U, 2U);
 
-	TestEqual(TEXT("Insert default to buffer, size:"), Test.Num(), 7U);
+	TestEqual(TEXT("Insert default to near-head buffer, size:"), Test.Num(), 7U);
 
 	for (uint32 i = 0; i < Test.Num(); ++i)
 	{
 		if (i == 0U)
 		{
-			TestEqual(TEXT("Insert default to buffer, value:"), Test[i], 0U);
+			TestEqual(TEXT("Insert default to near-head buffer, value:"), Test[i], 0U);
 		}
 		else if ( i == 1U || i ==2U)
 		{
-			TestEqual(TEXT("Insert default to buffer, value:"), Test[i], uint32());
+			TestEqual(TEXT("Insert default to near-head buffer, value:"), Test[i], uint32());
 		}
 		else
 		{
-			TestEqual(TEXT("Insert default to buffer, value:"), Test[i], i-2U);
+			TestEqual(TEXT("Insert default to near-head buffer, value:"), Test[i], i-2U);
+		}
+	}
+
+	Test.Empty();
+
+	for (uint32 i = 0; i < 8U; ++i)
+	{
+		Test.Add(i);
+	}
+
+	Test.InsertDefault(6U, 2U);
+
+	TestEqual(TEXT("Insert default to near-tail buffer, size:"), Test.Num(), 10U);
+
+	for (uint32 i = 0; i < Test.Num(); ++i)
+	{
+		if (i < 6U)
+		{
+			TestEqual(TEXT("Insert default to near-tail buffer, value:"), Test[i], i);
+		}
+		else if (i < 8U)
+		{
+			TestEqual(TEXT("Insert default to near-tail buffer, value:"), Test[i], uint32());
+		}
+		else
+		{
+			TestEqual(TEXT("Insert default to near-tail buffer, value:"), Test[i], i - 2U);
+		}
+	}
+
+	Test.InsertDefault(8U, 11U);
+
+	TestEqual(TEXT("Insert default to near-tail buffer till overflow, size:"), Test.Num(), 10U);
+
+	for (uint32 i = 0; i < Test.Num(); ++i)
+	{
+		if (i < 6U)
+		{
+			TestEqual(TEXT("Insert default to near-tail buffer till overflow, value:"), Test[i], i);
+		}
+		else
+		{
+			TestEqual(TEXT("Insert default to near-tail buffer till overflow, value:"), Test[i], uint32());
 		}
 	}
 
