@@ -45,7 +45,7 @@ void FSavedClientRigidBodyState::RetriveRigidBodyState(physx::PxRigidDynamic* co
 	}
 }
 
-const bool& FSavedClientRigidBodyState::IsReplicatedStateValid()
+const bool FSavedClientRigidBodyState::IsReplicatedStateValid() const
 {
 	return bIsReplicatedStateValid;
 }

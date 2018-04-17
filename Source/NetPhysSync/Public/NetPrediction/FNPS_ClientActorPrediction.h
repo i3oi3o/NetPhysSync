@@ -22,12 +22,19 @@ public:
 	virtual ~FNPS_ClientActorPrediction();
 
 	void SaveRigidBodyState(physx::PxRigidDynamic* PxRigidBodyDynamic, uint32 ClientTickIndex);
-	void RetrieveRigidBodyState(physx::PxRigidDynamic* PxRigidDynamic, uint32 ClientTickIndex) const;
-	void ServerCorrectState(const FReplicatedRigidBodyState& CorrectState, uint32 ClientTickIndex);
+	/*
+	* Currently for testing.
+	*/
+	void SaveRigidBodyState(const FSavedClientRigidBodyState& SaveRigidBodyState, uint32 ClientTickIndex);
+	void GetRigidBodyState(physx::PxRigidDynamic* PxRigidDynamic, uint32 ClientTickIndex, bool bUseNearestIfTickOutOfRange=true) const;
+	/**
+	 * Currently for testing.
+	 */
+	FSavedClientRigidBodyState GetRigidBodyState(uint32 ClientTickIndex, bool bUseNearestIfTickOutOfRange = true) const;
+	virtual void ServerCorrectState(const FReplicatedRigidBodyState& CorrectState, uint32 ClientTickIndex);
 	virtual void ShiftStartBufferIndex(int32 ShiftAmount);
 	bool TryGetReplayTickIndex(uint32& OutTickIndex) const;
 	void ConsumeReplayFlag();
-	virtual void TrimBufferToReplayIndex();
 	bool HasClientStateBufferYet() const;
 
 protected:
@@ -39,7 +46,7 @@ protected:
 	TNPSCircularBuffer<FSavedClientRigidBodyState, TInlineAllocator<20>> ClientStateBuffers;
 	uint32 ClientStateBufferStartsTickIndex;
 	uint32 ReplayTickIndex;
-	bool bHasReplayTickIndex;
+	bool bNeedReplay;
 };
 
 

@@ -24,7 +24,7 @@ public:
 
 
 	template<typename ElementType, typename AllocatorType>
-	static void SetBuffers
+	static void SetElementToBuffers
 	(
 		TNPSCircularBuffer<ElementType, AllocatorType>& Buffers,
 		const ElementType& ToSet, 

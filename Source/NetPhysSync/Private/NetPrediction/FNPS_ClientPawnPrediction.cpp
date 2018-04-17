@@ -4,7 +4,8 @@
 #include "FNPS_StaticHelperFunction.h"
 
 FNPS_ClientPawnPrediction::FNPS_ClientPawnPrediction()
-	: ClientInputBuffers(20)
+	: ClientInputBuffers(20),
+	ClientInputBuffersStartTickIndex(0)
 {
 }
 
@@ -14,7 +15,7 @@ FNPS_ClientPawnPrediction::~FNPS_ClientPawnPrediction()
 
 void FNPS_ClientPawnPrediction::SaveInput(FVector TargetWorldSpeed, uint32 ClientTickIndex)
 {
-	FNPS_StaticHelperFunction::SetBuffers
+	FNPS_StaticHelperFunction::SetElementToBuffers
 	(
 		ClientInputBuffers, FSavedInput(TargetWorldSpeed),
 		ClientInputBuffersStartTickIndex, ClientTickIndex

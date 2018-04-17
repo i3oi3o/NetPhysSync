@@ -24,7 +24,7 @@ public:
 	/**
 	 * If create by default constructor, ReplicatedState is not valid.
 	 */
-	const bool& IsReplicatedStateValid();
+	const bool IsReplicatedStateValid() const;
 
 
 private:

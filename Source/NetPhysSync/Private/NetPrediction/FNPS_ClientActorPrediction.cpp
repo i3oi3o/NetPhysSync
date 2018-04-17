@@ -4,7 +4,10 @@
 #include "FNPS_StaticHelperFunction.h"
 
 FNPS_ClientActorPrediction::FNPS_ClientActorPrediction() 
-	: ClientStateBuffers(20)
+	: ClientStateBuffers(20),
+	ClientStateBufferStartsTickIndex(0),
+	ReplayTickIndex(0),
+	bNeedReplay(false)
 {
 }
 
@@ -14,24 +17,63 @@ FNPS_ClientActorPrediction::~FNPS_ClientActorPrediction()
 
 void FNPS_ClientActorPrediction::SaveRigidBodyState(physx::PxRigidDynamic* PxRigidBodyDynamic, uint32 ClientTickIndex)
 {
-	FNPS_StaticHelperFunction::SetBuffers
+	this->SaveRigidBodyState(FSavedClientRigidBodyState(PxRigidBodyDynamic), ClientTickIndex);
+}
+
+void FNPS_ClientActorPrediction::SaveRigidBodyState(const FSavedClientRigidBodyState& SaveRigidBodyState, uint32 ClientTickIndex)
+{
+	FNPS_StaticHelperFunction::SetElementToBuffers
 	(
 		ClientStateBuffers,
-		FSavedClientRigidBodyState(PxRigidBodyDynamic),
+		SaveRigidBodyState,
 		ClientStateBufferStartsTickIndex,
 		ClientTickIndex
 	);
 }
 
-void FNPS_ClientActorPrediction::RetrieveRigidBodyState(physx::PxRigidDynamic* PxRigidDynamic, uint32 ClientTickIndex) const
+void FNPS_ClientActorPrediction::GetRigidBodyState
+(
+	physx::PxRigidDynamic* PxRigidDynamic, 
+	uint32 ClientTickIndex, 
+	bool bUseNearestIfTickOutOfRange /*=true*/
+) const
+{
+	FSavedClientRigidBodyState RetrivedState = GetRigidBodyState(ClientTickIndex, bUseNearestIfTickOutOfRange);
+	// Don't worry.
+	// If state is invalid, FSavedClientRigidBodyState::RetriveBodyState() 
+	// doesn't copy state to PxRigidDynamic.
+	RetrivedState.RetriveRigidBodyState(PxRigidDynamic);
+}
+
+FSavedClientRigidBodyState FNPS_ClientActorPrediction::GetRigidBodyState
+(
+	uint32 ClientTickIndex, 
+	bool bUseNearestIfTickOutOfRange /*= true*/
+) const
 {
 	int32 OutArrayIndex;
-	FNPS_StaticHelperFunction::CalculateBufferArrayIndex(ClientStateBufferStartsTickIndex, ClientTickIndex, 
+	FNPS_StaticHelperFunction::CalculateBufferArrayIndex(ClientStateBufferStartsTickIndex, ClientTickIndex,
 		OutArrayIndex);
 
-	if (OutArrayIndex >= 0 && OutArrayIndex < ClientStateBuffers.Num())
+	if (bUseNearestIfTickOutOfRange)
 	{
-		ClientStateBuffers[OutArrayIndex].RetriveRigidBodyState(PxRigidDynamic);
+		if (OutArrayIndex < 0)
+		{
+			OutArrayIndex = 0;
+		}
+		else if(OutArrayIndex < ClientStateBuffers.Num())
+		{
+			OutArrayIndex = ClientStateBuffers.Num() - 1;
+		}
+	}
+
+	if (ClientStateBuffers.IsIndexInRange(OutArrayIndex))
+	{
+		return ClientStateBuffers[OutArrayIndex];
+	}
+	else
+	{
+		return FSavedClientRigidBodyState();
 	}
 }
 
@@ -45,7 +87,7 @@ void FNPS_ClientActorPrediction::ServerCorrectState(const FReplicatedRigidBodySt
 	}
 	else
 	{
-		FNPS_StaticHelperFunction::SetBuffers
+		FNPS_StaticHelperFunction::SetElementToBuffers
 		(
 			ClientStateBuffers, 
 			FSavedClientRigidBodyState(CorrectState),
@@ -54,7 +96,7 @@ void FNPS_ClientActorPrediction::ServerCorrectState(const FReplicatedRigidBodySt
 		);
 	}
 
-	bHasReplayTickIndex = true;
+	bNeedReplay = true;
 	ReplayTickIndex = ClientTickIndex;
 }
 
@@ -67,29 +109,12 @@ void FNPS_ClientActorPrediction::ShiftStartBufferIndex(int32 ShiftAmount)
 bool FNPS_ClientActorPrediction::TryGetReplayTickIndex(uint32& OutTickIndex) const
 {
 	OutTickIndex = ReplayTickIndex;
-	return bHasReplayTickIndex;
+	return bNeedReplay;
 }
 
 void FNPS_ClientActorPrediction::ConsumeReplayFlag()
 {
-	bHasReplayTickIndex = false;
-}
-
-void FNPS_ClientActorPrediction::TrimBufferToReplayIndex()
-{
-	if (bHasReplayTickIndex)
-	{
-		int32 OutArrayIndex;
-		FNPS_StaticHelperFunction::CalculateBufferArrayIndex
-		(ClientStateBufferStartsTickIndex, ReplayTickIndex, OutArrayIndex);
-
-		if (OutArrayIndex > 0)
-		{
-			ClientStateBuffers.RemoveAt(0, ReplayTickIndex);
-			ClientStateBufferStartsTickIndex = ReplayTickIndex;
-			
-		}
-	}
+	bNeedReplay = false;
 }
 
 bool FNPS_ClientActorPrediction::HasClientStateBufferYet() const
