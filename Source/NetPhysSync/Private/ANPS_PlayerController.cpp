@@ -17,19 +17,31 @@ void ANPS_PlayerController::SetupInputComponent()
 
 	check(InputComponent != nullptr);
 
-	InputComponent->BindAxis(InputNameCollection::MOVE_FORWARD_AXIS_NAME, this, 
-		&ANPS_PlayerController::MoveForward);
-	InputComponent->BindAxis(InputNameCollection::MOVE_RIGHT_AXIS_NAME, this, 
-		&ANPS_PlayerController::MoveRight);
-	InputComponent->BindAxis(InputNameCollection::TURN_RIGHT_AXIS_NAME, this, 
-		&ANPS_PlayerController::TurnRight);
-	InputComponent->BindAxis(InputNameCollection::TURN_UP_AXIS_NAME, this, 
-		&ANPS_PlayerController::TurnUp);
-	InputComponent->BindAxis(InputNameCollection::TURN_RATE_RIGHT_AXIS_NAME, this, 
-		&ANPS_PlayerController::TurnRateRight);
-	InputComponent->BindAxis(InputNameCollection::TURN_RATE_UP_AXIS_NAME, this,
-		&ANPS_PlayerController::TurnRateUp);
+	ENetMode NetMode = GetNetMode();
 
+	if ( 
+			(
+				NetMode == ENetMode::NM_Client && 
+				Role == ENetRole::ROLE_AutonomousProxy
+			) 
+			||
+			NetMode == ENetMode::NM_ListenServer ||
+			NetMode == ENetMode::NM_Standalone
+	   )
+	{
+		InputComponent->BindAxis(InputNameCollection::MOVE_FORWARD_AXIS_NAME, this,
+			&ANPS_PlayerController::MoveForward);
+		InputComponent->BindAxis(InputNameCollection::MOVE_RIGHT_AXIS_NAME, this,
+			&ANPS_PlayerController::MoveRight);
+		InputComponent->BindAxis(InputNameCollection::TURN_RIGHT_AXIS_NAME, this,
+			&ANPS_PlayerController::TurnRight);
+		InputComponent->BindAxis(InputNameCollection::TURN_UP_AXIS_NAME, this,
+			&ANPS_PlayerController::TurnUp);
+		InputComponent->BindAxis(InputNameCollection::TURN_RATE_RIGHT_AXIS_NAME, this,
+			&ANPS_PlayerController::TurnRateRight);
+		InputComponent->BindAxis(InputNameCollection::TURN_RATE_UP_AXIS_NAME, this,
+			&ANPS_PlayerController::TurnRateUp);
+	}
 }
 
 void ANPS_PlayerController::MoveForward(float InputValue)
