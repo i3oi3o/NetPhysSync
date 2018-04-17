@@ -4,7 +4,7 @@
 #include "FNPS_StaticHelperFunction.h"
 
 
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(FUint32OverflowTest, "NetPhysSync.OverflowHandle.Uint32 Uint32OperationTest", EAutomationTestFlags::EditorContext | EAutomationTestFlags::SmokeFilter)
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FUint32OverflowTest, "NetPhysSync.OverflowHandle.Uint32OperationTest", EAutomationTestFlags::EditorContext | EAutomationTestFlags::SmokeFilter)
 
 bool FUint32OverflowTest::RunTest(const FString& Parameters)
 {
@@ -26,7 +26,7 @@ bool FUint32OverflowTest::RunTest(const FString& Parameters)
 	return TestResult;
 }
 
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(FBufferTickOverflow, "NetPhysSync.OverflowHandle.BufferIndex BufferIndexOperationTest", EAutomationTestFlags::EditorContext | EAutomationTestFlags::SmokeFilter)
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FBufferTickOverflow, "NetPhysSync.OverflowHandle.BufferIndexOperationTest", EAutomationTestFlags::EditorContext | EAutomationTestFlags::SmokeFilter)
 
 bool FBufferTickOverflow::RunTest(const FString& Parameters)
 {
