@@ -15,6 +15,7 @@ public:
 		: MaxCapacity(MaxCapacityParam)
 		, CurrentStartIndex(0)
 		, ElementCount(0)
+		, Elements()
 	{
 		checkf(MaxCapacity > 0U, TEXT("Circular Buffer with Zero Capacity?"));
 		Elements.AddDefaulted(MaxCapacity);
@@ -182,6 +183,13 @@ public:
 		ElementType DefaultElement = ElementType();
 		if (Index == 0) // Insert in front of head.
 		{
+			ElementCount += Count;
+
+			if (ElementCount > Capacity())
+			{
+				ElementCount = Capacity();
+			}
+
 			if (CurrentStartIndex >= Count) // Handle uint32 overflow
 			{
 				CurrentStartIndex -= Count;
@@ -195,13 +203,55 @@ public:
 			{
 				(*this)[i] = DefaultElement;
 			}
-
+		}
+		// Choose between relocating direction.
+		else if ( ElementCount >= Index + Count && // This condition handle overflow.
+				Index < ElementCount - Index - Count)
+		{
+			// Relocate from tail to head.
 			ElementCount += Count;
 
 			if (ElementCount > Capacity())
 			{
 				ElementCount = Capacity();
 			}
+
+			// Handle overflow case
+			if (Index + 1 + Count >= Capacity())
+			{
+				for (uint32 i = Index + 1; i < ElementCount; ++i)
+				{
+					(*this)[i] = DefaultElement;
+				}
+			}
+			else
+			{
+				// Shift CurrentStartIndex to left.
+				if (CurrentStartIndex >= Count)
+				{
+					CurrentStartIndex -= Count;
+				}
+				else
+				{
+					CurrentStartIndex = Capacity() + CurrentStartIndex - Count;
+				}
+
+				// Move old element first
+				for (uint32 i = 0; i < Index; ++i)
+				{
+					(*this)[i] = (*this)[i + Count];
+				}
+
+				// Insert Default
+				for (uint32 i = Index; i < Index + Count && i < ElementCount; ++i)
+				{
+					(*this)[i] = DefaultElement;
+				}
+
+				checkf(CurrentStartIndex >= 0 && CurrentStartIndex < Capacity(), 
+					TEXT("Wrong CurrentStartIndex Calculation."));
+			}
+
 		}
 		else
 		{
