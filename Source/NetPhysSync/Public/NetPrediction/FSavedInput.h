@@ -13,21 +13,19 @@ struct NETPHYSSYNC_API FSavedInput
 {
 	GENERATED_BODY()
 public:
-	FSavedInput(): TickCount(0)
-		, TargetSpeed()
+	FSavedInput(): 
+		TargetWorldSpeed(0.0f, 0.0f, 0.0f)
 	{
 	
 	}
 
-	FSavedInput(FVector TargetSpeedParam, uint8 TickCount = 1);
+	FSavedInput(FVector TargetSpeedParam);
 	~FSavedInput();
 	
-	FVector GetTargetSpeed() const { return TargetSpeed; }
-	uint8 GetTickCount() const { return TickCount; }
+	FVector GetTargetSpeed() const { return TargetWorldSpeed; }
+	const FVector& GetConstTargetSpeedReference() const { return TargetWorldSpeed; }
 
 private:
 	UPROPERTY()
-	uint8 TickCount;
-	UPROPERTY()
-	FVector TargetSpeed;
+	FVector TargetWorldSpeed;
 };

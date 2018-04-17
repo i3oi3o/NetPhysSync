@@ -13,13 +13,19 @@ FNPS_ClientActorPrediction::~FNPS_ClientActorPrediction()
 
 void FNPS_ClientActorPrediction::SaveRigidBodyState(physx::PxRigidDynamic* PxRigidBodyDynamic, uint32 ClientTickIndex)
 {
-	SetClientBuffsState(FSavedClientRigidBodyState(PxRigidBodyDynamic), ClientTickIndex);
+	FNPS_StaticHelperFunction::SetBuffers
+	(
+		ClientStateBuffers,
+		FSavedClientRigidBodyState(PxRigidBodyDynamic),
+		ClientStateBufferStartsTickIndex,
+		ClientTickIndex
+	);
 }
 
 void FNPS_ClientActorPrediction::RetrieveRigidBodyState(physx::PxRigidDynamic* PxRigidDynamic, uint32 ClientTickIndex) const
 {
 	int32 OutArrayIndex;
-	FNPS_StaticHelperFunction::CalculateBufferArrayIndex(ClientBufferStartTickIndex, ClientTickIndex, 
+	FNPS_StaticHelperFunction::CalculateBufferArrayIndex(ClientStateBufferStartsTickIndex, ClientTickIndex, 
 		OutArrayIndex);
 
 	if (OutArrayIndex >= 0 && OutArrayIndex < ClientStateBuffers.Num())
@@ -31,14 +37,20 @@ void FNPS_ClientActorPrediction::RetrieveRigidBodyState(physx::PxRigidDynamic* P
 void FNPS_ClientActorPrediction::ServerCorrectState(const FReplicatedRigidBodyState& CorrectState, uint32 ClientTickIndex)
 {
 	int32 OutArrayIndex;
-	FNPS_StaticHelperFunction::CalculateBufferArrayIndex(ClientBufferStartTickIndex, ClientTickIndex, OutArrayIndex);
+	FNPS_StaticHelperFunction::CalculateBufferArrayIndex(ClientStateBufferStartsTickIndex, ClientTickIndex, OutArrayIndex);
 	if (OutArrayIndex >= 0 && OutArrayIndex < ClientStateBuffers.Num())
 	{
 		ClientStateBuffers[OutArrayIndex].SaveReplicatedRigidBodyState(CorrectState);
 	}
 	else
 	{
-		SetClientBuffsState(FSavedClientRigidBodyState(CorrectState), ClientTickIndex);
+		FNPS_StaticHelperFunction::SetBuffers
+		(
+			ClientStateBuffers, 
+			FSavedClientRigidBodyState(CorrectState),
+			ClientStateBufferStartsTickIndex,
+			ClientTickIndex
+		);
 	}
 
 	bHasReplayTickIndex = true;
@@ -47,7 +59,7 @@ void FNPS_ClientActorPrediction::ServerCorrectState(const FReplicatedRigidBodySt
 
 void FNPS_ClientActorPrediction::ShiftStartBufferIndex(int32 ShiftAmount)
 {
-	ClientBufferStartTickIndex += ShiftAmount;
+	ClientStateBufferStartsTickIndex += ShiftAmount;
 	ReplayTickIndex += ShiftAmount;
 }
 
@@ -57,55 +69,31 @@ bool FNPS_ClientActorPrediction::TryGetReplayTickIndex(uint32& OutTickIndex) con
 	return bHasReplayTickIndex;
 }
 
-void FNPS_ClientActorPrediction::ClearReplayFlag()
+void FNPS_ClientActorPrediction::ConsumeReplayFlag()
 {
 	bHasReplayTickIndex = false;
 }
 
-bool FNPS_ClientActorPrediction::HasClientBufferYet() const
+void FNPS_ClientActorPrediction::TrimBufferToReplayIndex()
+{
+	if (bHasReplayTickIndex)
+	{
+		int32 OutArrayIndex;
+		FNPS_StaticHelperFunction::CalculateBufferArrayIndex
+		(ClientStateBufferStartsTickIndex, ReplayTickIndex, OutArrayIndex);
+
+		if (OutArrayIndex > 0)
+		{
+			ClientStateBuffers.RemoveAt(0, ReplayTickIndex);
+			ClientStateBufferStartsTickIndex = ReplayTickIndex;
+			
+		}
+	}
+}
+
+bool FNPS_ClientActorPrediction::HasClientStateBufferYet() const
 {
 	return ClientStateBuffers.Num() > 0;
 }
 
-/**
- * Think of better implementation.
- */
-void FNPS_ClientActorPrediction::SetClientBuffsState(const FSavedClientRigidBodyState& ToSet, uint32 ClientTickIndex)
-{
-	if (HasClientBufferYet())
-	{
-		int32 OutArrayIndex;
-		FNPS_StaticHelperFunction::CalculateBufferArrayIndex(ClientBufferStartTickIndex, ClientTickIndex, OutArrayIndex);
 
-		if (OutArrayIndex >= 0 && OutArrayIndex < ClientStateBuffers.Num())
-		{
-			ClientStateBuffers[OutArrayIndex] = ToSet;
-		}
-		else if (OutArrayIndex >= ClientStateBuffers.Num())
-		{
-			checkf(OutArrayIndex == ClientStateBuffers.Num(), TEXT("Why set array index very far in future?"));
-
-			if (OutArrayIndex == ClientStateBuffers.Num())
-			{
-				ClientStateBuffers.Add(ToSet);
-			}
-			else
-			{
-				ClientStateBuffers.AddDefaulted(OutArrayIndex - ClientStateBuffers.Num() + 1);
-				ClientStateBuffers[OutArrayIndex] = ToSet;
-			}
-
-		}
-		else if (OutArrayIndex < 0)
-		{
-			ClientBufferStartTickIndex += OutArrayIndex;
-			ClientStateBuffers.InsertDefaulted(0, -OutArrayIndex);
-			ClientStateBuffers[OutArrayIndex] = ToSet;
-		}
-	}
-	else
-	{
-		ClientBufferStartTickIndex = ClientTickIndex;
-		ClientStateBuffers.Add(ToSet);
-	}
-}

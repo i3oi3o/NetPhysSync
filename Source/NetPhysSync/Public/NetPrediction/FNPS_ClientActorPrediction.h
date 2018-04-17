@@ -23,9 +23,11 @@ public:
 	void SaveRigidBodyState(physx::PxRigidDynamic* PxRigidBodyDynamic, uint32 ClientTickIndex);
 	void RetrieveRigidBodyState(physx::PxRigidDynamic* PxRigidDynamic, uint32 ClientTickIndex) const;
 	void ServerCorrectState(const FReplicatedRigidBodyState& CorrectState, uint32 ClientTickIndex);
-	void ShiftStartBufferIndex(int32 ShiftAmount);
+	virtual void ShiftStartBufferIndex(int32 ShiftAmount);
 	bool TryGetReplayTickIndex(uint32& OutTickIndex) const;
-	void ClearReplayFlag();
+	void ConsumeReplayFlag();
+	virtual void TrimBufferToReplayIndex();
+	bool HasClientStateBufferYet() const;
 
 protected:
 	/*
@@ -34,11 +36,9 @@ protected:
 	* Use 20 slot to avoid overflow.
 	*/
 	TArray<FSavedClientRigidBodyState, TInlineAllocator<20>> ClientStateBuffers;
-	uint32 ClientBufferStartTickIndex;
+	uint32 ClientStateBufferStartsTickIndex;
 	uint32 ReplayTickIndex;
 	bool bHasReplayTickIndex;
-	bool HasClientBufferYet() const;
-
-	void SetClientBuffsState(const FSavedClientRigidBodyState& ToSet, uint32 ClientTickIndex);
-
 };
+
+

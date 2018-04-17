@@ -2,9 +2,8 @@
 
 #include "FSavedInput.h"
 
-FSavedInput::FSavedInput(FVector TagetSpeedParam, uint8 TickCount)
-	: TargetSpeed(TagetSpeedParam)
-	, TickCount(TickCount)
+FSavedInput::FSavedInput(FVector TagetSpeedParam)
+	: TargetWorldSpeed(TagetSpeedParam)
 {
 }
 
