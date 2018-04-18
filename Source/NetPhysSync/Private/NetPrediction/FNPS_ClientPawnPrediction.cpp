@@ -27,7 +27,7 @@ FVector FNPS_ClientPawnPrediction::GetSavedInput(uint32 ClientTick) const
 	int32 OutArrayIndex;
 	FNPS_StaticHelperFunction::CalculateBufferArrayIndex(
 		ClientInputBuffersStartTickIndex, ClientTick, OutArrayIndex);
-	if (OutArrayIndex >= 0 && OutArrayIndex < ClientInputBuffers.Num())
+	if (ClientInputBuffers.IsIndexInRange(OutArrayIndex))
 	{
 		return ClientInputBuffers[OutArrayIndex].GetConstTargetSpeedReference();
 	}
@@ -37,6 +37,17 @@ FVector FNPS_ClientPawnPrediction::GetSavedInput(uint32 ClientTick) const
 	}
 }
 
+
+bool FNPS_ClientPawnPrediction::HasUnacknowledgedInput() const
+{
+	unimplemented();
+	return false;
+}
+
+uint32 FNPS_ClientPawnPrediction::GetUnacknowledgeInputClientTickIndex() const
+{
+	return ReplayTickIndex+1;
+}
 
 void FNPS_ClientPawnPrediction::ShiftStartBufferIndex(int32 ShiftAmount)
 {

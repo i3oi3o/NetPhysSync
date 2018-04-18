@@ -20,9 +20,20 @@ public:
 
 	void SaveInput(FVector TargetWorldSpeed, uint32 ClientTickIndex);
 	FVector GetSavedInput(uint32 ClientTick) const;
+	bool HasUnacknowledgedInput() const;
+	FORCEINLINE uint32 GetUnacknowledgeInputClientTickIndex() const;
 	virtual void ShiftStartBufferIndex(int32 ShiftAmount) override;
-
 	bool HasClientInputBuffers() const;
+
+	template<typename ArrayAllocator>
+	void CopyUnacknowledgeInputToArray(TArray<FSavedInput, ArrayAllocator> DestArray)
+	{
+		if (HasUnacknowledgedInput())
+		{
+
+		}
+	}
+
 
 protected:
 	/**
