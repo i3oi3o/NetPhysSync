@@ -38,3 +38,16 @@ void FReplicatedRigidBodyState::RetrivedRigidBodyState(PxRigidDynamic* const Rig
 		RigidDynamic->setLinearVelocity(PxLinearVelocity);
 	}
 }
+
+float FReplicatedRigidBodyState::CalculateSumDiffSqrError
+(
+	const FReplicatedRigidBodyState& Other
+) const
+{
+	float SumSqrtError = 0;
+	SumSqrtError += (WorldPos - Other.WorldPos).SizeSquared();
+	SumSqrtError += (WorldRotation - Other.WorldRotation).SizeSquared();
+	SumSqrtError += (LinearVelocity - Other.LinearVelocity).SizeSquared();
+	SumSqrtError += (LinearAngularVelocity - Other.LinearAngularVelocity).SizeSquared();
+	return SumSqrtError;
+}

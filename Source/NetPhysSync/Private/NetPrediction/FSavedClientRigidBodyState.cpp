@@ -45,6 +45,16 @@ void FSavedClientRigidBodyState::RetriveRigidBodyState(physx::PxRigidDynamic* co
 	}
 }
 
+float FSavedClientRigidBodyState::CalculatedSumDiffSqurError(const FReplicatedRigidBodyState& OtherReplicatedState)
+{
+	return ReplicatedRigidBodyStateState.CalculateSumDiffSqrError(OtherReplicatedState);
+}
+
+float FSavedClientRigidBodyState::CalculatedSumDiffSqurError(const FSavedClientRigidBodyState& Other)
+{
+	return ReplicatedRigidBodyStateState.CalculateSumDiffSqrError(Other.ReplicatedRigidBodyStateState);
+}
+
 const bool FSavedClientRigidBodyState::IsReplicatedStateValid() const
 {
 	return bIsReplicatedStateValid;

@@ -6,7 +6,7 @@
 FNPS_ClientActorPrediction::FNPS_ClientActorPrediction() 
 	: ClientStateBuffers(20),
 	ClientStateBufferStartsTickIndex(0),
-	ReplayTickIndex(0),
+	LastCorrectedStateTickIndex(0),
 	bNeedReplay(false)
 {
 }
@@ -81,12 +81,16 @@ void FNPS_ClientActorPrediction::ServerCorrectState(const FReplicatedRigidBodySt
 {
 	int32 OutArrayIndex;
 	FNPS_StaticHelperFunction::CalculateBufferArrayIndex(ClientStateBufferStartsTickIndex, ClientTickIndex, OutArrayIndex);
+	float SumSqrError = 0;
 	if (OutArrayIndex >= 0 && OutArrayIndex < ClientStateBuffers.Num())
 	{
-		ClientStateBuffers[OutArrayIndex].SaveReplicatedRigidBodyState(CorrectState);
+		FSavedClientRigidBodyState& ExistState = ClientStateBuffers[OutArrayIndex];
+		SumSqrError = ExistState.CalculatedSumDiffSqurError(CorrectState);
+		ExistState.SaveReplicatedRigidBodyState(CorrectState);
 	}
 	else
 	{
+		SumSqrError = TNumericLimits<float>::Max();
 		FNPS_StaticHelperFunction::SetElementToBuffers
 		(
 			ClientStateBuffers, 
@@ -96,19 +100,19 @@ void FNPS_ClientActorPrediction::ServerCorrectState(const FReplicatedRigidBodySt
 		);
 	}
 
-	bNeedReplay = true;
-	ReplayTickIndex = ClientTickIndex;
+	bNeedReplay = SumSqrError > 1.0f;
+	LastCorrectedStateTickIndex = ClientTickIndex;
 }
 
 void FNPS_ClientActorPrediction::ShiftStartBufferIndex(int32 ShiftAmount)
 {
 	ClientStateBufferStartsTickIndex += ShiftAmount;
-	ReplayTickIndex += ShiftAmount;
+	LastCorrectedStateTickIndex += ShiftAmount;
 }
 
 bool FNPS_ClientActorPrediction::TryGetReplayTickIndex(uint32& OutTickIndex) const
 {
-	OutTickIndex = ReplayTickIndex;
+	OutTickIndex = LastCorrectedStateTickIndex;
 	return bNeedReplay;
 }
 

@@ -21,10 +21,14 @@ public:
 	void SaveRigidBodyState(const physx::PxRigidDynamic* const RigidDynamic);
 	void SaveReplicatedRigidBodyState(const FReplicatedRigidBodyState& ReplicatedState);
 	void RetriveRigidBodyState(physx::PxRigidDynamic* const RigidDynamic) const;
+	
+	float CalculatedSumDiffSqurError(const FReplicatedRigidBodyState& OtherReplicatedState);
+	float CalculatedSumDiffSqurError(const FSavedClientRigidBodyState& Other);
+
 	/**
 	 * If create by default constructor, ReplicatedState is not valid.
 	 */
-	const bool IsReplicatedStateValid() const;
+	FORCEINLINE const bool IsReplicatedStateValid() const;
 
 
 private:

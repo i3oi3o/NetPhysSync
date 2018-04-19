@@ -18,10 +18,32 @@ struct NETPHYSSYNC_API FReplicatedRigidBodyState
 {
 	GENERATED_BODY()
 public:
-	FReplicatedRigidBodyState() : LinearVelocity()
-		,LinearAngularVelocity()
-		, WorldPos()
+	FReplicatedRigidBodyState() 
+		: WorldPos()
 		, WorldRotation(EForceInit::ForceInit)
+		, LinearVelocity()
+		, LinearAngularVelocity()
+		, bIsSleep(false)
+	{
+
+	}
+
+	/**
+	 * Constructor for testing.
+	 */
+	FReplicatedRigidBodyState
+	(
+		FVector WorldPosParam,
+		FQuat WorldRotationParam,
+		FVector LinearVelocityParam,
+		FVector LinearAngularVelocityParam,
+		bool bIsSleepParam
+	) 
+		: WorldPos(WorldPosParam)
+		, WorldRotation(WorldRotationParam)
+		, LinearVelocity(LinearAngularVelocityParam)
+		, LinearAngularVelocity(LinearAngularVelocityParam)
+		, bIsSleep(bIsSleepParam)
 	{
 
 	}
@@ -29,22 +51,23 @@ public:
 	FReplicatedRigidBodyState(const physx::PxRigidDynamic* const RigidDynamic);
 	~FReplicatedRigidBodyState();
 
-	const FVector& GetLinearVelocity() const { return LinearVelocity; }
-	const FVector& GetLinearAngularVelocity() const { return LinearAngularVelocity;}
-	const FVector& GetWorldPos() const { return WorldPos; }
-	const FQuat& GetWorldRotation() const { return WorldRotation; }
-	const bool& IsSleep() const { return bIsSleep; }
+	FORCEINLINE const FVector& GetLinearVelocity() const { return LinearVelocity; }
+	FORCEINLINE const FVector& GetLinearAngularVelocity() const { return LinearAngularVelocity;}
+	FORCEINLINE const FVector& GetWorldPos() const { return WorldPos; }
+	FORCEINLINE const FQuat& GetWorldRotation() const { return WorldRotation; }
+	FORCEINLINE const bool IsSleep() const { return bIsSleep; }
 	void RetrivedRigidBodyState(physx::PxRigidDynamic* const RigidDynamic) const;
+	float CalculateSumDiffSqrError(const FReplicatedRigidBodyState& Other) const;
 
 private:
-	UPROPERTY()
-	FVector LinearVelocity;
-	UPROPERTY()
-	FVector LinearAngularVelocity;
 	UPROPERTY()
 	FVector WorldPos;
 	UPROPERTY()
 	FQuat WorldRotation;
+	UPROPERTY()
+	FVector LinearVelocity;
+	UPROPERTY()
+	FVector LinearAngularVelocity;
 	UPROPERTY()
 	bool bIsSleep;
 };
