@@ -5,7 +5,10 @@
 #include "CoreMinimal.h"
 
 /**
- * Implement CircularBuffer by wrapping over TArray
+ * Implement CircularBuffer by wrapping over TArray.
+ * Current implementation doesn't call removed element's destructor.
+ * Element can be removed by adding/inserting overflow element or removing.
+ * Use MemoryOps.h DestructItem later.
  */
 template<typename ElementType, typename AllocatorType=FDefaultAllocator>
 class NETPHYSSYNC_API TNPSCircularBuffer
