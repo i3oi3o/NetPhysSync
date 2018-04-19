@@ -48,15 +48,24 @@ public:
 
 				int32 AddAmount = OutArrayIndex - Buffers.Num() + 1;
 
-				if (Buffers.Num() + AddAmount > Buffers.Capacity())
+				if (AddAmount >= Buffers.Capacity())
 				{
-					InOutBufferStartIndex += Buffers.Num() + AddAmount - Buffers.Capacity();
+					Buffers.Empty();
+					InOutBufferStartIndex = BufferSetTargetIndex;
+				}
+				else
+				{
+					if (Buffers.Num() + AddAmount > Buffers.Capacity())
+					{
+						InOutBufferStartIndex += Buffers.Num() + AddAmount - Buffers.Capacity();
+					}
+
+					if (AddAmount > 1)
+					{
+						Buffers.AddDefaulted(AddAmount - 1);
+					}
 				}
 
-				if (AddAmount > 1)
-				{
-					Buffers.AddDefaulted(AddAmount-1);
-				}
 				
 				Buffers.Add(ToSet);
 			}
