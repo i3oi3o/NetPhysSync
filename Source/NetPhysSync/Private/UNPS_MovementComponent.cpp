@@ -44,6 +44,51 @@ void UNPS_MovementComponent::BeginPlay()
 }
 
 
+void UNPS_MovementComponent::SimulatedInput(FVector MoveSpeedVecParam)
+{
+	float CurrentSpeedSizeSqrt = MoveSpeedVecParam.SizeSquared2D();
+	if (CurrentSpeedSizeSqrt > 0.0001f)
+	{
+		float CurrentSpeedSize = FMath::Sqrt(CurrentSpeedSizeSqrt);
+		FVector MoveDir = MoveSpeedVecParam / CurrentSpeedSize;
+		FBodyInstance* BodyInstance = UpdatedPrimitive->GetBodyInstance();
+		PxRigidDynamic* RigidBody = BodyInstance->GetPxRigidDynamic_AssumesLocked();
+		FVector CurrentVelocity = P2UVector(RigidBody->getLinearVelocity());
+		FVector DiffVector = MoveSpeedVecParam - CurrentVelocity;
+		
+		// Remove projected negative from DiffVector
+		float DotProduct = FVector::DotProduct(DiffVector, MoveDir);
+		if (DotProduct < 0)
+		{
+			DiffVector -= MoveDir*DotProduct;
+		}
+
+		float DiffSizeSqr = DiffVector.SizeSquared2D();
+		if (DiffSizeSqr > 0.01f)
+		{
+			float Mass = RigidBody->getMass();
+			FVector ToAddImpulse;
+			DiffVector.Z = 0;
+			float CurrentMaxVelocityChange = CurrentSpeedSize*MaxVelocityChange / Speed;
+
+
+			if (DiffSizeSqr < CurrentMaxVelocityChange*CurrentMaxVelocityChange)
+			{
+				ToAddImpulse = Mass*DiffVector;
+			}
+			else
+			{
+				ToAddImpulse = Mass*CurrentMaxVelocityChange
+					*DiffVector 
+					/ FMath::Sqrt(DiffSizeSqr);
+			}
+
+			PxRigidBodyExt::addForceAtLocalPos(*RigidBody, U2PVector(ToAddImpulse),
+				U2PVector(ApplyForceLocalPos), PxForceMode::eIMPULSE);
+		}
+	}
+}
+
 bool UNPS_MovementComponent::IsTickEnabled() const
 {
 	AActor* Owner = GetOwner();
@@ -60,7 +105,7 @@ void UNPS_MovementComponent::TickStartPhysic(const FStartPhysParam& param)
 	float InputSize = InputVector.Size();
 	MoveSpeed = FMath::Min(InputSize*Speed, Speed);
 	
-	if (MoveSpeed > 0.01f)
+	if (InputSize > 0.05f) // Death Zone for Controller.
 	{
 		FVector InputDir = InputVector / InputSize;
 		InvMoveSpeed = 1.0f / MoveSpeed;
@@ -75,33 +120,7 @@ void UNPS_MovementComponent::TickStartPhysic(const FStartPhysParam& param)
 
 void UNPS_MovementComponent::TickPhysStep(const FPhysStepParam& param)
 {
-	if (MoveSpeed > 0.01f)
-	{
-		FBodyInstance* BodyInstance = UpdatedPrimitive->GetBodyInstance();
-		PxRigidDynamic* RigidBody = BodyInstance->GetPxRigidDynamic_AssumesLocked();
-		FVector CurrentVelocity = P2UVector(RigidBody->getLinearVelocity());
-		FVector DiffVector = MoveSpeedVec - CurrentVelocity;
-		
-		
-		float DiffSizeSqr = DiffVector.SizeSquared2D();
-		if (DiffSizeSqr > 0.01f)
-		{
-			float Mass = RigidBody->getMass();
-			FVector ToAddImpulse;
-			DiffVector.Z = 0;
-			if (DiffSizeSqr < MaxVelocityChange*MaxVelocityChange)
-			{
-				ToAddImpulse = Mass*DiffVector;
-			}
-			else
-			{
-				ToAddImpulse = Mass*MaxVelocityChange*DiffVector / FMath::Sqrt(DiffSizeSqr);
-			}
-			
-			PxRigidBodyExt::addForceAtLocalPos(*RigidBody, U2PVector(ToAddImpulse),
-				U2PVector(ApplyForceLocalPos), PxForceMode::eIMPULSE);
-		}
-	}
+	SimulatedInput(MoveSpeedVec);
 }
 
 void UNPS_MovementComponent::TickPostPhysStep(const FPostPhysStepParam& param)
@@ -133,4 +152,6 @@ void UNPS_MovementComponent::TickComponent(float DeltaTime, ELevelTick TickType,
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 }
+
+
 
