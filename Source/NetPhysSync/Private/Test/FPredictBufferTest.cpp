@@ -2,10 +2,27 @@
 #include "AutomationTest.h"
 #include "NumericLimits.h"
 #include "FNPS_StaticHelperFunction.h"
+#include "FNPS_ClientActorPrediction.h"
+#include "FSavedClientRigidBodyState.h"
 
+void GenerateFakedState(FSavedClientRigidBodyState* InSaveClientStateArray, int Count)
+{
+	for (int i = 0; i < Count; ++i)
+	{
+		FReplicatedRigidBodyState (Tmp)
+		(
+			FVector(static_cast<float>(i + 1), 0.0f, 0.0f),
+			FQuat(FRotator(0.0f, static_cast<float>(i + 1), 0.0f)),
+			FVector(0.0f, static_cast<float>(i + 1), 0.0f),
+			FVector(0.0f, 0.0f, static_cast<float>(i + 1)),
+			false
+		);
 
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(FUint32OverflowTest, "NetPhysSync.OverflowHandle.Uint32OperationTest", EAutomationTestFlags::EditorContext | EAutomationTestFlags::SmokeFilter)
+		InSaveClientStateArray[i] = FSavedClientRigidBodyState(Tmp);
+	}
+}
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FUint32OverflowTest, "NetPhysSync.PredictBuffer.Uint32OperationTest", EAutomationTestFlags::EditorContext | EAutomationTestFlags::SmokeFilter)
 bool FUint32OverflowTest::RunTest(const FString& Parameters)
 {
 	bool TestResult = true;
@@ -26,9 +43,8 @@ bool FUint32OverflowTest::RunTest(const FString& Parameters)
 	return TestResult;
 }
 
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(FBufferTickOverflow, "NetPhysSync.OverflowHandle.BufferIndexOperationTest", EAutomationTestFlags::EditorContext | EAutomationTestFlags::SmokeFilter)
-
-bool FBufferTickOverflow::RunTest(const FString& Parameters)
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FBufferTickOverflowTest, "NetPhysSync.PredictBuffer.IndexOperationTest", EAutomationTestFlags::EditorContext | EAutomationTestFlags::SmokeFilter)
+bool FBufferTickOverflowTest::RunTest(const FString& Parameters)
 {
 	bool TestResult = true;
 	
@@ -60,4 +76,89 @@ bool FBufferTickOverflow::RunTest(const FString& Parameters)
 	TestResult &= (TestIndex == -5);
 
 	return TestResult;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FClientActorPredictionSaveTest, "NetPhysSync.PredictBuffer.ClientActorSaved", EAutomationTestFlags::EditorContext | EAutomationTestFlags::SmokeFilter)
+bool FClientActorPredictionSaveTest::RunTest(const FString& Parameters)
+{
+	
+	uint32 FakeClientTick = 0 - 5U;
+	FNPS_ClientActorPrediction ClientActorPrediction;
+	FSavedClientRigidBodyState GenerateClientRigidBodyStates[10];
+
+	GenerateFakedState(GenerateClientRigidBodyStates, 10);
+
+	FReplicatedRigidBodyState (DummyReplicatedState)
+	(
+		FVector(1.0f, 0.0f, 0.0f),
+		FQuat(EForceInit::ForceInit),
+		FVector(),
+		FVector(),
+		true
+	);
+
+	FSavedClientRigidBodyState DummyState(DummyReplicatedState);
+
+	for (int32 i = 0; i < 15; ++i)
+	{
+		ClientActorPrediction.SaveRigidBodyState(DummyState, FakeClientTick);
+		++FakeClientTick;
+	}
+
+	for (int32 i = 1; i <= 15; ++i)
+	{
+		float ErrorDiff = ClientActorPrediction
+			.GetRigidBodyState(FakeClientTick - i)
+			.CalculatedSumDiffSqurError(DummyReplicatedState);
+
+		TestEqual(TEXT("Compare Dummy RigidBodyState in buffer."), ErrorDiff, 0.0f);
+	}
+
+	for (int32 i = 0; i < 10; ++i)
+	{
+		ClientActorPrediction.SaveRigidBodyState
+		(
+			GenerateClientRigidBodyStates[i], 
+			FakeClientTick
+		);
+		++FakeClientTick;
+	}
+
+	for (int32 i = 1; i <= 20; ++i)
+	{
+		float ErrorDiff = 0.0f;
+		if (i <= 10)
+		{
+			ErrorDiff = ClientActorPrediction
+				.GetRigidBodyState(FakeClientTick - i)
+				.CalculatedSumDiffSqurError(GenerateClientRigidBodyStates[i - 1]);
+			TestEqual(TEXT("Compare Generated RigidBodyState in buffer."), ErrorDiff, 0.0f);
+		}
+		else
+		{
+			ErrorDiff = ClientActorPrediction
+				.GetRigidBodyState(FakeClientTick - i)
+				.CalculatedSumDiffSqurError(DummyReplicatedState);
+			TestEqual(TEXT("Compare Dummy2 RigidBodyState in buffer."), ErrorDiff, 0.0f);
+		}
+	}
+
+	{
+		/*Test Query Out of bound element*/
+
+		float ErrorDiff = ClientActorPrediction
+			.GetRigidBodyState(FakeClientTick + 10)
+			.CalculatedSumDiffSqurError(GenerateClientRigidBodyStates[9]);
+
+		TestEqual(TEXT("Comapre out of bound state from future."), ErrorDiff, 0.0f);
+
+		ErrorDiff = ClientActorPrediction
+			.GetRigidBodyState(FakeClientTick - 60)
+			.CalculatedSumDiffSqurError(DummyReplicatedState);
+
+		TestEqual(TEXT("Compare out of bound state from past."), ErrorDiff, 0.0f);
+	}
+
+	return true;
+
 }
