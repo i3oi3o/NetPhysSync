@@ -30,11 +30,33 @@ public:
 	virtual void ServerCorrectState(const FReplicatedRigidBodyState& CorrectState, uint32 ClientTickIndex);
 
 	template<typename ArrayAllocator>
-	void CopyUnacknowledgeInputToArray(TArray<FSavedInput, ArrayAllocator> DestArray)
+	void CopyUnacknowledgeInputToArray(TArray<FSavedInput, ArrayAllocator>& DestArray)
 	{
+		DestArray.Empty(DestArray.Max());
 		if (HasUnacknowledgedInput())
 		{
+			int32 OutArrayIndex;
+			FNPS_StaticHelperFunction::CalculateBufferArrayIndex
+			(
+				ClientInputBuffersStartTickIndex,
+				GetLastUnacknowledgeInputClientTickIndex(),
+				OutArrayIndex
+			);
 
+			if (OutArrayIndex >= 0 && OutArrayIndex < ClientInputBuffers.Num())
+			{
+				int32 Amount = ClientInputBuffers.Num() - OutArrayIndex;
+
+				if (DestArray.Max() < Amount)
+				{
+					DestArray.SetNum(Amount);
+				}
+
+				for (int32 i = OutArrayIndex; i < ClientInputBuffers.Num(); ++i)
+				{
+					DestArray.Add(ClientInputBuffers[i]);
+				}
+			}
 		}
 	}
 
