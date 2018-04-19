@@ -32,7 +32,7 @@ public:
 		uint32 BufferSetTargetIndex
 	)
 	{
-		if (Buffers.Num() == 0)
+		if (Buffers.Num() > 0)
 		{
 			int32 OutArrayIndex;
 			FNPS_StaticHelperFunction::CalculateBufferArrayIndex
