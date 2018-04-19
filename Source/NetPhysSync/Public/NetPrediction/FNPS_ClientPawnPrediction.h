@@ -20,10 +20,14 @@ public:
 
 	void SaveInput(FVector TargetWorldSpeed, uint32 ClientTickIndex);
 	FVector GetSavedInput(uint32 ClientTick) const;
-	bool HasUnacknowledgedInput() const;
-	FORCEINLINE uint32 GetUnacknowledgeInputClientTickIndex() const;
+	FORCEINLINE bool HasUnacknowledgedInput() const;
+	/**
+	 * This try to return last UnacknowledgeInput ClientTick index. 
+	 * Regardless whether currently has UnackonwledgeInput or not. 
+	 */
+	uint32 GetLastUnacknowledgeInputClientTickIndex() const;
 	virtual void ShiftStartBufferIndex(int32 ShiftAmount) override;
-	bool HasClientInputBuffers() const;
+	virtual void ServerCorrectState(const FReplicatedRigidBodyState& CorrectState, uint32 ClientTickIndex);
 
 	template<typename ArrayAllocator>
 	void CopyUnacknowledgeInputToArray(TArray<FSavedInput, ArrayAllocator> DestArray)
@@ -43,4 +47,5 @@ protected:
 	 */
 	TNPSCircularBuffer<FSavedInput, TInlineAllocator<20>> ClientInputBuffers;
 	uint32 ClientInputBuffersStartTickIndex;
+	uint32 LastUnacknowledgeInput;
 };
