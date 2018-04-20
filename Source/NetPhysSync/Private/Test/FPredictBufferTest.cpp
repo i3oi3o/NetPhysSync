@@ -78,7 +78,7 @@ bool FBufferTickOverflowTest::RunTest(const FString& Parameters)
 	return TestResult;
 }
 
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(FClientActorPredictionSaveTest, "NetPhysSync.PredictBuffer.ClientActorSaved", EAutomationTestFlags::EditorContext | EAutomationTestFlags::SmokeFilter)
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FClientActorPredictionSaveTest, "NetPhysSync.PredictBuffer.ClientActorSaveAndGet", EAutomationTestFlags::EditorContext | EAutomationTestFlags::SmokeFilter)
 bool FClientActorPredictionSaveTest::RunTest(const FString& Parameters)
 {
 	
@@ -150,13 +150,26 @@ bool FClientActorPredictionSaveTest::RunTest(const FString& Parameters)
 			.GetRigidBodyState(FakeClientTick + 10)
 			.CalculatedSumDiffSqrtError(GenerateClientRigidBodyStates[9]);
 
-		TestEqual(TEXT("Comapre out of bound state from future."), ErrorDiff, 0.0f);
+		TestEqual(TEXT("Comapre out of bound state from future using nearest."), ErrorDiff, 0.0f);
 
 		ErrorDiff = ClientActorPrediction
 			.GetRigidBodyState(FakeClientTick - 60)
 			.CalculatedSumDiffSqrtError(DummyReplicatedState);
 
-		TestEqual(TEXT("Compare out of bound state from past."), ErrorDiff, 0.0f);
+		TestEqual(TEXT("Compare out of bound state from past using nearest."), ErrorDiff, 0.0f);
+
+
+		bool bIsValid = ClientActorPrediction
+			.GetRigidBodyState(FakeClientTick + 10, false)
+			.IsReplicatedStateValid();
+
+		TestEqual(TEXT("Test out of bound state from future without using nearest."), bIsValid, false);
+
+		bIsValid = ClientActorPrediction
+			.GetRigidBodyState(FakeClientTick - 60, false)
+			.IsReplicatedStateValid();
+
+		TestEqual(TEXT("Test out of bound state from past without using nearest."), bIsValid, false);
 	}
 
 	return true;
