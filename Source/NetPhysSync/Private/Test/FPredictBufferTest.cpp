@@ -131,7 +131,7 @@ bool FClientActorPredictionSaveTest::RunTest(const FString& Parameters)
 		{
 			ErrorDiff = ClientActorPrediction
 				.GetRigidBodyState(FakeClientTick - i)
-				.CalculatedSumDiffSqurError(GenerateClientRigidBodyStates[i - 1]);
+				.CalculatedSumDiffSqurError(GenerateClientRigidBodyStates[10-i]);
 			TestEqual(TEXT("Compare Generated RigidBodyState in buffer."), ErrorDiff, 0.0f);
 		}
 		else
