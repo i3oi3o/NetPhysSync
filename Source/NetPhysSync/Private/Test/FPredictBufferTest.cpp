@@ -5,7 +5,7 @@
 #include "FNPS_ClientActorPrediction.h"
 #include "FSavedClientRigidBodyState.h"
 
-void GenerateFakedState(FSavedClientRigidBodyState* InSaveClientStateArray, int Count)
+void GenerateFakedStateFunction(FSavedClientRigidBodyState* InSaveClientStateArray, int Count)
 {
 	for (int i = 0; i < Count; ++i)
 	{
@@ -78,7 +78,7 @@ bool FBufferTickOverflowTest::RunTest(const FString& Parameters)
 	return TestResult;
 }
 
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(FClientActorPredictionHasBufferYetTest, "NetPhysSyc.PredictBuffer.ClientActorHasStateBuffer", EAutomationTestFlags::EditorContext | EAutomationTestFlags::SmokeFilter)
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FClientActorPredictionHasBufferYetTest, "NetPhysSync.PredictBuffer.ClientActorHasStateBuffer", EAutomationTestFlags::EditorContext | EAutomationTestFlags::SmokeFilter)
 bool FClientActorPredictionHasBufferYetTest::RunTest(const FString& Parameters)
 {
 	uint32 FakeClientTick = 0 - 10U;
@@ -122,7 +122,7 @@ bool FClientActorPredictionSaveAndGetTest::RunTest(const FString& Parameters)
 	FNPS_ClientActorPrediction ClientActorPrediction;
 	FSavedClientRigidBodyState GenerateClientRigidBodyStates[10];
 
-	GenerateFakedState(GenerateClientRigidBodyStates, 10);
+	GenerateFakedStateFunction(GenerateClientRigidBodyStates, 10);
 
 	FReplicatedRigidBodyState (DummyReplicatedState)
 	(
@@ -210,4 +210,204 @@ bool FClientActorPredictionSaveAndGetTest::RunTest(const FString& Parameters)
 
 	return true;
 
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FClientActorPredictionShiftBufferTest, "NetPhysSync.PredictBuffer.ClientActorShiftBufferTest", EAutomationTestFlags::EditorContext | EAutomationTestFlags::SmokeFilter)
+bool FClientActorPredictionShiftBufferTest::RunTest(const FString& Parameters)
+{
+	uint32 FakeClientTick = 0U - 2U;
+
+	FNPS_ClientActorPrediction ClientActorPrediction;
+
+	FSavedClientRigidBodyState GeneratedSaveState[30];
+
+	GenerateFakedStateFunction(GeneratedSaveState, 30);
+
+	for (int32 i = 0; i < 30; ++i)
+	{
+		ClientActorPrediction.SaveRigidBodyState(GeneratedSaveState[i], FakeClientTick);
+		++FakeClientTick;
+	}
+
+	ClientActorPrediction.ShiftStartBufferIndex(-5);
+
+	uint32 LastStoreClientTickBeforeShifting = FakeClientTick - 1;
+	uint32 ToQuertByShiftingTick = LastStoreClientTickBeforeShifting - 5U;
+
+	for (int32 i = 29; i >= 10; --i)
+	{
+		float DiffError = ClientActorPrediction
+			.GetRigidBodyState(ToQuertByShiftingTick + (i-29))
+			.CalculatedSumDiffSqrtError(GeneratedSaveState[i]);
+
+		TestEqual(TEXT("Compare Shift-to-Past Buffer Value"), DiffError, 0.0f);
+	}
+
+	ClientActorPrediction.ShiftStartBufferIndex(10);
+
+	ToQuertByShiftingTick = LastStoreClientTickBeforeShifting + 5U;
+
+	for (int32 i = 29; i >= 10; --i)
+	{
+		float DiffError = ClientActorPrediction
+			.GetRigidBodyState(ToQuertByShiftingTick + (i - 29))
+			.CalculatedSumDiffSqrtError(GeneratedSaveState[i]);
+
+		TestEqual(TEXT("Compare Shift-to-Future Buffer Value"), DiffError, 0.0f);
+	}
+
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FClientActorPredictionReplayTickTest, "NetPhysSync.PredictBuffer.GetReplayTickTest", EAutomationTestFlags::EditorContext | EAutomationTestFlags::SmokeFilter)
+bool FClientActorPredictionReplayTickTest::RunTest(const FString& Parameters)
+{
+	uint32 FakeClientTick = 0U - 2U;
+	FNPS_ClientActorPrediction ClientActorPrediction;
+	FSavedClientRigidBodyState GeneratedState[10];
+	uint32 ForQueryReplayTick;
+	float DiffSqrtError = 0;
+
+	GenerateFakedStateFunction(GeneratedState, 10);
+
+	for (int32 i = 0; i < 10; ++i)
+	{
+		ClientActorPrediction.SaveRigidBodyState
+		(
+			GeneratedState[i], 
+			FakeClientTick+i
+		);
+	}
+
+
+#pragma region Correct Same State
+	ClientActorPrediction.ServerCorrectState
+	(
+		GeneratedState[4].GetRigidBodyState(),
+		FakeClientTick + 4
+	);
+
+	bool NeedReplay = ClientActorPrediction.TryGetReplayTickIndex(ForQueryReplayTick);
+
+	TestEqual(TEXT("Correct State is the same. Shouldn't need replay."), NeedReplay, false);
+#pragma endregion
+
+#pragma region Correct Slightly Different
+	const FReplicatedRigidBodyState& ExistState = GeneratedState[4].GetRigidBodyState();
+
+	FReplicatedRigidBodyState (SlightlyDifferent)
+	(
+		ExistState.GetWorldPos() + FVector(0.01f, 0.0f, 0.0f),
+		ExistState.GetWorldRotation(),
+		ExistState.GetLinearVelocity(),
+		ExistState.GetLinearAngularVelocity(),
+		ExistState.IsSleep()
+	);
+
+	ClientActorPrediction.ServerCorrectState
+	(
+		SlightlyDifferent,
+		FakeClientTick + 4
+	);
+
+	NeedReplay = ClientActorPrediction.TryGetReplayTickIndex(ForQueryReplayTick);
+
+	TestEqual(TEXT("Correct State is the same. Shouldn't need replay."), NeedReplay, false);
+#pragma endregion
+
+#pragma region FakeClientTick + 4
+	ClientActorPrediction.ServerCorrectState
+	(
+		GeneratedState[5].GetRigidBodyState(),
+		FakeClientTick + 4
+	);
+
+	NeedReplay = ClientActorPrediction.TryGetReplayTickIndex(ForQueryReplayTick);
+
+	TestEqual(TEXT("Need replay at FakeClientTick+4"), NeedReplay && (ForQueryReplayTick == (FakeClientTick+4)), true);
+
+	DiffSqrtError = ClientActorPrediction
+		.GetRigidBodyState(ForQueryReplayTick)
+		.CalculatedSumDiffSqrtError(GeneratedState[5]);
+
+	TestEqual(TEXT("Check replay state at FakeClientTick+4"), DiffSqrtError, 0.0f);
+#pragma endregion
+
+#pragma region Shift by -4
+	ClientActorPrediction.ShiftStartBufferIndex(-4);
+
+	NeedReplay = ClientActorPrediction.TryGetReplayTickIndex(ForQueryReplayTick);
+
+	TestEqual(TEXT("Shifting replay to FakeClientTick"), NeedReplay && (ForQueryReplayTick == FakeClientTick), true);
+
+	DiffSqrtError = ClientActorPrediction
+		.GetRigidBodyState(ForQueryReplayTick)
+		.CalculatedSumDiffSqrtError(GeneratedState[5]);
+	
+	TestEqual(TEXT("Check replay state at Shifting-to FakeClientTick"), DiffSqrtError, 0.0f);
+#pragma endregion
+
+#pragma region Shift by 4
+	ClientActorPrediction.ShiftStartBufferIndex(4);
+
+	NeedReplay = ClientActorPrediction.TryGetReplayTickIndex(ForQueryReplayTick);
+
+	TestEqual(TEXT("Shifting replay back to FakeClientTick+4"), NeedReplay && (ForQueryReplayTick == (FakeClientTick+4)), true);
+
+	DiffSqrtError = ClientActorPrediction
+		.GetRigidBodyState(ForQueryReplayTick)
+		.CalculatedSumDiffSqrtError(GeneratedState[5]);
+
+	TestEqual(TEXT("Check replay state at Shifting-back FakeClientTick+4"), DiffSqrtError, 0.0f);
+#pragma endregion
+
+#pragma region FakeClientTick - 2U
+
+	ClientActorPrediction.ServerCorrectState
+	(
+		GeneratedState[5].GetRigidBodyState(),
+		FakeClientTick - 2U
+	);
+
+	NeedReplay = ClientActorPrediction.TryGetReplayTickIndex(ForQueryReplayTick);
+
+	TestEqual(TEXT("Need replay at FakeClientTick-2"), NeedReplay && (ForQueryReplayTick == (FakeClientTick-2)), true);
+
+	DiffSqrtError = ClientActorPrediction
+		.GetRigidBodyState(ForQueryReplayTick)
+		.CalculatedSumDiffSqrtError(GeneratedState[5]);
+
+	TestEqual(TEXT("Check replay state at FakeClientTick - 2U"), DiffSqrtError, 0.0f);
+
+#pragma endregion
+
+#pragma region FakeClientTick + 12U
+	ClientActorPrediction.ServerCorrectState
+	(
+		GeneratedState[5].GetRigidBodyState(),
+		FakeClientTick + 12U
+	);
+
+	NeedReplay = ClientActorPrediction.TryGetReplayTickIndex(ForQueryReplayTick);
+
+	TestEqual(TEXT("Need replay at FakeClientTick+12"), NeedReplay && (ForQueryReplayTick == (FakeClientTick + 12)), true);
+
+	DiffSqrtError = ClientActorPrediction
+		.GetRigidBodyState(ForQueryReplayTick, false)
+		.CalculatedSumDiffSqrtError(GeneratedState[5]);
+
+	TestEqual(TEXT("Check correct state at FakeClientTick+12"), DiffSqrtError, 0.0f);
+#pragma endregion
+
+	
+
+#pragma region ConsumeReplayFlag
+	ClientActorPrediction.ConsumeReplayFlag();
+
+	NeedReplay = ClientActorPrediction.TryGetReplayTickIndex(ForQueryReplayTick);
+
+	TestEqual(TEXT("Consume Replay Flag"), NeedReplay, false);
+#pragma endregion
+
+	return true;
 }
