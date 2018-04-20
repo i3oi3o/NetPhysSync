@@ -22,8 +22,9 @@ public:
 	FSavedInput(FVector TargetSpeedParam);
 	~FSavedInput();
 	
-	FVector GetTargetSpeed() const { return TargetWorldSpeed; }
-	const FVector& GetConstTargetSpeedReference() const { return TargetWorldSpeed; }
+	const FVector& GetTargetSpeed() const { return TargetWorldSpeed; }
+
+	float CalculatedSumDiffSqrtError(const FSavedInput& Other) const;
 
 private:
 	UPROPERTY()

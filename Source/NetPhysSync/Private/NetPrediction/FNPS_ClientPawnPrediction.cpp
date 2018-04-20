@@ -4,8 +4,9 @@
 #include "FNPS_StaticHelperFunction.h"
 
 FNPS_ClientPawnPrediction::FNPS_ClientPawnPrediction()
-	: ClientInputBuffers(20),
-	ClientInputBuffersStartTickIndex(0)
+	: ClientInputBuffers(20)
+	, ClientInputBuffersStartTickIndex(0)
+	, InvalidSaveInput()
 {
 }
 
@@ -22,18 +23,18 @@ void FNPS_ClientPawnPrediction::SaveInput(FVector TargetWorldSpeed, uint32 Clien
 	);
 }
 
-FVector FNPS_ClientPawnPrediction::GetSavedInput(uint32 ClientTick) const
+const FSavedInput& FNPS_ClientPawnPrediction::GetSavedInput(uint32 ClientTick) const
 {
 	int32 OutArrayIndex;
 	FNPS_StaticHelperFunction::CalculateBufferArrayIndex(
 		ClientInputBuffersStartTickIndex, ClientTick, OutArrayIndex);
 	if (ClientInputBuffers.IsIndexInRange(OutArrayIndex))
 	{
-		return ClientInputBuffers[OutArrayIndex].GetConstTargetSpeedReference();
+		return ClientInputBuffers[OutArrayIndex];
 	}
 	else
 	{
-		return FVector(0.0f, 0.0f, 0.0f);
+		return InvalidSaveInput;
 	}
 }
 

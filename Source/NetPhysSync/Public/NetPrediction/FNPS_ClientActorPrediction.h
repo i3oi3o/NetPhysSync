@@ -46,7 +46,7 @@ protected:
 	TNPSCircularBuffer<FSavedClientRigidBodyState, TInlineAllocator<20>> ClientStateBuffers;
 	uint32 ClientStateBufferStartsTickIndex;
 	uint32 LastCorrectedStateTickIndex;
-	FSavedClientRigidBodyState InvalidState;
+	const FSavedClientRigidBodyState InvalidState;
 	bool bNeedReplay;
 };
 

@@ -19,7 +19,7 @@ public:
 	virtual ~FNPS_ClientPawnPrediction();
 
 	void SaveInput(FVector TargetWorldSpeed, uint32 ClientTickIndex);
-	FVector GetSavedInput(uint32 ClientTick) const;
+	const FSavedInput& GetSavedInput(uint32 ClientTick) const;
 	FORCEINLINE bool HasUnacknowledgedInput() const;
 	/**
 	 * This try to return last UnacknowledgeInput ClientTick index. 
@@ -70,4 +70,5 @@ protected:
 	TNPSCircularBuffer<FSavedInput, TInlineAllocator<20>> ClientInputBuffers;
 	uint32 ClientInputBuffersStartTickIndex;
 	uint32 LastUnacknowledgeInput;
+	const FSavedInput InvalidSaveInput;
 };

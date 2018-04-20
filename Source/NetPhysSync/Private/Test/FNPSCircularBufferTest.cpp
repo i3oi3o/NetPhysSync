@@ -49,8 +49,6 @@ bool FCircularBufferAddingDefaultTest::RunTest(const FString& Parameters)
 
 	Test.AddDefaulted(3);
 
-	UE_LOG(LogTemp, Log, TEXT("uint32 default constructor:%u"), int32());
-
 	for (int32 i = 0; i < Test.Num(); ++i)
 	{
 		if (i >= 7)

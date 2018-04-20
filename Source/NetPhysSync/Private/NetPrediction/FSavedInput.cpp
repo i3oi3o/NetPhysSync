@@ -11,3 +11,8 @@ FSavedInput::~FSavedInput()
 {
 }
 
+float FSavedInput::CalculatedSumDiffSqrtError(const FSavedInput& Other) const
+{
+	return (TargetWorldSpeed - Other.TargetWorldSpeed).SizeSquared();
+}
+
