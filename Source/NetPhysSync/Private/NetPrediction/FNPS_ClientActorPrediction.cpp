@@ -7,7 +7,8 @@ FNPS_ClientActorPrediction::FNPS_ClientActorPrediction()
 	: ClientStateBuffers(20),
 	ClientStateBufferStartsTickIndex(0),
 	LastCorrectedStateTickIndex(0),
-	bNeedReplay(false)
+	bNeedReplay(false),
+	InvalidState()
 {
 }
 
@@ -38,14 +39,14 @@ void FNPS_ClientActorPrediction::GetRigidBodyState
 	bool bUseNearestIfTickOutOfRange /*=true*/
 ) const
 {
-	FSavedClientRigidBodyState RetrivedState = GetRigidBodyState(ClientTickIndex, bUseNearestIfTickOutOfRange);
+	const FSavedClientRigidBodyState& RetrivedState = GetRigidBodyState(ClientTickIndex, bUseNearestIfTickOutOfRange);
 	// Don't worry.
 	// If state is invalid, FSavedClientRigidBodyState::RetriveBodyState() 
 	// doesn't copy state to PxRigidDynamic.
 	RetrivedState.GetRigidBodyState(PxRigidDynamic);
 }
 
-FSavedClientRigidBodyState FNPS_ClientActorPrediction::GetRigidBodyState
+const FSavedClientRigidBodyState& FNPS_ClientActorPrediction::GetRigidBodyState
 (
 	uint32 ClientTickIndex, 
 	bool bUseNearestIfTickOutOfRange /*= true*/
@@ -73,7 +74,7 @@ FSavedClientRigidBodyState FNPS_ClientActorPrediction::GetRigidBodyState
 	}
 	else
 	{
-		return FSavedClientRigidBodyState();
+		return InvalidState;
 	}
 }
 
@@ -85,7 +86,7 @@ void FNPS_ClientActorPrediction::ServerCorrectState(const FReplicatedRigidBodySt
 	if (OutArrayIndex >= 0 && OutArrayIndex < ClientStateBuffers.Num())
 	{
 		FSavedClientRigidBodyState& ExistState = ClientStateBuffers[OutArrayIndex];
-		SumSqrError = ExistState.CalculatedSumDiffSqurError(CorrectState);
+		SumSqrError = ExistState.CalculatedSumDiffSqrtError(CorrectState);
 		ExistState.SaveReplicatedRigidBodyState(CorrectState);
 	}
 	else

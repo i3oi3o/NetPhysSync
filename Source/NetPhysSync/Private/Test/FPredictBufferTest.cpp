@@ -109,7 +109,7 @@ bool FClientActorPredictionSaveTest::RunTest(const FString& Parameters)
 	{
 		float ErrorDiff = ClientActorPrediction
 			.GetRigidBodyState(FakeClientTick - i)
-			.CalculatedSumDiffSqurError(DummyReplicatedState);
+			.CalculatedSumDiffSqrtError(DummyReplicatedState);
 
 		TestEqual(TEXT("Compare Dummy RigidBodyState in buffer."), ErrorDiff, 0.0f);
 	}
@@ -131,14 +131,14 @@ bool FClientActorPredictionSaveTest::RunTest(const FString& Parameters)
 		{
 			ErrorDiff = ClientActorPrediction
 				.GetRigidBodyState(FakeClientTick - i)
-				.CalculatedSumDiffSqurError(GenerateClientRigidBodyStates[10-i]);
+				.CalculatedSumDiffSqrtError(GenerateClientRigidBodyStates[10-i]);
 			TestEqual(TEXT("Compare Generated RigidBodyState in buffer."), ErrorDiff, 0.0f);
 		}
 		else
 		{
 			ErrorDiff = ClientActorPrediction
 				.GetRigidBodyState(FakeClientTick - i)
-				.CalculatedSumDiffSqurError(DummyReplicatedState);
+				.CalculatedSumDiffSqrtError(DummyReplicatedState);
 			TestEqual(TEXT("Compare Dummy2 RigidBodyState in buffer."), ErrorDiff, 0.0f);
 		}
 	}
@@ -148,13 +148,13 @@ bool FClientActorPredictionSaveTest::RunTest(const FString& Parameters)
 
 		float ErrorDiff = ClientActorPrediction
 			.GetRigidBodyState(FakeClientTick + 10)
-			.CalculatedSumDiffSqurError(GenerateClientRigidBodyStates[9]);
+			.CalculatedSumDiffSqrtError(GenerateClientRigidBodyStates[9]);
 
 		TestEqual(TEXT("Comapre out of bound state from future."), ErrorDiff, 0.0f);
 
 		ErrorDiff = ClientActorPrediction
 			.GetRigidBodyState(FakeClientTick - 60)
-			.CalculatedSumDiffSqurError(DummyReplicatedState);
+			.CalculatedSumDiffSqrtError(DummyReplicatedState);
 
 		TestEqual(TEXT("Compare out of bound state from past."), ErrorDiff, 0.0f);
 	}

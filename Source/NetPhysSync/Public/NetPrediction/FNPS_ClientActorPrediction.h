@@ -30,7 +30,7 @@ public:
 	/**
 	 * Currently for testing.
 	 */
-	FSavedClientRigidBodyState GetRigidBodyState(uint32 ClientTickIndex, bool bUseNearestIfTickOutOfRange = true) const;
+	const FSavedClientRigidBodyState& GetRigidBodyState(uint32 ClientTickIndex, bool bUseNearestIfTickOutOfRange = true) const;
 	virtual void ServerCorrectState(const FReplicatedRigidBodyState& CorrectState, uint32 ClientTickIndex);
 	virtual void ShiftStartBufferIndex(int32 ShiftAmount);
 	bool TryGetReplayTickIndex(uint32& OutTickIndex) const;
@@ -46,6 +46,7 @@ protected:
 	TNPSCircularBuffer<FSavedClientRigidBodyState, TInlineAllocator<20>> ClientStateBuffers;
 	uint32 ClientStateBufferStartsTickIndex;
 	uint32 LastCorrectedStateTickIndex;
+	FSavedClientRigidBodyState InvalidState;
 	bool bNeedReplay;
 };
 
