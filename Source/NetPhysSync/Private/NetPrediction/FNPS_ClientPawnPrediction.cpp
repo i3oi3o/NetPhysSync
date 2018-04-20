@@ -68,6 +68,7 @@ void FNPS_ClientPawnPrediction::ShiftStartBufferIndex(int32 ShiftAmount)
 {
 	Super::ShiftStartBufferIndex(ShiftAmount);
 	ClientInputBuffersStartTickIndex += ShiftAmount;
+	LastUnacknowledgeInput += ShiftAmount;
 }
 
 void FNPS_ClientPawnPrediction::ServerCorrectState(const FReplicatedRigidBodyState& CorrectState, uint32 ClientTickIndex)
