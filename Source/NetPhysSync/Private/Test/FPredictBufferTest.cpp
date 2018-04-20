@@ -78,8 +78,44 @@ bool FBufferTickOverflowTest::RunTest(const FString& Parameters)
 	return TestResult;
 }
 
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(FClientActorPredictionSaveTest, "NetPhysSync.PredictBuffer.ClientActorSaveAndGet", EAutomationTestFlags::EditorContext | EAutomationTestFlags::SmokeFilter)
-bool FClientActorPredictionSaveTest::RunTest(const FString& Parameters)
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FClientActorPredictionHasBufferYetTest, "NetPhysSyc.PredictBuffer.ClientActorHasStateBuffer", EAutomationTestFlags::EditorContext | EAutomationTestFlags::SmokeFilter)
+bool FClientActorPredictionHasBufferYetTest::RunTest(const FString& Parameters)
+{
+	uint32 FakeClientTick = 0 - 10U;
+
+	FNPS_ClientActorPrediction ClientActorPrediction;
+	TestEqual
+	(
+		TEXT("Test If Buffer is Empty."), 
+		ClientActorPrediction.HasClientStateBufferYet(),
+		false
+	);
+
+	FReplicatedRigidBodyState(DummyReplicatedState)
+		(
+			FVector(1.0f, 0.0f, 0.0f),
+			FQuat(EForceInit::ForceInit),
+			FVector(),
+			FVector(),
+			true
+			);
+
+	FSavedClientRigidBodyState DummyState(DummyReplicatedState);
+
+	ClientActorPrediction.SaveRigidBodyState(DummyState, FakeClientTick);
+
+	TestEqual
+	(
+		TEXT("Test If Buffer is not Empty"),
+		ClientActorPrediction.HasClientStateBufferYet(),
+		true
+	);
+
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FClientActorPredictionSaveAndGetTest, "NetPhysSync.PredictBuffer.ClientActorSaveAndGet", EAutomationTestFlags::EditorContext | EAutomationTestFlags::SmokeFilter)
+bool FClientActorPredictionSaveAndGetTest::RunTest(const FString& Parameters)
 {
 	
 	uint32 FakeClientTick = 0 - 5U;
