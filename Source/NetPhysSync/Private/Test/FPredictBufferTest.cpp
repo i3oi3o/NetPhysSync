@@ -229,7 +229,7 @@ bool FClientActorPredictionShiftBufferTest::RunTest(const FString& Parameters)
 		++FakeClientTick;
 	}
 
-	ClientActorPrediction.ShiftStartBufferIndex(-5);
+	ClientActorPrediction.ShiftBufferElementsToDifferentClientTick(-5);
 
 	uint32 LastStoreClientTickBeforeShifting = FakeClientTick - 1;
 	uint32 ToQuertByShiftingTick = LastStoreClientTickBeforeShifting - 5U;
@@ -243,7 +243,7 @@ bool FClientActorPredictionShiftBufferTest::RunTest(const FString& Parameters)
 		TestEqual(TEXT("Compare Shift-to-Past Buffer Value"), DiffError, 0.0f);
 	}
 
-	ClientActorPrediction.ShiftStartBufferIndex(10);
+	ClientActorPrediction.ShiftBufferElementsToDifferentClientTick(10);
 
 	ToQuertByShiftingTick = LastStoreClientTickBeforeShifting + 5U;
 
@@ -334,7 +334,7 @@ bool FClientActorPredictionReplayTickTest::RunTest(const FString& Parameters)
 #pragma endregion
 
 #pragma region Shift by -4
-	ClientActorPrediction.ShiftStartBufferIndex(-4);
+	ClientActorPrediction.ShiftBufferElementsToDifferentClientTick(-4);
 
 	NeedReplay = ClientActorPrediction.TryGetReplayTickIndex(ForQueryReplayTick);
 
@@ -348,7 +348,7 @@ bool FClientActorPredictionReplayTickTest::RunTest(const FString& Parameters)
 #pragma endregion
 
 #pragma region Shift by 4
-	ClientActorPrediction.ShiftStartBufferIndex(4);
+	ClientActorPrediction.ShiftBufferElementsToDifferentClientTick(4);
 
 	NeedReplay = ClientActorPrediction.TryGetReplayTickIndex(ForQueryReplayTick);
 

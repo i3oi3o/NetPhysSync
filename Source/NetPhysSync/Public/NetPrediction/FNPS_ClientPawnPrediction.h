@@ -26,7 +26,7 @@ public:
 	 * Regardless whether currently has UnackonwledgeInput or not. 
 	 */
 	uint32 GetLastUnacknowledgeInputClientTickIndex() const;
-	virtual void ShiftStartBufferIndex(int32 ShiftAmount) override;
+	virtual void ShiftBufferElementsToDifferentClientTick(int32 ShiftAmount) override;
 	virtual void ServerCorrectState(const FReplicatedRigidBodyState& CorrectState, uint32 ClientTickIndex);
 
 	template<typename ArrayAllocator>
