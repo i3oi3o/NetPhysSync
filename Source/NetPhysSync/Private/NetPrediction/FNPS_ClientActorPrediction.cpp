@@ -42,7 +42,7 @@ void FNPS_ClientActorPrediction::GetRigidBodyState
 	// Don't worry.
 	// If state is invalid, FSavedClientRigidBodyState::RetriveBodyState() 
 	// doesn't copy state to PxRigidDynamic.
-	RetrivedState.RetriveRigidBodyState(PxRigidDynamic);
+	RetrivedState.GetRigidBodyState(PxRigidDynamic);
 }
 
 FSavedClientRigidBodyState FNPS_ClientActorPrediction::GetRigidBodyState
@@ -61,7 +61,7 @@ FSavedClientRigidBodyState FNPS_ClientActorPrediction::GetRigidBodyState
 		{
 			OutArrayIndex = 0;
 		}
-		else if(OutArrayIndex < ClientStateBuffers.Num())
+		else if(OutArrayIndex >= ClientStateBuffers.Num())
 		{
 			OutArrayIndex = ClientStateBuffers.Num() - 1;
 		}
