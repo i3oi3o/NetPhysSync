@@ -44,13 +44,11 @@ public:
 			}
 			else if (OutArrayIndex >= Buffers.Num())
 			{
-				ensureMsgf(OutArrayIndex == Buffers.Num(), TEXT("This shouldn't happen. FNetPhysSyncManager should handle this."));
-
 				int32 AddAmount = OutArrayIndex - Buffers.Num() + 1;
 
 				if (AddAmount >= Buffers.Capacity())
 				{
-					Buffers.Empty();
+					Buffers.Empty(false);
 					InOutBufferStartIndex = BufferSetTargetIndex;
 				}
 				else
@@ -71,9 +69,19 @@ public:
 			}
 			else if (OutArrayIndex < 0)
 			{
-				InOutBufferStartIndex += OutArrayIndex;
-				Buffers.InsertDefaulted(0, -OutArrayIndex);
-				Buffers[0] = ToSet;
+				if (-OutArrayIndex >= Buffers.Capacity())
+				{
+					InOutBufferStartIndex = BufferSetTargetIndex;
+					Buffers.Empty(false);
+					Buffers.Add(ToSet);
+				}
+				else
+				{
+					InOutBufferStartIndex += OutArrayIndex;
+					Buffers.InsertDefaulted(0, -OutArrayIndex);
+					Buffers[0] = ToSet;
+				}
+				
 			}
 		}
 		else
