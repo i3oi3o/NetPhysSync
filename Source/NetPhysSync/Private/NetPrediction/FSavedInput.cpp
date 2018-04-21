@@ -2,6 +2,8 @@
 
 #include "FSavedInput.h"
 
+
+
 FSavedInput::FSavedInput(FVector TagetSpeedParam)
 	: TargetWorldSpeed(TagetSpeedParam)
 {
@@ -10,6 +12,8 @@ FSavedInput::FSavedInput(FVector TagetSpeedParam)
 FSavedInput::~FSavedInput()
 {
 }
+
+const FSavedInput FSavedInput::EmptyInput = FSavedInput();
 
 float FSavedInput::CalculatedSumDiffSqrtError(const FSavedInput& Other) const
 {
