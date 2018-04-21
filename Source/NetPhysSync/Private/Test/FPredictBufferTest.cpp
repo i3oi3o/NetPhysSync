@@ -4,12 +4,16 @@
 #include "FNPS_StaticHelperFunction.h"
 #include "FNPS_ClientActorPrediction.h"
 #include "FSavedClientRigidBodyState.h"
+#include "FSavedInput.h"
+#include "FNPS_ClientPawnPrediction.h"
 
-void GenerateFakedStateFunction(FSavedClientRigidBodyState* InSaveClientStateArray, int Count)
+
+
+void GenerateFakedStateFunction(FSavedClientRigidBodyState* InSaveClientStateArray, int32 Count)
 {
-	for (int i = 0; i < Count; ++i)
+	for (int32 i = 0; i < Count; ++i)
 	{
-		FReplicatedRigidBodyState (Tmp)
+		new (InSaveClientStateArray+i) FReplicatedRigidBodyState
 		(
 			FVector(static_cast<float>(i + 1), 0.0f, 0.0f),
 			FQuat(FRotator(0.0f, static_cast<float>(i + 1), 0.0f)),
@@ -17,9 +21,74 @@ void GenerateFakedStateFunction(FSavedClientRigidBodyState* InSaveClientStateArr
 			FVector(0.0f, 0.0f, static_cast<float>(i + 1)),
 			false
 		);
-
-		InSaveClientStateArray[i] = FSavedClientRigidBodyState(Tmp);
 	}
+}
+
+void GenerateFakedInputFunction(FSavedInput* InSaveInputArray, int32 Count)
+{
+	for (int32 i = 0; i < Count; ++i)
+	{
+		new (InSaveInputArray + i) FSavedInput
+		(
+			FVector(static_cast<float>(i+1), 0.0f, 0.0f)
+		);
+	}
+}
+
+template<typename AllocatorType>
+void TestCopyUnacknowledgedInput
+(
+	const FNPS_ClientPawnPrediction& ClientPawnPrediction,
+	TArray<FSavedInput, AllocatorType>& ForStoreUnacknowledgedInputArray,
+	uint32 ForVerifyUnacknowledgeClientTick,
+	FAutomationTestBase* CurrentAutomationTest
+)
+{
+	uint32 UnacknowledgedClientTick = ClientPawnPrediction
+		.GetLastUnacknowledgeInputClientTickIndex();
+
+	CurrentAutomationTest->TestEqual
+	(
+		TEXT("Test unacknowledge client tick."),
+		UnacknowledgedClientTick,
+		ForVerifyUnacknowledgeClientTick
+	);
+
+	ClientPawnPrediction
+		.CopyUnacknowledgeInputToArray(ForStoreUnacknowledgedInputArray);
+
+	int32 CountLastEmpty = 0;
+	bool bCountingLastEmpty = true;
+	for (int32 i = ForStoreUnacknowledgedInputArray.Num() - 1; i >= 0; --i)
+	{
+		bool bIsEqual = ForStoreUnacknowledgedInputArray[i] ==
+			ClientPawnPrediction.GetSavedInput(UnacknowledgedClientTick + i);
+		CurrentAutomationTest->TestEqual
+		(
+			TEXT("Test unacknowledge input value."),
+			bIsEqual,
+			true
+		);
+
+		if (bCountingLastEmpty)
+		{
+			if (ForStoreUnacknowledgedInputArray[i].IsEmptyInput())
+			{
+				++CountLastEmpty;
+			}
+			else
+			{
+				bCountingLastEmpty = false;
+			}
+		}
+	}
+
+	CurrentAutomationTest->TestEqual
+	(
+		TEXT("Last empty input count from buffer shouldn't exceed 1."),
+		CountLastEmpty <= 1,
+		true
+	);
 }
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FUint32OverflowTest, "NetPhysSync.PredictBuffer.Uint32OperationTest", EAutomationTestFlags::EditorContext | EAutomationTestFlags::SmokeFilter)
@@ -78,7 +147,7 @@ bool FBufferTickOverflowTest::RunTest(const FString& Parameters)
 	return TestResult;
 }
 
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(FClientActorPredictionHasBufferYetTest, "NetPhysSync.PredictBuffer.ClientActorHasStateBuffer", EAutomationTestFlags::EditorContext | EAutomationTestFlags::SmokeFilter)
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FClientActorPredictionHasBufferYetTest, "NetPhysSync.PredictBuffer.Client.Actor.HasStateBuffer", EAutomationTestFlags::EditorContext | EAutomationTestFlags::SmokeFilter)
 bool FClientActorPredictionHasBufferYetTest::RunTest(const FString& Parameters)
 {
 	uint32 FakeClientTick = 0 - 10U;
@@ -114,7 +183,7 @@ bool FClientActorPredictionHasBufferYetTest::RunTest(const FString& Parameters)
 	return true;
 }
 
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(FClientActorPredictionSaveAndGetTest, "NetPhysSync.PredictBuffer.ClientActorSaveAndGet", EAutomationTestFlags::EditorContext | EAutomationTestFlags::SmokeFilter)
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FClientActorPredictionSaveAndGetTest, "NetPhysSync.PredictBuffer.Client.Actor.SaveAndGet", EAutomationTestFlags::EditorContext | EAutomationTestFlags::SmokeFilter)
 bool FClientActorPredictionSaveAndGetTest::RunTest(const FString& Parameters)
 {
 	
@@ -212,7 +281,7 @@ bool FClientActorPredictionSaveAndGetTest::RunTest(const FString& Parameters)
 
 }
 
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(FClientActorPredictionShiftBufferTest, "NetPhysSync.PredictBuffer.ClientActorShiftBufferTest", EAutomationTestFlags::EditorContext | EAutomationTestFlags::SmokeFilter)
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FClientActorPredictionShiftBufferTest, "NetPhysSync.PredictBuffer.Client.Actor.ShiftBufferGetAndSave", EAutomationTestFlags::EditorContext | EAutomationTestFlags::SmokeFilter)
 bool FClientActorPredictionShiftBufferTest::RunTest(const FString& Parameters)
 {
 	uint32 FakeClientTick = 0U - 2U;
@@ -259,7 +328,7 @@ bool FClientActorPredictionShiftBufferTest::RunTest(const FString& Parameters)
 	return true;
 }
 
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(FClientActorPredictionReplayTickTest, "NetPhysSync.PredictBuffer.GetReplayTickTest", EAutomationTestFlags::EditorContext | EAutomationTestFlags::SmokeFilter)
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FClientActorPredictionReplayTickTest, "NetPhysSync.PredictBuffer.Client.Actor.GetReplayTickTest", EAutomationTestFlags::EditorContext | EAutomationTestFlags::SmokeFilter)
 bool FClientActorPredictionReplayTickTest::RunTest(const FString& Parameters)
 {
 	uint32 FakeClientTick = 0U - 2U;
@@ -408,6 +477,229 @@ bool FClientActorPredictionReplayTickTest::RunTest(const FString& Parameters)
 
 	TestEqual(TEXT("Consume Replay Flag"), NeedReplay, false);
 #pragma endregion
+
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FClientPawnPredictionSaveAndGetTest, "NetPhysSync.PredictBuffer.Client.Pawn.GetAndSaveInput", EAutomationTestFlags::EditorContext | EAutomationTestFlags::SmokeFilter)
+bool FClientPawnPredictionSaveAndGetTest::RunTest(const FString& Parameters)
+{
+	uint32 FakeClientTick = 0 - 10U;
+	FNPS_ClientPawnPrediction PawnPrediction;
+	FSavedInput GeneratedInput[30];
+
+	GenerateFakedInputFunction(GeneratedInput, 20);
+
+	for (int32 i = 20; i < 30; ++i)
+	{
+		new (GeneratedInput + i)FSavedInput();
+	}
+
+	for (int32 i = 0; i < 30; ++i)
+	{
+		PawnPrediction.SaveInput(GeneratedInput[i], FakeClientTick + i);
+	}
+
+	for (int32 i = 10; i < 30; ++i)
+	{
+		bool bIsEqual = PawnPrediction.GetSavedInput(FakeClientTick + i) == GeneratedInput[i];
+
+		TestEqual(TEXT("Test Save and Get Value"), bIsEqual, true);
+	}
+
+	for (int32 i = 0; i < 10; ++i)
+	{
+		bool bIsEqual = PawnPrediction.GetSavedInput(FakeClientTick + i) == GeneratedInput[10];
+
+		TestEqual(TEXT("Test Nearest from past"), bIsEqual, true);
+
+		const FSavedInput& EmptyInput = PawnPrediction
+			.GetSavedInput(FakeClientTick + i, false);
+
+		TestEqual
+		(
+			TEXT("Test out of bound from past. Should get empty input."), 
+			EmptyInput.IsEmptyInput(),
+			true
+		);
+	}
+
+	for (int32 i = 30; i < 40; ++i)
+	{
+		bool bIsEqual = PawnPrediction.GetSavedInput(FakeClientTick + i) == GeneratedInput[29];
+
+		TestEqual(TEXT("Test Nearest from future"), bIsEqual, true);
+
+		const FSavedInput& EmptyInput = PawnPrediction
+			.GetSavedInput(FakeClientTick + i, false);
+
+		TestEqual
+		(
+			TEXT("Test out of bound from future. Should get empty input."),
+			EmptyInput.IsEmptyInput(),
+			true
+		);
+	}
+
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FClientPawnPredictionShiftTest, "NetPhysSync.PredictBuffer.Client.Pawn.ShiftBufferGetAndSave", EAutomationTestFlags::EditorContext | EAutomationTestFlags::SmokeFilter)
+bool FClientPawnPredictionShiftTest::RunTest(const FString& Parameters)
+{
+	uint32 FakeClientTick = 0 - 10U;
+	FNPS_ClientPawnPrediction ClientPawnPrediction;
+	FSavedInput GeneratedInput[10];
+
+	GenerateFakedInputFunction(GeneratedInput, 10);
+
+	for (int32 i = 0; i < 10; ++i)
+	{
+		ClientPawnPrediction.SaveInput(GeneratedInput[i], FakeClientTick + i);
+	}
+
+	ClientPawnPrediction.ShiftBufferElementsToDifferentClientTick(-5);
+
+	for (int32 i = 0; i < 10; ++i)
+	{
+		const FSavedInput& SavedInput = ClientPawnPrediction
+			.GetSavedInput(FakeClientTick - 5 + i);
+
+		TestEqual
+		(
+			TEXT("Test Shift To Past."), 
+			SavedInput == GeneratedInput[i], 
+			true
+		);
+	}
+
+	ClientPawnPrediction.ShiftBufferElementsToDifferentClientTick(10);
+
+	for (int32 i = 0; i < 10; ++i)
+	{
+		const FSavedInput& SavedInput = ClientPawnPrediction
+			.GetSavedInput(FakeClientTick + 5 + i);
+
+		TestEqual
+		(
+			TEXT("Test Shift To Past."),
+			SavedInput == GeneratedInput[i],
+			true
+		);
+	}
+
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FClientPawnPredictionUnacknowledgedInputTest, "NetPhysSync.PredictBuffer.Client.Pawn.UnacknowledgeInput", EAutomationTestFlags::EditorContext | EAutomationTestFlags::SmokeFilter)
+bool FClientPawnPredictionUnacknowledgedInputTest::RunTest(const FString& Parameters)
+{
+	uint32 FakeClientTick = 0 - 5U;
+
+	FNPS_ClientPawnPrediction ClientPawnPredicton;
+
+	TArray<FSavedInput, TInlineAllocator<11>> UnacknowledgedInputArray;
+
+	FSavedInput GeneratedSaveInput[10];
+
+	GenerateFakedInputFunction(GeneratedSaveInput, 10);
+
+	for (int32 i = 0; i < 10; ++i)
+	{
+		ClientPawnPredicton.SaveInput(GeneratedSaveInput[i], FakeClientTick + i);
+	}
+
+	
+
+	for (int32 i = 0; i < 5; ++i)
+	{
+		ClientPawnPredicton.SaveInput(FSavedInput(), FakeClientTick + 10 + i);
+	}
+
+	TestEqual
+	(
+		TEXT("Has Unacknowledged Input."), 
+		ClientPawnPredicton.HasUnacknowledgedInput(), 
+		true
+	);
+
+	ClientPawnPredicton.ShiftBufferElementsToDifferentClientTick(-5);
+
+	TestEqual
+	(
+		TEXT("Test shift-to-past unacknowledged input index."),
+		ClientPawnPredicton.GetLastUnacknowledgeInputClientTickIndex(),
+		FakeClientTick - 5
+	);
+
+	ClientPawnPredicton.ShiftBufferElementsToDifferentClientTick(10);
+
+	TestEqual
+	(
+		TEXT("Test shift-to-future unacknowledged input index."),
+		ClientPawnPredicton.GetLastUnacknowledgeInputClientTickIndex(),
+		FakeClientTick + 5
+	);
+
+
+	ClientPawnPredicton.ShiftBufferElementsToDifferentClientTick(-5);
+
+	
+	TestCopyUnacknowledgedInput
+	(
+		ClientPawnPredicton, 
+		UnacknowledgedInputArray, 
+		FakeClientTick,
+		this
+	);
+
+	FReplicatedRigidBodyState DummyState
+	(
+		FVector(1.0f, 0.0f, 0.0f),
+		FQuat(EForceInit::ForceInit),
+		FVector(0.0f, 1.0f, 0.0f),
+		FVector(0.0f, 0.0f, 0.0f),
+		false
+	);
+
+	ClientPawnPredicton.ServerCorrectState(DummyState, FakeClientTick+5);
+
+	TestEqual
+	(
+		TEXT("Test if there is unacknowledged input after correcting state."),
+		ClientPawnPredicton.HasUnacknowledgedInput(),
+		true
+	);
+
+	TestCopyUnacknowledgedInput
+	(
+		ClientPawnPredicton, 
+		UnacknowledgedInputArray, 
+		FakeClientTick + 5,
+		this
+	);
+
+	ClientPawnPredicton.ServerCorrectState(DummyState, FakeClientTick + 11);
+
+	TestEqual
+	(
+		TEXT("Test if there is unacknowledged input after correcting all input."),
+		ClientPawnPredicton.HasUnacknowledgedInput(),
+		false
+	);
+
+	for (int32 i = 0; i < 5; ++i)
+	{
+		ClientPawnPredicton.SaveInput(GeneratedSaveInput[i], FakeClientTick + 15 + i);
+	}
+
+	TestCopyUnacknowledgedInput
+	(
+		ClientPawnPredicton, 
+		UnacknowledgedInputArray, 
+		FakeClientTick + 15,
+		this
+	);
 
 	return true;
 }
