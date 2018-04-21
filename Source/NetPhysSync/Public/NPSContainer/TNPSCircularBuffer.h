@@ -93,12 +93,12 @@ public:
 		}
 	}
 
-	void Empty(bool SetUnOccupliedSlotToDefault=true)
+	void Empty()
 	{
-		RemoveAt(0, Capacity(), SetUnOccupliedSlotToDefault);
+		RemoveAt(0, Capacity());
 	}
 
-	void RemoveAt(int32 Index, int32 Count=1, bool SetUnOccupliedSlotToDefault=true)
+	void RemoveAt(int32 Index, int32 Count=1)
 	{
 		if (Count <= 0)
 		{
@@ -153,31 +153,6 @@ public:
 
 			ElementCount -= Count;
 			checkf(ElementCount > 0, TEXT("Why is element count not positive?"));
-		}
-
-		if (SetUnOccupliedSlotToDefault)
-		{
-			ElementType DefaultValue = ElementType();
-			for (int32 i = 0; i < Capacity(); ++i)
-			{
-				bool IsInRange =
-					(
-						// Not overflow case
-						i >= CurrentStartIndex &&
-						i - CurrentStartIndex < ElementCount
-					)
-					||
-					(
-						// Overflow case
-						i < CurrentStartIndex &&
-						Capacity() - CurrentStartIndex + i < ElementCount
-					);
-
-				if (!IsInRange)
-				{
-					Elements[i] = DefaultValue;
-				}
-			}
 		}
 	}
 

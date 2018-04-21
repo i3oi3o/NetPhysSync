@@ -48,7 +48,7 @@ public:
 
 				if (AddAmount >= Buffers.Capacity())
 				{
-					Buffers.Empty(false);
+					Buffers.Empty();
 					InOutBufferStartIndex = BufferSetTargetIndex;
 				}
 				else
@@ -72,7 +72,7 @@ public:
 				if (-OutArrayIndex >= Buffers.Capacity())
 				{
 					InOutBufferStartIndex = BufferSetTargetIndex;
-					Buffers.Empty(false);
+					Buffers.Empty();
 					Buffers.Add(ToSet);
 				}
 				else
