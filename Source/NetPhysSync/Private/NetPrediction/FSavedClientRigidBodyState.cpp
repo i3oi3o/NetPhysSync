@@ -25,6 +25,8 @@ FSavedClientRigidBodyState::~FSavedClientRigidBodyState()
 {
 }
 
+const FSavedClientRigidBodyState FSavedClientRigidBodyState::InvalidState = FSavedClientRigidBodyState();
+
 void FSavedClientRigidBodyState::SaveRigidBodyState(const physx::PxRigidDynamic* const RigidDynamic)
 {
 	bIsReplicatedStateValid = true;

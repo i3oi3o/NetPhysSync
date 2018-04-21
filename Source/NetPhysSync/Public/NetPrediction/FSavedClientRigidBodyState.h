@@ -18,6 +18,8 @@ public:
 	FSavedClientRigidBodyState(const FReplicatedRigidBodyState& ReplicatedStateParam);
 	~FSavedClientRigidBodyState();
 
+	static const FSavedClientRigidBodyState InvalidState;
+
 	void SaveRigidBodyState(const physx::PxRigidDynamic* const RigidDynamic);
 	void SaveReplicatedRigidBodyState(const FReplicatedRigidBodyState& ReplicatedState);
 	void GetRigidBodyState(physx::PxRigidDynamic* const RigidDynamic) const;
