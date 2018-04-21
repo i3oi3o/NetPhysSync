@@ -71,5 +71,4 @@ protected:
 	TNPSCircularBuffer<FSavedInput, TInlineAllocator<20>> ClientInputBuffers;
 	uint32 ClientInputBuffersStartTickIndex;
 	uint32 LastUnacknowledgeInput;
-	const FSavedInput EmptySaveInput;
 };

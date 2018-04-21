@@ -7,8 +7,7 @@ FNPS_ClientActorPrediction::FNPS_ClientActorPrediction()
 	: ClientStateBuffers(20),
 	ClientStateBufferStartsTickIndex(0),
 	LastCorrectedStateTickIndex(0),
-	bNeedReplay(false),
-	InvalidState()
+	bNeedReplay(false)
 {
 }
 
@@ -74,7 +73,7 @@ const FSavedClientRigidBodyState& FNPS_ClientActorPrediction::GetRigidBodyState
 	}
 	else
 	{
-		return InvalidState;
+		return FSavedClientRigidBodyState::InvalidState;
 	}
 }
 

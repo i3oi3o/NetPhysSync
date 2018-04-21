@@ -6,7 +6,6 @@
 FNPS_ClientPawnPrediction::FNPS_ClientPawnPrediction()
 	: ClientInputBuffers(20)
 	, ClientInputBuffersStartTickIndex(0)
-	, EmptySaveInput()
 {
 }
 
@@ -52,7 +51,7 @@ const FSavedInput& FNPS_ClientPawnPrediction::GetSavedInput(uint32 ClientTick, b
 	}
 	else
 	{
-		return EmptySaveInput;
+		return FSavedInput::EmptyInput;
 	}
 }
 
