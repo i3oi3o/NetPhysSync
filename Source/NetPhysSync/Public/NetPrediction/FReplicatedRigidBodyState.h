@@ -41,7 +41,7 @@ public:
 	) 
 		: WorldPos(WorldPosParam)
 		, WorldRotation(WorldRotationParam)
-		, LinearVelocity(LinearAngularVelocityParam)
+		, LinearVelocity(LinearVelocityParam)
 		, LinearAngularVelocity(LinearAngularVelocityParam)
 		, bIsSleep(bIsSleepParam)
 	{

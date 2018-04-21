@@ -352,7 +352,7 @@ bool FClientActorPredictionReplayTickTest::RunTest(const FString& Parameters)
 #pragma region Correct Same State
 	ClientActorPrediction.ServerCorrectState
 	(
-		GeneratedState[4].GetRigidBodyState(),
+		GeneratedState[4].GetReplicatedRigidBodyState(),
 		FakeClientTick + 4
 	);
 
@@ -362,9 +362,11 @@ bool FClientActorPredictionReplayTickTest::RunTest(const FString& Parameters)
 #pragma endregion
 
 #pragma region Correct Slightly Different
-	const FReplicatedRigidBodyState& ExistState = GeneratedState[4].GetRigidBodyState();
+	const FReplicatedRigidBodyState& ExistState = ClientActorPrediction
+		.GetRigidBodyState(FakeClientTick + 4)
+		.GetReplicatedRigidBodyState();
 
-	FReplicatedRigidBodyState (SlightlyDifferent)
+	FReplicatedRigidBodyState SlightlyDifferent
 	(
 		ExistState.GetWorldPos() + FVector(0.01f, 0.0f, 0.0f),
 		ExistState.GetWorldRotation(),
@@ -381,13 +383,13 @@ bool FClientActorPredictionReplayTickTest::RunTest(const FString& Parameters)
 
 	NeedReplay = ClientActorPrediction.TryGetReplayTickIndex(ForQueryReplayTick);
 
-	TestEqual(TEXT("Correct State is the same. Shouldn't need replay."), NeedReplay, false);
+	TestEqual(TEXT("Correct State is slightly different. Shouldn't need replay."), NeedReplay, false);
 #pragma endregion
 
 #pragma region FakeClientTick + 4
 	ClientActorPrediction.ServerCorrectState
 	(
-		GeneratedState[5].GetRigidBodyState(),
+		GeneratedState[5].GetReplicatedRigidBodyState(),
 		FakeClientTick + 4
 	);
 
@@ -434,7 +436,7 @@ bool FClientActorPredictionReplayTickTest::RunTest(const FString& Parameters)
 
 	ClientActorPrediction.ServerCorrectState
 	(
-		GeneratedState[5].GetRigidBodyState(),
+		GeneratedState[5].GetReplicatedRigidBodyState(),
 		FakeClientTick - 2U
 	);
 
@@ -453,7 +455,7 @@ bool FClientActorPredictionReplayTickTest::RunTest(const FString& Parameters)
 #pragma region FakeClientTick + 12U
 	ClientActorPrediction.ServerCorrectState
 	(
-		GeneratedState[5].GetRigidBodyState(),
+		GeneratedState[5].GetReplicatedRigidBodyState(),
 		FakeClientTick + 12U
 	);
 

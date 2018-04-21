@@ -20,10 +20,10 @@ public:
 
 	static const FSavedClientRigidBodyState InvalidState;
 
-	void SaveRigidBodyState(const physx::PxRigidDynamic* const RigidDynamic);
+	void SaveReplicatedRigidBodyState(const physx::PxRigidDynamic* const RigidDynamic);
 	void SaveReplicatedRigidBodyState(const FReplicatedRigidBodyState& ReplicatedState);
-	void GetRigidBodyState(physx::PxRigidDynamic* const RigidDynamic) const;
-	FORCEINLINE const FReplicatedRigidBodyState& GetRigidBodyState();
+	void GetReplicatedRigidBodyState(physx::PxRigidDynamic* const RigidDynamic) const;
+	FORCEINLINE const FReplicatedRigidBodyState& GetReplicatedRigidBodyState() const;
 
 	float CalculatedSumDiffSqrtError(const FReplicatedRigidBodyState& OtherReplicatedState) const;
 	float CalculatedSumDiffSqrtError(const FSavedClientRigidBodyState& Other) const;
