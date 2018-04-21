@@ -32,6 +32,6 @@ FORCEINLINE bool FSavedInput::operator!=(const FSavedInput& Other) const
 
 FORCEINLINE bool FSavedInput::operator==(const FSavedInput& Other) const
 {
-	return TargetWorldSpeed != Other.TargetWorldSpeed;
+	return TargetWorldSpeed == Other.TargetWorldSpeed;
 }
 

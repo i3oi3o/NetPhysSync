@@ -20,11 +20,23 @@ void FNPS_ClientPawnPrediction::SaveInput(FVector TargetWorldSpeed, uint32 Clien
 
 void FNPS_ClientPawnPrediction::SaveInput(const FSavedInput& ToSave, uint32 ClientTickIndex)
 {
-	FNPS_StaticHelperFunction::SetElementToBuffers
-	(
-		ClientInputBuffers, ToSave,
-		ClientInputBuffersStartTickIndex, ClientTickIndex
-	);
+
+	if (
+			!ToSave.IsEmptyInput() ||
+			(
+				// This condition prevent putting many empty inputs 
+				// at the end of buffer.
+				ClientInputBuffers.Num() > 0 &&
+				!ClientInputBuffers[ClientInputBuffers.Num()-1].IsEmptyInput()
+			)
+	   )
+	{
+		FNPS_StaticHelperFunction::SetElementToBuffers
+		(
+			ClientInputBuffers, ToSave,
+			ClientInputBuffersStartTickIndex, ClientTickIndex
+		);
+	}
 }
 
 const FSavedInput& FNPS_ClientPawnPrediction::GetSavedInput(uint32 ClientTick, bool UseNearestIfOutOfBound /*=true*/) const

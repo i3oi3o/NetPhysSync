@@ -490,9 +490,9 @@ bool FClientPawnPredictionSaveAndGetTest::RunTest(const FString& Parameters)
 	FNPS_ClientPawnPrediction PawnPrediction;
 	FSavedInput GeneratedInput[30];
 
-	GenerateFakedInputFunction(GeneratedInput, 20);
+	GenerateFakedInputFunction(GeneratedInput, 19);
 
-	for (int32 i = 20; i < 30; ++i)
+	for (int32 i = 19; i < 30; ++i)
 	{
 		new (GeneratedInput + i)FSavedInput();
 	}
@@ -502,16 +502,15 @@ bool FClientPawnPredictionSaveAndGetTest::RunTest(const FString& Parameters)
 		PawnPrediction.SaveInput(GeneratedInput[i], FakeClientTick + i);
 	}
 
-	for (int32 i = 10; i < 30; ++i)
+	for (int32 i = 0; i < 21; ++i)
 	{
 		bool bIsEqual = PawnPrediction.GetSavedInput(FakeClientTick + i) == GeneratedInput[i];
-
 		TestEqual(TEXT("Test Save and Get Value"), bIsEqual, true);
 	}
 
-	for (int32 i = 0; i < 10; ++i)
+	for (int32 i = -10; i < 0; ++i)
 	{
-		bool bIsEqual = PawnPrediction.GetSavedInput(FakeClientTick + i) == GeneratedInput[10];
+		bool bIsEqual = PawnPrediction.GetSavedInput(FakeClientTick + i) == GeneratedInput[0];
 
 		TestEqual(TEXT("Test Nearest from past"), bIsEqual, true);
 
@@ -520,11 +519,12 @@ bool FClientPawnPredictionSaveAndGetTest::RunTest(const FString& Parameters)
 
 		TestEqual
 		(
-			TEXT("Test out of bound from past. Should get empty input."), 
+			TEXT("Test out of bound from past. Should get empty input."),
 			EmptyInput.IsEmptyInput(),
 			true
 		);
 	}
+
 
 	for (int32 i = 30; i < 40; ++i)
 	{
