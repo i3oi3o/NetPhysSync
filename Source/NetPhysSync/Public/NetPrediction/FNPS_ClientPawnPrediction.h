@@ -19,7 +19,8 @@ public:
 	virtual ~FNPS_ClientPawnPrediction();
 
 	void SaveInput(FVector TargetWorldSpeed, uint32 ClientTickIndex);
-	const FSavedInput& GetSavedInput(uint32 ClientTick) const;
+	void SaveInput(const FSavedInput& ToSave, uint32 ClientTickIndex);
+	const FSavedInput& GetSavedInput(uint32 ClientTick, bool UseNearestIfOutOfBound=true) const;
 	FORCEINLINE bool HasUnacknowledgedInput() const;
 	/**
 	 * This try to return last UnacknowledgeInput ClientTick index. 
@@ -30,7 +31,7 @@ public:
 	virtual void ServerCorrectState(const FReplicatedRigidBodyState& CorrectState, uint32 ClientTickIndex);
 
 	template<typename ArrayAllocator>
-	void CopyUnacknowledgeInputToArray(TArray<FSavedInput, ArrayAllocator>& DestArray)
+	void CopyUnacknowledgeInputToArray(TArray<FSavedInput, ArrayAllocator>& DestArray) const
 	{
 		DestArray.Empty(DestArray.Max());
 		if (HasUnacknowledgedInput())
@@ -70,5 +71,5 @@ protected:
 	TNPSCircularBuffer<FSavedInput, TInlineAllocator<20>> ClientInputBuffers;
 	uint32 ClientInputBuffersStartTickIndex;
 	uint32 LastUnacknowledgeInput;
-	const FSavedInput InvalidSaveInput;
+	const FSavedInput EmptySaveInput;
 };

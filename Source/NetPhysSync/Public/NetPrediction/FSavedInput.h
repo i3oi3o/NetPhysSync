@@ -26,6 +26,15 @@ public:
 
 	float CalculatedSumDiffSqrtError(const FSavedInput& Other) const;
 
+	/**
+	 * Use this to mark the end of input buffer that there is no more input.
+	 */
+	bool IsEmptyInput() const;
+
+	bool operator==(const FSavedInput& Other) const;
+
+	bool operator!=(const FSavedInput& Other) const;
+
 private:
 	UPROPERTY()
 	FVector TargetWorldSpeed;

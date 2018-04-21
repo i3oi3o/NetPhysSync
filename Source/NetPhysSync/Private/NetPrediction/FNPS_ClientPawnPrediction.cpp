@@ -6,7 +6,7 @@
 FNPS_ClientPawnPrediction::FNPS_ClientPawnPrediction()
 	: ClientInputBuffers(20)
 	, ClientInputBuffersStartTickIndex(0)
-	, InvalidSaveInput()
+	, EmptySaveInput()
 {
 }
 
@@ -16,25 +16,43 @@ FNPS_ClientPawnPrediction::~FNPS_ClientPawnPrediction()
 
 void FNPS_ClientPawnPrediction::SaveInput(FVector TargetWorldSpeed, uint32 ClientTickIndex)
 {
+	SaveInput(FSavedInput(TargetWorldSpeed), ClientTickIndex);
+}
+
+void FNPS_ClientPawnPrediction::SaveInput(const FSavedInput& ToSave, uint32 ClientTickIndex)
+{
 	FNPS_StaticHelperFunction::SetElementToBuffers
 	(
-		ClientInputBuffers, FSavedInput(TargetWorldSpeed),
+		ClientInputBuffers, ToSave,
 		ClientInputBuffersStartTickIndex, ClientTickIndex
 	);
 }
 
-const FSavedInput& FNPS_ClientPawnPrediction::GetSavedInput(uint32 ClientTick) const
+const FSavedInput& FNPS_ClientPawnPrediction::GetSavedInput(uint32 ClientTick, bool UseNearestIfOutOfBound /*=true*/) const
 {
 	int32 OutArrayIndex;
 	FNPS_StaticHelperFunction::CalculateBufferArrayIndex(
 		ClientInputBuffersStartTickIndex, ClientTick, OutArrayIndex);
+
+	if (UseNearestIfOutOfBound)
+	{
+		if (OutArrayIndex < 0)
+		{
+			OutArrayIndex = 0;
+		}
+		else if (OutArrayIndex >= ClientInputBuffers.Num())
+		{
+			OutArrayIndex = ClientInputBuffers.Num() - 1;
+		}
+	}
+
 	if (ClientInputBuffers.IsIndexInRange(OutArrayIndex))
 	{
 		return ClientInputBuffers[OutArrayIndex];
 	}
 	else
 	{
-		return InvalidSaveInput;
+		return EmptySaveInput;
 	}
 }
 
