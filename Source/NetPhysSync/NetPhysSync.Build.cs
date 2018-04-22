@@ -10,28 +10,33 @@ public class NetPhysSync : ModuleRules
 	{
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
         
-
         int BufferSize = 20;
-        FileReference ProjectFile;
 
         Log.TraceInformation("######## Target Directory : "+ Target.ProjectFile.Directory.FullName);
 
-        ConfigHierarchy ConfigHeirar = ConfigCache.ReadHierarchy
+        ConfigHierarchy EngineConfig = ConfigCache.ReadHierarchy
             (
                 ConfigHierarchyType.Engine,
                 DirectoryReference.FromFile(Target.ProjectFile), 
                 Target.Platform 
             );
 
-        if (ConfigHeirar != null)
+        ConfigHierarchy GameConfig = ConfigCache.ReadHierarchy
+            (
+                ConfigHierarchyType.Game,
+                DirectoryReference.FromFile(Target.ProjectFile),
+                Target.Platform
+            );
+
+        if (EngineConfig != null)
         {
             float PhysSubstepDeltaTime;
             float SupportRTTInMS;
             int JitterWaitPhysTick;
 
-            if (ConfigHeirar.TryGetValue("/Script/Engine.PhysicsSettings", "MaxSubstepDeltaTime", out PhysSubstepDeltaTime) &&
-                ConfigHeirar.TryGetValue("/Script/NPSNetSetting", "SupportRTTInMS", out SupportRTTInMS) &&
-                ConfigHeirar.TryGetValue("/Script/NPSNetSetting", "JitterWaitPhysTick", out JitterWaitPhysTick))
+            if (EngineConfig.TryGetValue("/Script/Engine.PhysicsSettings", "MaxSubstepDeltaTime", out PhysSubstepDeltaTime) &&
+                GameConfig.TryGetValue("/Script/NetPhysSync.NPSNetSetting", "SupportRTTInMS", out SupportRTTInMS) &&
+                GameConfig.TryGetValue("/Script/NetPhysSync.NPSNetSetting", "JitterWaitPhysTick", out JitterWaitPhysTick))
             {
                 float BufferSizeFloat = (0.001f * SupportRTTInMS) / PhysSubstepDeltaTime;
                 BufferSize = (int)Math.Ceiling(BufferSizeFloat);
