@@ -31,11 +31,17 @@ void FNPS_ClientPawnPrediction::SaveInput(const FSavedInput& ToSave, uint32 Clie
 			)
 	   )
 	{
+		if (ClientInputBuffers.Num() == 0)
+		{
+			OldestUnacknowledgedInput = ClientTickIndex;
+		}
+
 		FNPS_StaticHelperFunction::SetElementToBuffers
 		(
 			ClientInputBuffers, ToSave,
 			ClientInputBuffersStartTickIndex, ClientTickIndex
 		);
+
 	}
 }
 
@@ -73,31 +79,16 @@ bool FNPS_ClientPawnPrediction::HasUnacknowledgedInput() const
 	return ClientInputBuffers.Num() > 0;
 }
 
-uint32 FNPS_ClientPawnPrediction::GetLastUnacknowledgeInputClientTickIndex() const
+uint32 FNPS_ClientPawnPrediction::GetOldestUnacknowledgeInputClientTickIndex() const
 {
-	int32 OutArrayIndex;
-	FNPS_StaticHelperFunction::CalculateBufferArrayIndex
-	(
-		LastUnacknowledgeInput,
-		ClientInputBuffersStartTickIndex,
-		OutArrayIndex
-	);
-
-	if (OutArrayIndex > 0)
-	{
-		return ClientInputBuffersStartTickIndex;
-	}
-	else
-	{
-		return LastUnacknowledgeInput;
-	}
+	return OldestUnacknowledgedInput;
 }
 
 void FNPS_ClientPawnPrediction::ShiftBufferElementsToDifferentClientTick(int32 ShiftAmount)
 {
 	Super::ShiftBufferElementsToDifferentClientTick(ShiftAmount);
 	ClientInputBuffersStartTickIndex += ShiftAmount;
-	LastUnacknowledgeInput += ShiftAmount;
+	OldestUnacknowledgedInput += ShiftAmount;
 }
 
 void FNPS_ClientPawnPrediction::ServerCorrectState(const FReplicatedRigidBodyState& CorrectState, uint32 ClientTickIndex)
@@ -116,13 +107,25 @@ void FNPS_ClientPawnPrediction::ServerCorrectState(const FReplicatedRigidBodySta
 
 		if (OutArrayIndex >= ClientInputBuffers.Num())
 		{
-			LastUnacknowledgeInput = ClientInputBuffersStartTickIndex
+			OldestUnacknowledgedInput = ClientInputBuffersStartTickIndex
 				+ ClientInputBuffers.Num() - 1;
 			ClientInputBuffers.Empty();
 		}
 		else
 		{
-			LastUnacknowledgeInput = ClientTickIndex;
+			OldestUnacknowledgedInput = ClientTickIndex;
+		}
+	}
+	else
+	{
+		int32 OutArrayIndex;
+		FNPS_StaticHelperFunction::CalculateBufferArrayIndex(
+			OldestUnacknowledgedInput, ClientTickIndex, OutArrayIndex);
+
+		if (OutArrayIndex > 0.5f*TNumericLimits<int32>::Max())
+		{
+			// Prevent overflow problem if 
+			OldestUnacknowledgedInput = ClientTickIndex;
 		}
 	}
 }

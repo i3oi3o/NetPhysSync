@@ -38,34 +38,39 @@ void GenerateFakedInputFunction(FSavedInput* InSaveInputArray, int32 Count)
 template<typename AllocatorType>
 void TestCopyUnacknowledgedInput
 (
+	const FString& PrefixDesc,
 	const FNPS_ClientPawnPrediction& ClientPawnPrediction,
 	TArray<FSavedInput, AllocatorType>& ForStoreUnacknowledgedInputArray,
-	uint32 ForVerifyUnacknowledgeClientTick,
+	uint32 VerifyCopyUnacknowledgeStartTick,
 	FAutomationTestBase* CurrentAutomationTest
 )
 {
-	uint32 UnacknowledgedClientTick = ClientPawnPrediction
-		.GetLastUnacknowledgeInputClientTickIndex();
+	uint32 CopyUnacknowledgedStartTick;
+
+	ClientPawnPrediction
+		.CopyUnacknowledgeInputToArray
+		(
+			ForStoreUnacknowledgedInputArray, 
+			CopyUnacknowledgedStartTick
+		);
 
 	CurrentAutomationTest->TestEqual
 	(
-		TEXT("Test unacknowledge client tick."),
-		UnacknowledgedClientTick,
-		ForVerifyUnacknowledgeClientTick
+		PrefixDesc+TEXT("Test unacknowledge client tick."),
+		CopyUnacknowledgedStartTick,
+		VerifyCopyUnacknowledgeStartTick
 	);
-
-	ClientPawnPrediction
-		.CopyUnacknowledgeInputToArray(ForStoreUnacknowledgedInputArray);
 
 	int32 CountLastEmpty = 0;
 	bool bCountingLastEmpty = true;
 	for (int32 i = ForStoreUnacknowledgedInputArray.Num() - 1; i >= 0; --i)
 	{
 		bool bIsEqual = ForStoreUnacknowledgedInputArray[i] ==
-			ClientPawnPrediction.GetSavedInput(UnacknowledgedClientTick + i);
+			ClientPawnPrediction.GetSavedInput(CopyUnacknowledgedStartTick + i);
+
 		CurrentAutomationTest->TestEqual
 		(
-			TEXT("Test unacknowledge input value."),
+			PrefixDesc+TEXT("Test unacknowledge input value."),
 			bIsEqual,
 			true
 		);
@@ -85,7 +90,7 @@ void TestCopyUnacknowledgedInput
 
 	CurrentAutomationTest->TestEqual
 	(
-		TEXT("Last empty input count from buffer shouldn't exceed 1."),
+		PrefixDesc+TEXT("Last empty input count from buffer shouldn't exceed 1."),
 		CountLastEmpty <= 1,
 		true
 	);
@@ -630,7 +635,7 @@ bool FClientPawnPredictionUnacknowledgedInputTest::RunTest(const FString& Parame
 	TestEqual
 	(
 		TEXT("Test shift-to-past unacknowledged input index."),
-		ClientPawnPredicton.GetLastUnacknowledgeInputClientTickIndex(),
+		ClientPawnPredicton.GetOldestUnacknowledgeInputClientTickIndex(),
 		FakeClientTick - 5
 	);
 
@@ -639,7 +644,7 @@ bool FClientPawnPredictionUnacknowledgedInputTest::RunTest(const FString& Parame
 	TestEqual
 	(
 		TEXT("Test shift-to-future unacknowledged input index."),
-		ClientPawnPredicton.GetLastUnacknowledgeInputClientTickIndex(),
+		ClientPawnPredicton.GetOldestUnacknowledgeInputClientTickIndex(),
 		FakeClientTick + 5
 	);
 
@@ -649,6 +654,7 @@ bool FClientPawnPredictionUnacknowledgedInputTest::RunTest(const FString& Parame
 	
 	TestCopyUnacknowledgedInput
 	(
+		TEXT("Test after shift back to old tick : "),
 		ClientPawnPredicton, 
 		UnacknowledgedInputArray, 
 		FakeClientTick,
@@ -675,6 +681,7 @@ bool FClientPawnPredictionUnacknowledgedInputTest::RunTest(const FString& Parame
 
 	TestCopyUnacknowledgedInput
 	(
+		TEXT("Test after correct state : "),
 		ClientPawnPredicton, 
 		UnacknowledgedInputArray, 
 		FakeClientTick + 5,
@@ -697,6 +704,7 @@ bool FClientPawnPredictionUnacknowledgedInputTest::RunTest(const FString& Parame
 
 	TestCopyUnacknowledgedInput
 	(
+		TEXT("Test new input after acknowledged all : "),
 		ClientPawnPredicton, 
 		UnacknowledgedInputArray, 
 		FakeClientTick + 15,

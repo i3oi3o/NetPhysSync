@@ -23,39 +23,51 @@ public:
 	const FSavedInput& GetSavedInput(uint32 ClientTick, bool UseNearestIfOutOfBound=true) const;
 	FORCEINLINE bool HasUnacknowledgedInput() const;
 	/**
-	 * This try to return last UnacknowledgeInput ClientTick index. 
-	 * Regardless whether currently has UnackonwledgeInput or not. 
+	 * If current don't have any unacknowledged input, 
+	 * this return TickIndex for comparing with server replication's last acknowledged input.
 	 */
-	uint32 GetLastUnacknowledgeInputClientTickIndex() const;
+	uint32 GetOldestUnacknowledgeInputClientTickIndex() const;
 	virtual void ShiftBufferElementsToDifferentClientTick(int32 ShiftAmount) override;
 	virtual void ServerCorrectState(const FReplicatedRigidBodyState& CorrectState, uint32 ClientTickIndex);
 
 	template<typename ArrayAllocator>
-	void CopyUnacknowledgeInputToArray(TArray<FSavedInput, ArrayAllocator>& DestArray) const
+	void CopyUnacknowledgeInputToArray
+	(
+		TArray<FSavedInput, ArrayAllocator>& DestArray,
+		uint32& CopyUnacknowledgedStartTickIndex
+	) const
 	{
-		DestArray.Empty(DestArray.Max());
+		DestArray.RemoveAt(0, DestArray.Num(), false);
 		if (HasUnacknowledgedInput())
 		{
 			int32 OutArrayIndex;
+			
 			FNPS_StaticHelperFunction::CalculateBufferArrayIndex
 			(
 				ClientInputBuffersStartTickIndex,
-				GetLastUnacknowledgeInputClientTickIndex(),
+				GetOldestUnacknowledgeInputClientTickIndex(),
 				OutArrayIndex
 			);
+
+			if (OutArrayIndex < 0)
+			{
+				OutArrayIndex = 0;
+				CopyUnacknowledgedStartTickIndex = ClientInputBuffersStartTickIndex;
+			}
+			else
+			{
+				CopyUnacknowledgedStartTickIndex = GetOldestUnacknowledgeInputClientTickIndex();
+			}
+
 
 			if (OutArrayIndex >= 0 && OutArrayIndex < ClientInputBuffers.Num())
 			{
 				int32 Amount = ClientInputBuffers.Num() - OutArrayIndex;
-
-				if (DestArray.Max() < Amount)
-				{
-					DestArray.SetNum(Amount);
-				}
-
+				DestArray.SetNumUninitialized(Amount, false);
+				
 				for (int32 i = OutArrayIndex; i < ClientInputBuffers.Num(); ++i)
 				{
-					DestArray.Add(ClientInputBuffers[i]);
+					DestArray[i-OutArrayIndex] = ClientInputBuffers[i];
 				}
 			}
 		}
@@ -70,5 +82,5 @@ protected:
 	 */
 	TNPSCircularBuffer<FSavedInput, TInlineAllocator<20>> ClientInputBuffers;
 	uint32 ClientInputBuffersStartTickIndex;
-	uint32 LastUnacknowledgeInput;
+	uint32 OldestUnacknowledgedInput;
 };
