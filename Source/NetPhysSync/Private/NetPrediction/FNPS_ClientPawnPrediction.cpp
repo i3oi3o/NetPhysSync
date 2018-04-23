@@ -84,9 +84,9 @@ uint32 FNPS_ClientPawnPrediction::GetOldestUnacknowledgeInputClientTickIndex() c
 	return OldestUnacknowledgedInput;
 }
 
-void FNPS_ClientPawnPrediction::ShiftBufferElementsToDifferentClientTick(int32 ShiftAmount)
+void FNPS_ClientPawnPrediction::ShiftElementsToDifferentTickIndex(int32 ShiftAmount)
 {
-	Super::ShiftBufferElementsToDifferentClientTick(ShiftAmount);
+	Super::ShiftElementsToDifferentTickIndex(ShiftAmount);
 	ClientInputBuffersStartTickIndex += ShiftAmount;
 	OldestUnacknowledgedInput += ShiftAmount;
 }

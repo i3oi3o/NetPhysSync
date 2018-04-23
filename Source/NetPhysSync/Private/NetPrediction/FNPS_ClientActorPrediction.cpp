@@ -104,7 +104,7 @@ void FNPS_ClientActorPrediction::ServerCorrectState(const FReplicatedRigidBodySt
 	LastCorrectedStateTickIndex = ClientTickIndex;
 }
 
-void FNPS_ClientActorPrediction::ShiftBufferElementsToDifferentClientTick(int32 ShiftAmount)
+void FNPS_ClientActorPrediction::ShiftElementsToDifferentTickIndex(int32 ShiftAmount)
 {
 	ClientStateBufferStartsTickIndex += ShiftAmount;
 	LastCorrectedStateTickIndex += ShiftAmount;

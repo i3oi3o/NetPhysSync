@@ -165,14 +165,14 @@ bool FClientActorPredictionHasBufferYetTest::RunTest(const FString& Parameters)
 		false
 	);
 
-	FReplicatedRigidBodyState(DummyReplicatedState)
+	FReplicatedRigidBodyState DummyReplicatedState
 		(
 			FVector(1.0f, 0.0f, 0.0f),
 			FQuat(EForceInit::ForceInit),
 			FVector(),
 			FVector(),
 			true
-			);
+		);
 
 	FSavedClientRigidBodyState DummyState(DummyReplicatedState);
 
@@ -193,10 +193,11 @@ bool FClientActorPredictionSaveAndGetTest::RunTest(const FString& Parameters)
 {
 	
 	uint32 FakeClientTick = 0 - 5U;
+	const int32 OverflowSize = 10;
 	FNPS_ClientActorPrediction ClientActorPrediction;
-	FSavedClientRigidBodyState GenerateClientRigidBodyStates[10];
+	FSavedClientRigidBodyState GenerateClientRigidBodyStates[OverflowSize];
 
-	GenerateFakedStateFunction(GenerateClientRigidBodyStates, 10);
+	GenerateFakedStateFunction(GenerateClientRigidBodyStates, OverflowSize);
 
 	FReplicatedRigidBodyState (DummyReplicatedState)
 	(
@@ -209,74 +210,77 @@ bool FClientActorPredictionSaveAndGetTest::RunTest(const FString& Parameters)
 
 	FSavedClientRigidBodyState DummyState(DummyReplicatedState);
 
-	for (int32 i = 0; i < 15; ++i)
+
+
+	for (int32 i = 0; i < NPS_BUFFER_SIZE; ++i)
 	{
-		ClientActorPrediction.SaveRigidBodyState(DummyState, FakeClientTick);
-		++FakeClientTick;
+		ClientActorPrediction.SaveRigidBodyState(DummyState, FakeClientTick+i);
 	}
 
-	for (int32 i = 1; i <= 15; ++i)
+	for (int32 i = 0; i < NPS_BUFFER_SIZE; ++i)
 	{
 		float ErrorDiff = ClientActorPrediction
-			.GetRigidBodyState(FakeClientTick - i)
+			.GetRigidBodyState(FakeClientTick+i)
 			.CalculatedSumDiffSqrtError(DummyReplicatedState);
 
 		TestEqual(TEXT("Compare Dummy RigidBodyState in buffer."), ErrorDiff, 0.0f);
 	}
 
-	for (int32 i = 0; i < 10; ++i)
+	for (int32 i = 0; i < OverflowSize; ++i)
 	{
 		ClientActorPrediction.SaveRigidBodyState
 		(
 			GenerateClientRigidBodyStates[i], 
-			FakeClientTick
+			FakeClientTick + NPS_BUFFER_SIZE +i
 		);
-		++FakeClientTick;
 	}
 
-	for (int32 i = 1; i <= 20; ++i)
+	uint32 ToVerifyClientTick = FakeClientTick + NPS_BUFFER_SIZE - OverflowSize;
+
+	for (int32 i = 0; i < NPS_BUFFER_SIZE; ++i)
 	{
 		float ErrorDiff = 0.0f;
-		if (i <= 10)
+		if (i < OverflowSize)
 		{
 			ErrorDiff = ClientActorPrediction
-				.GetRigidBodyState(FakeClientTick - i)
-				.CalculatedSumDiffSqrtError(GenerateClientRigidBodyStates[10-i]);
-			TestEqual(TEXT("Compare Generated RigidBodyState in buffer."), ErrorDiff, 0.0f);
+				.GetRigidBodyState(ToVerifyClientTick + i)
+				.CalculatedSumDiffSqrtError(DummyReplicatedState);
+			TestEqual(TEXT("Compare Dummy2 RigidBodyState in buffer."), ErrorDiff, 0.0f);
 		}
 		else
 		{
 			ErrorDiff = ClientActorPrediction
-				.GetRigidBodyState(FakeClientTick - i)
-				.CalculatedSumDiffSqrtError(DummyReplicatedState);
-			TestEqual(TEXT("Compare Dummy2 RigidBodyState in buffer."), ErrorDiff, 0.0f);
+				.GetRigidBodyState(ToVerifyClientTick + i)
+				.CalculatedSumDiffSqrtError(GenerateClientRigidBodyStates[i- OverflowSize]);
+			TestEqual(TEXT("Compare Generated RigidBodyState in buffer."), ErrorDiff, 0.0f);
 		}
 	}
 
 	{
 		/*Test Query Out of bound element*/
+		int32 ShiftAmountToOutOfBound = 2 * (NPS_BUFFER_SIZE + OverflowSize);
 
 		float ErrorDiff = ClientActorPrediction
-			.GetRigidBodyState(FakeClientTick + 10)
-			.CalculatedSumDiffSqrtError(GenerateClientRigidBodyStates[9]);
+			.GetRigidBodyState(FakeClientTick + ShiftAmountToOutOfBound)
+			.CalculatedSumDiffSqrtError(GenerateClientRigidBodyStates[OverflowSize-1]);
 
 		TestEqual(TEXT("Comapre out of bound state from future using nearest."), ErrorDiff, 0.0f);
 
 		ErrorDiff = ClientActorPrediction
-			.GetRigidBodyState(FakeClientTick - 60)
+			.GetRigidBodyState(FakeClientTick - ShiftAmountToOutOfBound)
 			.CalculatedSumDiffSqrtError(DummyReplicatedState);
 
 		TestEqual(TEXT("Compare out of bound state from past using nearest."), ErrorDiff, 0.0f);
 
 
 		bool bIsValid = ClientActorPrediction
-			.GetRigidBodyState(FakeClientTick + 10, false)
+			.GetRigidBodyState(FakeClientTick + ShiftAmountToOutOfBound, false)
 			.IsReplicatedStateValid();
 
 		TestEqual(TEXT("Test out of bound state from future without using nearest."), bIsValid, false);
 
 		bIsValid = ClientActorPrediction
-			.GetRigidBodyState(FakeClientTick - 60, false)
+			.GetRigidBodyState(FakeClientTick - ShiftAmountToOutOfBound, false)
 			.IsReplicatedStateValid();
 
 		TestEqual(TEXT("Test out of bound state from past without using nearest."), bIsValid, false);
@@ -293,39 +297,38 @@ bool FClientActorPredictionShiftBufferTest::RunTest(const FString& Parameters)
 
 	FNPS_ClientActorPrediction ClientActorPrediction;
 
-	FSavedClientRigidBodyState GeneratedSaveState[30];
+	const int32 OverflowSize = 10;
 
-	GenerateFakedStateFunction(GeneratedSaveState, 30);
+	FSavedClientRigidBodyState GeneratedSaveState[NPS_BUFFER_SIZE + OverflowSize];
 
-	for (int32 i = 0; i < 30; ++i)
+	GenerateFakedStateFunction(GeneratedSaveState, NPS_BUFFER_SIZE + OverflowSize);
+
+	for (int32 i = 0; i < NPS_BUFFER_SIZE + OverflowSize; ++i)
 	{
-		ClientActorPrediction.SaveRigidBodyState(GeneratedSaveState[i], FakeClientTick);
-		++FakeClientTick;
+		ClientActorPrediction.SaveRigidBodyState(GeneratedSaveState[i], FakeClientTick+i);
 	}
 
-	ClientActorPrediction.ShiftBufferElementsToDifferentClientTick(-5);
+	ClientActorPrediction.ShiftElementsToDifferentTickIndex(-5);
 
-	uint32 LastStoreClientTickBeforeShifting = FakeClientTick - 1;
-	uint32 ToQuertByShiftingTick = LastStoreClientTickBeforeShifting - 5U;
+	
 
-	for (int32 i = 29; i >= 10; --i)
+	for (int32 i = 0; i < NPS_BUFFER_SIZE; ++i)
 	{
 		float DiffError = ClientActorPrediction
-			.GetRigidBodyState(ToQuertByShiftingTick + (i-29))
-			.CalculatedSumDiffSqrtError(GeneratedSaveState[i]);
+			.GetRigidBodyState(FakeClientTick + i + OverflowSize - 5)
+			.CalculatedSumDiffSqrtError(GeneratedSaveState[i+OverflowSize]);
 
 		TestEqual(TEXT("Compare Shift-to-Past Buffer Value"), DiffError, 0.0f);
 	}
 
-	ClientActorPrediction.ShiftBufferElementsToDifferentClientTick(10);
+	ClientActorPrediction.ShiftElementsToDifferentTickIndex(10);
 
-	ToQuertByShiftingTick = LastStoreClientTickBeforeShifting + 5U;
 
-	for (int32 i = 29; i >= 10; --i)
+	for (int32 i = 0; i < NPS_BUFFER_SIZE; ++i)
 	{
 		float DiffError = ClientActorPrediction
-			.GetRigidBodyState(ToQuertByShiftingTick + (i - 29))
-			.CalculatedSumDiffSqrtError(GeneratedSaveState[i]);
+			.GetRigidBodyState(FakeClientTick + i + OverflowSize + 5)
+			.CalculatedSumDiffSqrtError(GeneratedSaveState[i+OverflowSize]);
 
 		TestEqual(TEXT("Compare Shift-to-Future Buffer Value"), DiffError, 0.0f);
 	}
@@ -338,13 +341,17 @@ bool FClientActorPredictionReplayTickTest::RunTest(const FString& Parameters)
 {
 	uint32 FakeClientTick = 0U - 2U;
 	FNPS_ClientActorPrediction ClientActorPrediction;
-	FSavedClientRigidBodyState GeneratedState[10];
+	const int32 TestSize = static_cast<int32>(0.5f*NPS_BUFFER_SIZE) + 1;
+	
+	checkf(TestSize > 1, TEXT("Test Size is too small."));
+
+	FSavedClientRigidBodyState GeneratedState[TestSize];
 	uint32 ForQueryReplayTick;
 	float DiffSqrtError = 0;
 
-	GenerateFakedStateFunction(GeneratedState, 10);
+	GenerateFakedStateFunction(GeneratedState, TestSize);
 
-	for (int32 i = 0; i < 10; ++i)
+	for (int32 i = 0; i < TestSize; ++i)
 	{
 		ClientActorPrediction.SaveRigidBodyState
 		(
@@ -355,134 +362,168 @@ bool FClientActorPredictionReplayTickTest::RunTest(const FString& Parameters)
 
 
 #pragma region Correct Same State
-	ClientActorPrediction.ServerCorrectState
-	(
-		GeneratedState[4].GetReplicatedRigidBodyState(),
-		FakeClientTick + 4
-	);
+	{
+		int32 TestIndex = static_cast<int32>(0.2f*TestSize);
 
-	bool NeedReplay = ClientActorPrediction.TryGetReplayTickIndex(ForQueryReplayTick);
+		ClientActorPrediction.ServerCorrectState
+		(
+			GeneratedState[TestIndex].GetReplicatedRigidBodyState(),
+			FakeClientTick + TestIndex
+		);
 
-	TestEqual(TEXT("Correct State is the same. Shouldn't need replay."), NeedReplay, false);
+		bool NeedReplay = ClientActorPrediction.TryGetReplayTickIndex(ForQueryReplayTick);
+
+		TestEqual(TEXT("Correct State is the same. Shouldn't need replay."), NeedReplay, false);
+
+	}
 #pragma endregion
 
 #pragma region Correct Slightly Different
-	const FReplicatedRigidBodyState& ExistState = ClientActorPrediction
-		.GetRigidBodyState(FakeClientTick + 4)
-		.GetReplicatedRigidBodyState();
+	{
+		int32 TestIndex = static_cast<int32>(0.2f*TestSize);
+		const FReplicatedRigidBodyState& ExistState = ClientActorPrediction
+			.GetRigidBodyState(FakeClientTick + TestIndex)
+			.GetReplicatedRigidBodyState();
 
-	FReplicatedRigidBodyState SlightlyDifferent
-	(
-		ExistState.GetWorldPos() + FVector(0.01f, 0.0f, 0.0f),
-		ExistState.GetWorldRotation(),
-		ExistState.GetLinearVelocity(),
-		ExistState.GetLinearAngularVelocity(),
-		ExistState.IsSleep()
-	);
+		FReplicatedRigidBodyState SlightlyDifferent
+		(
+			ExistState.GetWorldPos() + FVector(0.01f, 0.0f, 0.0f),
+			ExistState.GetWorldRotation(),
+			ExistState.GetLinearVelocity(),
+			ExistState.GetLinearAngularVelocity(),
+			ExistState.IsSleep()
+		);
 
-	ClientActorPrediction.ServerCorrectState
-	(
-		SlightlyDifferent,
-		FakeClientTick + 4
-	);
+		ClientActorPrediction.ServerCorrectState
+		(
+			SlightlyDifferent,
+			FakeClientTick + TestIndex
+		);
 
-	NeedReplay = ClientActorPrediction.TryGetReplayTickIndex(ForQueryReplayTick);
+		bool NeedReplay = ClientActorPrediction.TryGetReplayTickIndex(ForQueryReplayTick);
 
-	TestEqual(TEXT("Correct State is slightly different. Shouldn't need replay."), NeedReplay, false);
+		TestEqual(TEXT("Correct State is slightly different. Shouldn't need replay."), NeedReplay, false);
+	}
 #pragma endregion
 
-#pragma region FakeClientTick + 4
-	ClientActorPrediction.ServerCorrectState
-	(
-		GeneratedState[5].GetReplicatedRigidBodyState(),
-		FakeClientTick + 4
-	);
+#pragma region FakeClientTick + TestIndex
+	{
+		int32 TestIndex = static_cast<int32>(0.2f*TestSize);
 
-	NeedReplay = ClientActorPrediction.TryGetReplayTickIndex(ForQueryReplayTick);
+		ClientActorPrediction.ServerCorrectState
+		(
+			GeneratedState[TestSize-1].GetReplicatedRigidBodyState(),
+			FakeClientTick + TestIndex
+		);
 
-	TestEqual(TEXT("Need replay at FakeClientTick+4"), NeedReplay && (ForQueryReplayTick == (FakeClientTick+4)), true);
+		bool NeedReplay = ClientActorPrediction.TryGetReplayTickIndex(ForQueryReplayTick);
 
-	DiffSqrtError = ClientActorPrediction
-		.GetRigidBodyState(ForQueryReplayTick)
-		.CalculatedSumDiffSqrtError(GeneratedState[5]);
+		TestEqual
+		(
+			TEXT("Need replay at FakeClientTick + TestIndex"), 
+			NeedReplay && (ForQueryReplayTick == (FakeClientTick + TestIndex)), 
+			true
+		);
 
-	TestEqual(TEXT("Check replay state at FakeClientTick+4"), DiffSqrtError, 0.0f);
+		DiffSqrtError = ClientActorPrediction
+			.GetRigidBodyState(ForQueryReplayTick)
+			.CalculatedSumDiffSqrtError(GeneratedState[TestSize - 1]);
+		
+		TestEqual(TEXT("Check replay state at FakeClientTick+TestIndex"), DiffSqrtError, 0.0f);
+	}
 #pragma endregion
 
-#pragma region Shift by -4
-	ClientActorPrediction.ShiftBufferElementsToDifferentClientTick(-4);
+#pragma region Shift by -TestIndex
+	{
+		int32 TestIndex = static_cast<int32>(0.2f*TestSize);
 
-	NeedReplay = ClientActorPrediction.TryGetReplayTickIndex(ForQueryReplayTick);
+		ClientActorPrediction.ShiftElementsToDifferentTickIndex(-TestIndex);
 
-	TestEqual(TEXT("Shifting replay to FakeClientTick"), NeedReplay && (ForQueryReplayTick == FakeClientTick), true);
+		bool NeedReplay = ClientActorPrediction.TryGetReplayTickIndex(ForQueryReplayTick);
 
-	DiffSqrtError = ClientActorPrediction
-		.GetRigidBodyState(ForQueryReplayTick)
-		.CalculatedSumDiffSqrtError(GeneratedState[5]);
-	
-	TestEqual(TEXT("Check replay state at Shifting-to FakeClientTick"), DiffSqrtError, 0.0f);
+		TestEqual(TEXT("Shifting replay to FakeClientTick"), NeedReplay && (ForQueryReplayTick == FakeClientTick), true);
+
+		DiffSqrtError = ClientActorPrediction
+			.GetRigidBodyState(ForQueryReplayTick)
+			.CalculatedSumDiffSqrtError(GeneratedState[TestSize - 1]);
+
+		TestEqual(TEXT("Check replay state at Shifting-to FakeClientTick"), DiffSqrtError, 0.0f);
+	}
 #pragma endregion
 
-#pragma region Shift by 4
-	ClientActorPrediction.ShiftBufferElementsToDifferentClientTick(4);
+#pragma region Shift by + TestIndex
+	{
+		int32 TestIndex = static_cast<int32>(0.2f*TestSize);
 
-	NeedReplay = ClientActorPrediction.TryGetReplayTickIndex(ForQueryReplayTick);
+		ClientActorPrediction.ShiftElementsToDifferentTickIndex(TestIndex);
 
-	TestEqual(TEXT("Shifting replay back to FakeClientTick+4"), NeedReplay && (ForQueryReplayTick == (FakeClientTick+4)), true);
+		bool NeedReplay = ClientActorPrediction.TryGetReplayTickIndex(ForQueryReplayTick);
 
-	DiffSqrtError = ClientActorPrediction
-		.GetRigidBodyState(ForQueryReplayTick)
-		.CalculatedSumDiffSqrtError(GeneratedState[5]);
+		TestEqual(TEXT("Shifting replay back to FakeClientTick + TestIndex"), NeedReplay && (ForQueryReplayTick == (FakeClientTick + TestIndex)), true);
 
-	TestEqual(TEXT("Check replay state at Shifting-back FakeClientTick+4"), DiffSqrtError, 0.0f);
+		DiffSqrtError = ClientActorPrediction
+			.GetRigidBodyState(ForQueryReplayTick)
+			.CalculatedSumDiffSqrtError(GeneratedState[TestSize - 1]);
+
+		TestEqual(TEXT("Check replay state at Shifting-back FakeClientTick + TestIndex"), DiffSqrtError, 0.0f);
+	}
 #pragma endregion
 
 #pragma region FakeClientTick - 2U
+	{
+		ClientActorPrediction.ServerCorrectState
+		(
+			GeneratedState[TestSize - 1].GetReplicatedRigidBodyState(),
+			FakeClientTick - 2
+		);
 
-	ClientActorPrediction.ServerCorrectState
-	(
-		GeneratedState[5].GetReplicatedRigidBodyState(),
-		FakeClientTick - 2U
-	);
+		bool NeedReplay = ClientActorPrediction.TryGetReplayTickIndex(ForQueryReplayTick);
 
-	NeedReplay = ClientActorPrediction.TryGetReplayTickIndex(ForQueryReplayTick);
+		TestEqual(TEXT("Need replay at FakeClientTick - 2"), NeedReplay && (ForQueryReplayTick == (FakeClientTick - 2)), true);
 
-	TestEqual(TEXT("Need replay at FakeClientTick-2"), NeedReplay && (ForQueryReplayTick == (FakeClientTick-2)), true);
+		DiffSqrtError = ClientActorPrediction
+			.GetRigidBodyState(ForQueryReplayTick)
+			.CalculatedSumDiffSqrtError(GeneratedState[TestSize - 1]);
 
-	DiffSqrtError = ClientActorPrediction
-		.GetRigidBodyState(ForQueryReplayTick)
-		.CalculatedSumDiffSqrtError(GeneratedState[5]);
-
-	TestEqual(TEXT("Check replay state at FakeClientTick - 2U"), DiffSqrtError, 0.0f);
-
+		TestEqual(TEXT("Check replay state at FakeClientTick - 2"), DiffSqrtError, 0.0f);
+	}
 #pragma endregion
 
-#pragma region FakeClientTick + 12U
-	ClientActorPrediction.ServerCorrectState
-	(
-		GeneratedState[5].GetReplicatedRigidBodyState(),
-		FakeClientTick + 12U
-	);
+#pragma region FakeClientTick + TestSize + 2U
+	{
+		ClientActorPrediction.ServerCorrectState
+		(
+			GeneratedState[TestSize - 1].GetReplicatedRigidBodyState(),
+			FakeClientTick + TestSize + 2U
+		);
 
-	NeedReplay = ClientActorPrediction.TryGetReplayTickIndex(ForQueryReplayTick);
+		bool NeedReplay = ClientActorPrediction.TryGetReplayTickIndex(ForQueryReplayTick);
 
-	TestEqual(TEXT("Need replay at FakeClientTick+12"), NeedReplay && (ForQueryReplayTick == (FakeClientTick + 12)), true);
+		TestEqual
+		(
+			TEXT("Need replay at FakeClientTick + TestSize + 2U"), 
+			NeedReplay && (ForQueryReplayTick == (FakeClientTick + TestSize + 2U)), 
+			true
+		);
 
-	DiffSqrtError = ClientActorPrediction
-		.GetRigidBodyState(ForQueryReplayTick, false)
-		.CalculatedSumDiffSqrtError(GeneratedState[5]);
+		DiffSqrtError = ClientActorPrediction
+			.GetRigidBodyState(ForQueryReplayTick, false)
+			.CalculatedSumDiffSqrtError(GeneratedState[TestSize - 1]);
 
-	TestEqual(TEXT("Check correct state at FakeClientTick+12"), DiffSqrtError, 0.0f);
+		TestEqual(TEXT("Check correct state at FakeClientTick + TestSize + 2U"), DiffSqrtError, 0.0f);
+	}
 #pragma endregion
 
 	
 
 #pragma region ConsumeReplayFlag
-	ClientActorPrediction.ConsumeReplayFlag();
+	{
+		ClientActorPrediction.ConsumeReplayFlag();
 
-	NeedReplay = ClientActorPrediction.TryGetReplayTickIndex(ForQueryReplayTick);
+		bool NeedReplay = ClientActorPrediction.TryGetReplayTickIndex(ForQueryReplayTick);
 
-	TestEqual(TEXT("Consume Replay Flag"), NeedReplay, false);
+		TestEqual(TEXT("Consume Replay Flag"), NeedReplay, false);
+	}
 #pragma endregion
 
 	return true;
@@ -493,21 +534,26 @@ bool FClientPawnPredictionSaveAndGetTest::RunTest(const FString& Parameters)
 {
 	uint32 FakeClientTick = 0 - 10U;
 	FNPS_ClientPawnPrediction PawnPrediction;
-	FSavedInput GeneratedInput[30];
 
-	GenerateFakedInputFunction(GeneratedInput, 19);
+	const int32 OverflowSize = 10;
+	const int32 TestSize = NPS_BUFFER_SIZE + OverflowSize;
+	FSavedInput GeneratedInput[TestSize];
 
-	for (int32 i = 19; i < 30; ++i)
+	GenerateFakedInputFunction(GeneratedInput, NPS_BUFFER_SIZE-1);
+
+	checkf(NPS_BUFFER_SIZE > 1, TEXT("Buffer size is too small."));
+
+	for (int32 i = NPS_BUFFER_SIZE-1; i < TestSize; ++i)
 	{
 		new (GeneratedInput + i)FSavedInput();
 	}
 
-	for (int32 i = 0; i < 30; ++i)
+	for (int32 i = 0; i < TestSize; ++i)
 	{
 		PawnPrediction.SaveInput(GeneratedInput[i], FakeClientTick + i);
 	}
 
-	for (int32 i = 0; i < 21; ++i)
+	for (int32 i = 0; i < NPS_BUFFER_SIZE+1; ++i)
 	{
 		bool bIsEqual = PawnPrediction.GetSavedInput(FakeClientTick + i) == GeneratedInput[i];
 		TestEqual(TEXT("Test Save and Get Value"), bIsEqual, true);
@@ -531,9 +577,9 @@ bool FClientPawnPredictionSaveAndGetTest::RunTest(const FString& Parameters)
 	}
 
 
-	for (int32 i = 30; i < 40; ++i)
+	for (int32 i = TestSize; i < TestSize+10; ++i)
 	{
-		bool bIsEqual = PawnPrediction.GetSavedInput(FakeClientTick + i) == GeneratedInput[29];
+		bool bIsEqual = PawnPrediction.GetSavedInput(FakeClientTick + i) == GeneratedInput[TestSize-1];
 
 		TestEqual(TEXT("Test Nearest from future"), bIsEqual, true);
 
@@ -556,18 +602,21 @@ bool FClientPawnPredictionShiftTest::RunTest(const FString& Parameters)
 {
 	uint32 FakeClientTick = 0 - 10U;
 	FNPS_ClientPawnPrediction ClientPawnPrediction;
-	FSavedInput GeneratedInput[10];
 
-	GenerateFakedInputFunction(GeneratedInput, 10);
+	const int32 TestSize = static_cast<int32>(0.5f*NPS_BUFFER_SIZE);
 
-	for (int32 i = 0; i < 10; ++i)
+	FSavedInput GeneratedInput[TestSize];
+
+	GenerateFakedInputFunction(GeneratedInput, TestSize);
+
+	for (int32 i = 0; i < TestSize; ++i)
 	{
 		ClientPawnPrediction.SaveInput(GeneratedInput[i], FakeClientTick + i);
 	}
 
-	ClientPawnPrediction.ShiftBufferElementsToDifferentClientTick(-5);
+	ClientPawnPrediction.ShiftElementsToDifferentTickIndex(-5);
 
-	for (int32 i = 0; i < 10; ++i)
+	for (int32 i = 0; i < TestSize; ++i)
 	{
 		const FSavedInput& SavedInput = ClientPawnPrediction
 			.GetSavedInput(FakeClientTick - 5 + i);
@@ -580,9 +629,9 @@ bool FClientPawnPredictionShiftTest::RunTest(const FString& Parameters)
 		);
 	}
 
-	ClientPawnPrediction.ShiftBufferElementsToDifferentClientTick(10);
+	ClientPawnPrediction.ShiftElementsToDifferentTickIndex(10);
 
-	for (int32 i = 0; i < 10; ++i)
+	for (int32 i = 0; i < TestSize; ++i)
 	{
 		const FSavedInput& SavedInput = ClientPawnPrediction
 			.GetSavedInput(FakeClientTick + 5 + i);
@@ -605,22 +654,27 @@ bool FClientPawnPredictionUnacknowledgedInputTest::RunTest(const FString& Parame
 
 	FNPS_ClientPawnPrediction ClientPawnPredicton;
 
-	TArray<FSavedInput, TInlineAllocator<11>> UnacknowledgedInputArray;
+	const int32 TestSize = static_cast<int32>(0.5f*NPS_BUFFER_SIZE);
+	const int32 AdditionSize = static_cast<int32>(0.5f*TestSize);
 
-	FSavedInput GeneratedSaveInput[10];
+	checkf(TestSize > 1, TEXT("TestSize is too small"));
 
-	GenerateFakedInputFunction(GeneratedSaveInput, 10);
+	TArray<FSavedInput, TInlineAllocator<TestSize+1>> UnacknowledgedInputArray;
 
-	for (int32 i = 0; i < 10; ++i)
+	FSavedInput GeneratedSaveInput[TestSize];
+
+	GenerateFakedInputFunction(GeneratedSaveInput, TestSize);
+
+	for (int32 i = 0; i < TestSize; ++i)
 	{
 		ClientPawnPredicton.SaveInput(GeneratedSaveInput[i], FakeClientTick + i);
 	}
 
 	
 
-	for (int32 i = 0; i < 5; ++i)
+	for (int32 i = 0; i < AdditionSize; ++i)
 	{
-		ClientPawnPredicton.SaveInput(FSavedInput(), FakeClientTick + 10 + i);
+		ClientPawnPredicton.SaveInput(FSavedInput(), FakeClientTick + TestSize + i);
 	}
 
 	TestEqual
@@ -630,7 +684,7 @@ bool FClientPawnPredictionUnacknowledgedInputTest::RunTest(const FString& Parame
 		true
 	);
 
-	ClientPawnPredicton.ShiftBufferElementsToDifferentClientTick(-5);
+	ClientPawnPredicton.ShiftElementsToDifferentTickIndex(-5);
 
 	TestEqual
 	(
@@ -639,7 +693,7 @@ bool FClientPawnPredictionUnacknowledgedInputTest::RunTest(const FString& Parame
 		FakeClientTick - 5
 	);
 
-	ClientPawnPredicton.ShiftBufferElementsToDifferentClientTick(10);
+	ClientPawnPredicton.ShiftElementsToDifferentTickIndex(10);
 
 	TestEqual
 	(
@@ -649,7 +703,7 @@ bool FClientPawnPredictionUnacknowledgedInputTest::RunTest(const FString& Parame
 	);
 
 
-	ClientPawnPredicton.ShiftBufferElementsToDifferentClientTick(-5);
+	ClientPawnPredicton.ShiftElementsToDifferentTickIndex(-5);
 
 	
 	TestCopyUnacknowledgedInput
@@ -670,7 +724,7 @@ bool FClientPawnPredictionUnacknowledgedInputTest::RunTest(const FString& Parame
 		false
 	);
 
-	ClientPawnPredicton.ServerCorrectState(DummyState, FakeClientTick+5);
+	ClientPawnPredicton.ServerCorrectState(DummyState, FakeClientTick+AdditionSize);
 
 	TestEqual
 	(
@@ -684,11 +738,11 @@ bool FClientPawnPredictionUnacknowledgedInputTest::RunTest(const FString& Parame
 		TEXT("Test after correct state : "),
 		ClientPawnPredicton, 
 		UnacknowledgedInputArray, 
-		FakeClientTick + 5,
+		FakeClientTick + AdditionSize,
 		this
 	);
 
-	ClientPawnPredicton.ServerCorrectState(DummyState, FakeClientTick + 11);
+	ClientPawnPredicton.ServerCorrectState(DummyState, FakeClientTick + TestSize+1);
 
 	TestEqual
 	(
@@ -697,9 +751,9 @@ bool FClientPawnPredictionUnacknowledgedInputTest::RunTest(const FString& Parame
 		false
 	);
 
-	for (int32 i = 0; i < 5; ++i)
+	for (int32 i = 0; i < AdditionSize; ++i)
 	{
-		ClientPawnPredicton.SaveInput(GeneratedSaveInput[i], FakeClientTick + 15 + i);
+		ClientPawnPredicton.SaveInput(GeneratedSaveInput[i], FakeClientTick + TestSize + AdditionSize + i);
 	}
 
 	TestCopyUnacknowledgedInput
@@ -707,7 +761,7 @@ bool FClientPawnPredictionUnacknowledgedInputTest::RunTest(const FString& Parame
 		TEXT("Test new input after acknowledged all : "),
 		ClientPawnPredicton, 
 		UnacknowledgedInputArray, 
-		FakeClientTick + 15,
+		FakeClientTick + TestSize + AdditionSize,
 		this
 	);
 

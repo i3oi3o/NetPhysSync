@@ -32,7 +32,7 @@ public:
 	 */
 	const FSavedClientRigidBodyState& GetRigidBodyState(uint32 ClientTickIndex, bool bUseNearestIfTickOutOfRange = true) const;
 	virtual void ServerCorrectState(const FReplicatedRigidBodyState& CorrectState, uint32 ClientTickIndex);
-	virtual void ShiftBufferElementsToDifferentClientTick(int32 ShiftAmount);
+	virtual void ShiftElementsToDifferentTickIndex(int32 ShiftAmount);
 	bool TryGetReplayTickIndex(uint32& OutTickIndex) const;
 	void ConsumeReplayFlag();
 	bool HasClientStateBufferYet() const;

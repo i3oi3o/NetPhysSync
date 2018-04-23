@@ -27,7 +27,7 @@ public:
 	 * this return TickIndex for comparing with server replication's last acknowledged input.
 	 */
 	uint32 GetOldestUnacknowledgeInputClientTickIndex() const;
-	virtual void ShiftBufferElementsToDifferentClientTick(int32 ShiftAmount) override;
+	virtual void ShiftElementsToDifferentTickIndex(int32 ShiftAmount) override;
 	virtual void ServerCorrectState(const FReplicatedRigidBodyState& CorrectState, uint32 ClientTickIndex);
 
 	template<typename ArrayAllocator>
