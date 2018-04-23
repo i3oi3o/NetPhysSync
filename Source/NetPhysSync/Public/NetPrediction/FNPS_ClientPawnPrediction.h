@@ -75,12 +75,7 @@ public:
 
 
 protected:
-	/**
-	 * The inline allocator's size is hard code.
-	 * The number is based of 20 ms physic tick duration and 200 ms round trip time.
-	 * This give us buffer length with 10 slots. To avoid overflow making it 20 slots.
-	 */
-	TNPSCircularBuffer<FSavedInput, TInlineAllocator<20>> ClientInputBuffers;
+	TNPSCircularBuffer<FSavedInput, TInlineAllocator<NPS_BUFFER_SIZE>> ClientInputBuffers;
 	uint32 ClientInputBuffersStartTickIndex;
 	uint32 OldestUnacknowledgedInput;
 };

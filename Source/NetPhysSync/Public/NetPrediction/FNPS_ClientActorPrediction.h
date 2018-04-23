@@ -38,12 +38,7 @@ public:
 	bool HasClientStateBufferYet() const;
 
 protected:
-	/*
-	* The size here is hard code. Current physic tick is 20 ms.
-	* For 200 ms round trip time, We need array of 10 slot.
-	* Use 20 slot to avoid overflow.
-	*/
-	TNPSCircularBuffer<FSavedClientRigidBodyState, TInlineAllocator<20>> ClientStateBuffers;
+	TNPSCircularBuffer<FSavedClientRigidBodyState, TInlineAllocator<NPS_BUFFER_SIZE>> ClientStateBuffers;
 	uint32 ClientStateBufferStartsTickIndex;
 	uint32 LastCorrectedStateTickIndex;
 	bool bNeedReplay;
