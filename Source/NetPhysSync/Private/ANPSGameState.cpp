@@ -4,6 +4,7 @@
 #include "NetPhysSyncManagement/FNetPhysSyncManager.h"
 #include "NetPhysSyncManagement/INetPhysSync.h"
 #include <Engine/World.h>
+#include "UNPSNetSetting.h"
 
 
 
@@ -70,6 +71,17 @@ class FNetPhysSyncManager* ANPSGameState::GetOrCreateNetPhysSyncManager()
 void ANPSGameState::BeginPlay()
 {
 	Super::BeginPlay();
+
+	UNPSNetSetting* NetSetting = UNPSNetSetting::Get();
+
+	UE_LOG
+	(
+		LogTemp, Log, TEXT("NetSetting: { SupportRTTInMS:%f, JitterWaitPhysTick:%d, BufferSize:%d }"),
+		NetSetting->SupportRTTInMS,
+		NetSetting->JitterWaitPhysTick,
+		NPS_BUFFER_SIZE
+	);
+
 	UWorld* World = this->GetWorld();
 	if (World != nullptr)
 	{

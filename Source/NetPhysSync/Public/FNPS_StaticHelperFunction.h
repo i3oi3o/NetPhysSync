@@ -7,6 +7,7 @@
 
 template <class InterfaceType> class TScriptInterface;
 class INetPhysSync;
+class UNPSNetSetting;
 
 /**
  * 
@@ -22,6 +23,7 @@ public:
 
 	static void UnregisterINetPhySync(TScriptInterface<INetPhysSync> ToUnregister);
 
+	static UNPSNetSetting* GetNetSetting();
 
 	template<typename ElementType, typename AllocatorType>
 	static void SetElementToBuffers

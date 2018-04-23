@@ -5,6 +5,7 @@
 #include "INetPhysSync.h"
 #include "ANPSGameState.h"
 #include "Engine/World.h"
+#include "UNPSNetSetting.h"
 
 
 void FNPS_StaticHelperFunction::CalculateBufferArrayIndex(uint32 BufferStartTickIndex, uint32 BufferTargetIndex, int32& OutResultArrayIndex)
@@ -38,4 +39,9 @@ void FNPS_StaticHelperFunction::UnregisterINetPhySync(TScriptInterface<INetPhysS
 			}
 		}
 	}
+}
+
+UNPSNetSetting* FNPS_StaticHelperFunction::GetNetSetting()
+{
+	return UNPSNetSetting::Get();
 }
