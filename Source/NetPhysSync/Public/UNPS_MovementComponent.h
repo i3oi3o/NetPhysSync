@@ -4,8 +4,8 @@
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
-#include "NetPhysSyncManagement/INetPhysSync.h"
-#include "NetPhysSyncManagement/FAutoRegisterINetPhysSyncTick.h"
+#include "INetPhysSync.h"
+#include "FAutoRegisterINetPhysSyncTick.h"
 #include <GameFramework/PawnMovementComponent.h>
 #include "UNPS_MovementComponent.generated.h"
 

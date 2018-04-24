@@ -1,8 +1,8 @@
 // This is licensed under the BSD License 2.0 found in the LICENSE file in project's root directory.
 
 #include "ANPSGameState.h"
-#include "NetPhysSyncManagement/FNetPhysSyncManager.h"
-#include "NetPhysSyncManagement/INetPhysSync.h"
+#include "FNetPhysSyncManager.h"
+#include "INetPhysSync.h"
 #include <Engine/World.h>
 #include "UNPSNetSetting.h"
 

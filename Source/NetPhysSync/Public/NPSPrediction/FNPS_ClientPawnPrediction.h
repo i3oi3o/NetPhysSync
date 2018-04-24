@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "FNPS_ClientActorPrediction.h"
-#include "NetPrediction/FSavedInput.h"
+#include "FSavedInput.h"
 #include "TNPSCircularBuffer.h"
 
 /**
