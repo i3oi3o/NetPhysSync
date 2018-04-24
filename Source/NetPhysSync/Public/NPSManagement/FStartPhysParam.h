@@ -10,12 +10,17 @@
 struct NETPHYSSYNC_API FStartPhysParam
 {
 public:
-	FStartPhysParam(class FPhysScene* const PhysScene, 
-		const uint32 SceneType, const float StartDeltaTime);
+	FStartPhysParam
+	(
+		class FPhysScene* const PhysSceneParam, 
+		uint32 SceneTypeParam, float StartDeltaTimeParam,
+		uint32 LocalPhysTickIndexParam
+	);
 	~FStartPhysParam();
 
 public:
 	class FPhysScene* const PhysScene;
 	const enum EPhysicsSceneType SceneType;
 	const float StartDeltaTime;
+	const uint32 LocalPhysTickIndex;
 };

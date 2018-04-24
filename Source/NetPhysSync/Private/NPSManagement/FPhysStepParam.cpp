@@ -5,10 +5,15 @@
 
 
 
-FPhysStepParam::FPhysStepParam(FPhysScene* const PhysScene, const uint32 SceneType, float StepDeltaTime)
-	: PhysScene(PhysScene)
-	, SceneType(static_cast<EPhysicsSceneType>(SceneType))
-	, StepDeltaTime(StepDeltaTime)
+FPhysStepParam::FPhysStepParam
+(
+	FPhysScene* const PhysSceneParam, const uint32 SceneTypeParam, 
+	float StepDeltaTimeParam, uint32 LocalPhysTickIndexParam
+)
+	: PhysScene(PhysSceneParam)
+	, SceneType(static_cast<EPhysicsSceneType>(SceneTypeParam))
+	, StepDeltaTime(StepDeltaTimeParam)
+	, LocalPhysTickIndex(LocalPhysTickIndexParam)
 {
 
 }

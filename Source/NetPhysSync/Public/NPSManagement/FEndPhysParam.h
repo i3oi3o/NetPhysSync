@@ -11,11 +11,15 @@ struct NETPHYSSYNC_API FEndPhysParam
 {
 
 public:
-	FEndPhysParam(uint32 SceneType, float StartDeltaTime, uint32 LocalNetPhysTicks);
+	FEndPhysParam
+	(
+		uint32 SceneTypeParam, float StartDeltaTimeParam, 
+		uint32 LocalPhysTickIndexParam
+	);
 	~FEndPhysParam();
 
 public:
 	const enum EPhysicsSceneType SceneType;
 	const float StartDeltaTime;
-	const uint32 LocalNetPhysTicks;
+	const uint32 LocalPhysTickIndex;
 };

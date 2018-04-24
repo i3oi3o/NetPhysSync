@@ -102,7 +102,7 @@ void FNetPhysSyncManager::TickStartPhys(FPhysScene* PhysScene, uint32 SceneType,
 
 	FlushDeferedRegisteeAndCleanNull();
 
-	FStartPhysParam StartParam(PhysScene, SceneType, StartDeltaTime);
+	FStartPhysParam StartParam(PhysScene, SceneType, StartDeltaTime, LocalPhysTickIndex);
 	for (auto It = INetPhysSyncPtrList.CreateIterator(); It; ++It)
 	{
 		INetPhysSync* Interface = TryGetTickableINetPhysSync(*It);
@@ -134,7 +134,7 @@ void FNetPhysSyncManager::TickStepPhys(FPhysScene* PhysScene, uint32 SceneType, 
 		CachStepDeltaTime = StepDeltaTime;
 	}
 
-	FPhysStepParam StepParam(PhysScene, SceneType, StepDeltaTime);
+	FPhysStepParam StepParam(PhysScene, SceneType, StepDeltaTime, LocalPhysTickIndex);
 
 	for (auto It = INetPhysSyncPtrList.CreateIterator(); It; ++It)
 	{

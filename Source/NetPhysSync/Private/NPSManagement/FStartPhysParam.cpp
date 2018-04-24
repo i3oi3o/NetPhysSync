@@ -5,11 +5,16 @@
 
 
 
-FStartPhysParam::FStartPhysParam(FPhysScene* PhysScene, 
-	uint32 SceneType, float StartDeltaTime) 
-	: PhysScene(PhysScene),
-	SceneType(static_cast<EPhysicsSceneType>(SceneType)),
-	StartDeltaTime(StartDeltaTime)
+FStartPhysParam::FStartPhysParam
+(
+	FPhysScene* PhysSceneParam, 
+	uint32 SceneTypeParam, float StartDeltaTimeParam,
+	uint32 LocalPhysTickIndexParam
+) 
+	: PhysScene(PhysSceneParam)
+	, SceneType(static_cast<EPhysicsSceneType>(SceneTypeParam))
+	, StartDeltaTime(StartDeltaTimeParam)
+	, LocalPhysTickIndex(LocalPhysTickIndexParam)
 {
 
 }

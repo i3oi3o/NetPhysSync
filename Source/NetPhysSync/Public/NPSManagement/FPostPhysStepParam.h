@@ -10,14 +10,17 @@
 struct NETPHYSSYNC_API FPostPhysStepParam
 {
 public:
-	FPostPhysStepParam(class FPhysScene* const PhysScene, 
-		const uint32 SceneType, float StepDeltaTime,
-		const uint32 LocalNetPhysTicks);
+	FPostPhysStepParam
+	(
+		class FPhysScene* const PhysSceneParam, 
+		const uint32 SceneTypeParam, float StepDeltaTimeParam,
+		const uint32 LocalPhysTickIndexParam
+	);
 	~FPostPhysStepParam();
 
 public:
 	class FPhysScene* const PhysScene;
 	const enum EPhysicsSceneType SceneType;
 	const float StepDeltaTime;
-	const uint32 LocalNetPhysTicks;
+	const uint32 LocalPhysTickIndex;
 };

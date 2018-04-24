@@ -4,11 +4,15 @@
 
 
 
-FEndPhysParam::FEndPhysParam(uint32 SceneType, 
-	float StartDeltaTime, uint32 LocalNetPhysTicks)
-	: SceneType(static_cast<EPhysicsSceneType>(SceneType)),
-	StartDeltaTime(StartDeltaTime),
-	LocalNetPhysTicks(LocalNetPhysTicks)
+FEndPhysParam::FEndPhysParam
+(
+	uint32 SceneTypeParam, 
+	float StartDeltaTimeParam, 
+	uint32 LocalPhysTickIndexParam
+)
+	: SceneType(static_cast<EPhysicsSceneType>(SceneTypeParam))
+	, StartDeltaTime(StartDeltaTimeParam)
+	, LocalPhysTickIndex(LocalPhysTickIndexParam)
 {
 
 }
