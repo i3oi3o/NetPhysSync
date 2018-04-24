@@ -7,7 +7,7 @@
 FNetPhysSyncManager::FNetPhysSyncManager()
 	: PhysScene(nullptr)
 	, WorldOwningPhysScene(nullptr)
-	, LocalNetPhysTicks(0)
+	, LocalPhysTickIndex(0)
 	, INetPhysSyncPtrList()
 	, StartTickPostPhysicSubstepYet(false)
 	, StartPhysicYet(false)
@@ -70,7 +70,7 @@ void FNetPhysSyncManager::OnTickPostPhysic()
 	}
 
 	StartPhysicYet = false;
-	FPostPhysStepParam PostStepParam(PhysScene, CachSceneType, CachStepDeltaTime, LocalNetPhysTicks);
+	FPostPhysStepParam PostStepParam(PhysScene, CachSceneType, CachStepDeltaTime, LocalPhysTickIndex);
 	for (auto It = INetPhysSyncPtrList.CreateIterator(); It; ++It)
 	{
 		INetPhysSync* Interface = TryGetTickableINetPhysSync(*It);
@@ -80,7 +80,7 @@ void FNetPhysSyncManager::OnTickPostPhysic()
 		}
 	}
 
-	FEndPhysParam EndParam(CachSceneType, CachStartDeltaTime, LocalNetPhysTicks);
+	FEndPhysParam EndParam(CachSceneType, CachStartDeltaTime, LocalPhysTickIndex);
 	for (auto It = INetPhysSyncPtrList.CreateIterator(); It; ++It)
 	{
 		INetPhysSync* Interface = TryGetTickableINetPhysSync(*It);
@@ -90,7 +90,7 @@ void FNetPhysSyncManager::OnTickPostPhysic()
 		}
 	}
 
-	++LocalNetPhysTicks;
+	++LocalPhysTickIndex;
 }
 
 void FNetPhysSyncManager::TickStartPhys(FPhysScene* PhysScene, uint32 SceneType, float StartDeltaTime)
@@ -117,7 +117,7 @@ void FNetPhysSyncManager::TickStepPhys(FPhysScene* PhysScene, uint32 SceneType, 
 {
 	if (StartTickPostPhysicSubstepYet)
 	{
-		FPostPhysStepParam PostStepParam(PhysScene, SceneType, StepDeltaTime, LocalNetPhysTicks);
+		FPostPhysStepParam PostStepParam(PhysScene, SceneType, StepDeltaTime, LocalPhysTickIndex);
 		for (auto It = INetPhysSyncPtrList.CreateIterator(); It; ++It)
 		{
 			INetPhysSync* Interface = TryGetTickableINetPhysSync(*It);
@@ -127,7 +127,7 @@ void FNetPhysSyncManager::TickStepPhys(FPhysScene* PhysScene, uint32 SceneType, 
 			}
 		}
 
-		++LocalNetPhysTicks;
+		++LocalPhysTickIndex;
 	}
 	else
 	{

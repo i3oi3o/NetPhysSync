@@ -49,7 +49,7 @@ class NETPHYSSYNC_API FNetPhysSyncManager
 		
 		FPhysScene* PhysScene;
 
-		uint32 LocalNetPhysTicks;
+		uint32 LocalPhysTickIndex;
 
 		bool StartTickPostPhysicSubstepYet;
 
