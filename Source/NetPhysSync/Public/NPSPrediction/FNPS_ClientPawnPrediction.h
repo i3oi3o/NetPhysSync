@@ -31,7 +31,7 @@ public:
 	virtual void ServerCorrectState(const FReplicatedRigidBodyState& CorrectState, uint32 ClientTickIndex);
 
 	template<typename ArrayAllocator>
-	void CopyUnacknowledgeInputToArray
+	void CopyUnacknowledgedInputToArray
 	(
 		TArray<FSavedInput, ArrayAllocator>& DestArray,
 		uint32& CopyUnacknowledgedStartTickIndex

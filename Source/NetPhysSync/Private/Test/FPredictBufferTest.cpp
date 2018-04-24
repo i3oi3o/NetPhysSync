@@ -48,7 +48,7 @@ void TestCopyUnacknowledgedInput
 	uint32 CopyUnacknowledgedStartTick;
 
 	ClientPawnPrediction
-		.CopyUnacknowledgeInputToArray
+		.CopyUnacknowledgedInputToArray
 		(
 			ForStoreUnacknowledgedInputArray, 
 			CopyUnacknowledgedStartTick
