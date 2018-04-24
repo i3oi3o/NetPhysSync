@@ -26,11 +26,11 @@ public:
 	* Currently for testing.
 	*/
 	void SaveRigidBodyState(const FSavedClientRigidBodyState& SaveRigidBodyState, uint32 ClientTickIndex);
-	void GetRigidBodyState(physx::PxRigidDynamic* PxRigidDynamic, uint32 ClientTickIndex, bool bUseNearestIfTickOutOfRange=true) const;
+	void GetRigidBodyState(physx::PxRigidDynamic* PxRigidDynamic, uint32 ClientTickIndex, bool bUseNearestIfOutOfBound=true) const;
 	/**
 	 * Currently for testing.
 	 */
-	const FSavedClientRigidBodyState& GetRigidBodyState(uint32 ClientTickIndex, bool bUseNearestIfTickOutOfRange = true) const;
+	const FSavedClientRigidBodyState& GetRigidBodyState(uint32 ClientTickIndex, bool bUseNearestIfOutOfBound = true) const;
 	virtual void ServerCorrectState(const FReplicatedRigidBodyState& CorrectState, uint32 ClientTickIndex);
 	virtual void ShiftElementsToDifferentTickIndex(int32 ShiftAmount);
 	bool TryGetReplayTickIndex(uint32& OutTickIndex) const;
@@ -39,7 +39,7 @@ public:
 
 protected:
 	TNPSCircularBuffer<FSavedClientRigidBodyState, TInlineAllocator<NPS_BUFFER_SIZE>> ClientStateBuffer;
-	uint32 ClientStateBufferStartsTickIndex;
+	uint32 ClientStateBufferStartTickIndex;
 	uint32 LastCorrectedStateTickIndex;
 	bool bNeedReplay;
 };

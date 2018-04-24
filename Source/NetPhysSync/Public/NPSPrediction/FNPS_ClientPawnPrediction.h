@@ -20,7 +20,7 @@ public:
 
 	void SaveInput(FVector TargetWorldSpeed, uint32 ClientTickIndex);
 	void SaveInput(const FSavedInput& ToSave, uint32 ClientTickIndex);
-	const FSavedInput& GetSavedInput(uint32 ClientTick, bool UseNearestIfOutOfBound=true) const;
+	const FSavedInput& GetSavedInput(uint32 ClientTick, bool bUseNearestIfOutOfBound=true) const;
 	FORCEINLINE bool HasUnacknowledgedInput() const;
 	/**
 	 * If current don't have any unacknowledged input, 

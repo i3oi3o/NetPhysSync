@@ -5,7 +5,7 @@
 
 FNPS_ClientActorPrediction::FNPS_ClientActorPrediction() 
 	: ClientStateBuffer(20),
-	ClientStateBufferStartsTickIndex(0),
+	ClientStateBufferStartTickIndex(0),
 	LastCorrectedStateTickIndex(0),
 	bNeedReplay(false)
 {
@@ -26,7 +26,7 @@ void FNPS_ClientActorPrediction::SaveRigidBodyState(const FSavedClientRigidBodyS
 	(
 		ClientStateBuffer,
 		SaveRigidBodyState,
-		ClientStateBufferStartsTickIndex,
+		ClientStateBufferStartTickIndex,
 		ClientTickIndex
 	);
 }
@@ -35,10 +35,10 @@ void FNPS_ClientActorPrediction::GetRigidBodyState
 (
 	physx::PxRigidDynamic* PxRigidDynamic, 
 	uint32 ClientTickIndex, 
-	bool bUseNearestIfTickOutOfRange /*=true*/
+	bool bUseNearestIfOutOfBound /*=true*/
 ) const
 {
-	const FSavedClientRigidBodyState& RetrivedState = GetRigidBodyState(ClientTickIndex, bUseNearestIfTickOutOfRange);
+	const FSavedClientRigidBodyState& RetrivedState = GetRigidBodyState(ClientTickIndex, bUseNearestIfOutOfBound);
 	// Don't worry.
 	// If state is invalid, FSavedClientRigidBodyState::RetriveBodyState() 
 	// doesn't copy state to PxRigidDynamic.
@@ -52,7 +52,7 @@ const FSavedClientRigidBodyState& FNPS_ClientActorPrediction::GetRigidBodyState
 ) const
 {
 	int32 OutArrayIndex;
-	FNPS_StaticHelperFunction::CalculateBufferArrayIndex(ClientStateBufferStartsTickIndex, ClientTickIndex,
+	FNPS_StaticHelperFunction::CalculateBufferArrayIndex(ClientStateBufferStartTickIndex, ClientTickIndex,
 		OutArrayIndex);
 
 	if (bUseNearestIfTickOutOfRange)
@@ -73,7 +73,7 @@ const FSavedClientRigidBodyState& FNPS_ClientActorPrediction::GetRigidBodyState
 void FNPS_ClientActorPrediction::ServerCorrectState(const FReplicatedRigidBodyState& CorrectState, uint32 ClientTickIndex)
 {
 	int32 OutArrayIndex;
-	FNPS_StaticHelperFunction::CalculateBufferArrayIndex(ClientStateBufferStartsTickIndex, ClientTickIndex, OutArrayIndex);
+	FNPS_StaticHelperFunction::CalculateBufferArrayIndex(ClientStateBufferStartTickIndex, ClientTickIndex, OutArrayIndex);
 	float SumSqrError = 0;
 	if (OutArrayIndex >= 0 && OutArrayIndex < ClientStateBuffer.Num())
 	{
@@ -88,7 +88,7 @@ void FNPS_ClientActorPrediction::ServerCorrectState(const FReplicatedRigidBodySt
 		(
 			ClientStateBuffer, 
 			FSavedClientRigidBodyState(CorrectState),
-			ClientStateBufferStartsTickIndex,
+			ClientStateBufferStartTickIndex,
 			ClientTickIndex
 		);
 	}
@@ -99,7 +99,7 @@ void FNPS_ClientActorPrediction::ServerCorrectState(const FReplicatedRigidBodySt
 
 void FNPS_ClientActorPrediction::ShiftElementsToDifferentTickIndex(int32 ShiftAmount)
 {
-	ClientStateBufferStartsTickIndex += ShiftAmount;
+	ClientStateBufferStartTickIndex += ShiftAmount;
 	LastCorrectedStateTickIndex += ShiftAmount;
 }
 

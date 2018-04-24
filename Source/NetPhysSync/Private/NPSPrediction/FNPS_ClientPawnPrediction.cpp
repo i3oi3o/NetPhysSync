@@ -45,13 +45,13 @@ void FNPS_ClientPawnPrediction::SaveInput(const FSavedInput& ToSave, uint32 Clie
 	}
 }
 
-const FSavedInput& FNPS_ClientPawnPrediction::GetSavedInput(uint32 ClientTick, bool UseNearestIfOutOfBound /*=true*/) const
+const FSavedInput& FNPS_ClientPawnPrediction::GetSavedInput(uint32 ClientTick, bool bUseNearestIfOutOfBound /*=true*/) const
 {
 	int32 OutArrayIndex;
 	FNPS_StaticHelperFunction::CalculateBufferArrayIndex(
 		ClientInputBuffersStartTickIndex, ClientTick, OutArrayIndex);
 
-	if (UseNearestIfOutOfBound)
+	if (bUseNearestIfOutOfBound)
 	{
 		ClientInputBuffers.ClampIndexParamWithinRange(OutArrayIndex);
 	}
