@@ -4,7 +4,7 @@
 #include "FNPS_StaticHelperFunction.h"
 
 FNPS_ClientActorPrediction::FNPS_ClientActorPrediction() 
-	: ClientStateBuffers(20),
+	: ClientStateBuffer(20),
 	ClientStateBufferStartsTickIndex(0),
 	LastCorrectedStateTickIndex(0),
 	bNeedReplay(false)
@@ -24,7 +24,7 @@ void FNPS_ClientActorPrediction::SaveRigidBodyState(const FSavedClientRigidBodyS
 {
 	FNPS_StaticHelperFunction::SetElementToBuffers
 	(
-		ClientStateBuffers,
+		ClientStateBuffer,
 		SaveRigidBodyState,
 		ClientStateBufferStartsTickIndex,
 		ClientTickIndex
@@ -57,12 +57,12 @@ const FSavedClientRigidBodyState& FNPS_ClientActorPrediction::GetRigidBodyState
 
 	if (bUseNearestIfTickOutOfRange)
 	{
-		ClientStateBuffers.ClampIndexParamWithinRange(OutArrayIndex);
+		ClientStateBuffer.ClampIndexParamWithinRange(OutArrayIndex);
 	}
 
-	if (ClientStateBuffers.IsIndexInRange(OutArrayIndex))
+	if (ClientStateBuffer.IsIndexInRange(OutArrayIndex))
 	{
-		return ClientStateBuffers[OutArrayIndex];
+		return ClientStateBuffer[OutArrayIndex];
 	}
 	else
 	{
@@ -75,9 +75,9 @@ void FNPS_ClientActorPrediction::ServerCorrectState(const FReplicatedRigidBodySt
 	int32 OutArrayIndex;
 	FNPS_StaticHelperFunction::CalculateBufferArrayIndex(ClientStateBufferStartsTickIndex, ClientTickIndex, OutArrayIndex);
 	float SumSqrError = 0;
-	if (OutArrayIndex >= 0 && OutArrayIndex < ClientStateBuffers.Num())
+	if (OutArrayIndex >= 0 && OutArrayIndex < ClientStateBuffer.Num())
 	{
-		FSavedClientRigidBodyState& ExistState = ClientStateBuffers[OutArrayIndex];
+		FSavedClientRigidBodyState& ExistState = ClientStateBuffer[OutArrayIndex];
 		SumSqrError = ExistState.CalculatedSumDiffSqrtError(CorrectState);
 		ExistState.SaveReplicatedRigidBodyState(CorrectState);
 	}
@@ -86,7 +86,7 @@ void FNPS_ClientActorPrediction::ServerCorrectState(const FReplicatedRigidBodySt
 		SumSqrError = TNumericLimits<float>::Max();
 		FNPS_StaticHelperFunction::SetElementToBuffers
 		(
-			ClientStateBuffers, 
+			ClientStateBuffer, 
 			FSavedClientRigidBodyState(CorrectState),
 			ClientStateBufferStartsTickIndex,
 			ClientTickIndex
@@ -116,7 +116,7 @@ void FNPS_ClientActorPrediction::ConsumeReplayFlag()
 
 bool FNPS_ClientActorPrediction::HasClientStateBufferYet() const
 {
-	return ClientStateBuffers.Num() > 0;
+	return ClientStateBuffer.Num() > 0;
 }
 
 

@@ -38,7 +38,7 @@ public:
 	bool HasClientStateBufferYet() const;
 
 protected:
-	TNPSCircularBuffer<FSavedClientRigidBodyState, TInlineAllocator<NPS_BUFFER_SIZE>> ClientStateBuffers;
+	TNPSCircularBuffer<FSavedClientRigidBodyState, TInlineAllocator<NPS_BUFFER_SIZE>> ClientStateBuffer;
 	uint32 ClientStateBufferStartsTickIndex;
 	uint32 LastCorrectedStateTickIndex;
 	bool bNeedReplay;
