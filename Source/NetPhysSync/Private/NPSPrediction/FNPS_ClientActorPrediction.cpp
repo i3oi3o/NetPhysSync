@@ -114,7 +114,7 @@ void FNPS_ClientActorPrediction::ConsumeReplayFlag()
 	bNeedReplay = false;
 }
 
-bool FNPS_ClientActorPrediction::HasClientStateBufferYet() const
+bool FNPS_ClientActorPrediction::HasClientStateBuffer() const
 {
 	return ClientStateBuffer.Num() > 0;
 }

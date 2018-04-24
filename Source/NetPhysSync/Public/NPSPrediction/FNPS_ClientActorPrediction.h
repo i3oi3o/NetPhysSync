@@ -35,7 +35,7 @@ public:
 	virtual void ShiftElementsToDifferentTickIndex(int32 ShiftAmount);
 	bool TryGetReplayTickIndex(uint32& OutTickIndex) const;
 	void ConsumeReplayFlag();
-	bool HasClientStateBufferYet() const;
+	bool HasClientStateBuffer() const;
 
 protected:
 	TNPSCircularBuffer<FSavedClientRigidBodyState, TInlineAllocator<NPS_BUFFER_SIZE>> ClientStateBuffer;

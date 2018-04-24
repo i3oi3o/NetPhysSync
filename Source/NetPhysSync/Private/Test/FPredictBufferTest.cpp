@@ -161,7 +161,7 @@ bool FClientActorPredictionHasBufferYetTest::RunTest(const FString& Parameters)
 	TestEqual
 	(
 		TEXT("Test If Buffer is Empty."), 
-		ClientActorPrediction.HasClientStateBufferYet(),
+		ClientActorPrediction.HasClientStateBuffer(),
 		false
 	);
 
@@ -181,7 +181,7 @@ bool FClientActorPredictionHasBufferYetTest::RunTest(const FString& Parameters)
 	TestEqual
 	(
 		TEXT("Test If Buffer is not Empty"),
-		ClientActorPrediction.HasClientStateBufferYet(),
+		ClientActorPrediction.HasClientStateBuffer(),
 		true
 	);
 
