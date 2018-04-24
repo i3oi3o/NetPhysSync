@@ -84,10 +84,10 @@ public:
 	/**
 	 * Default element is created using default constructor.
 	 */
-	void AddDefaulted(uint32 Count=1)
+	void AddDefaulted(int32 Count=1)
 	{
 		ElementType DefaultElement = ElementType();
-		for (uint32 i = 0; i < Count; ++i)
+		for (int32 i = 0; i < Count; ++i)
 		{
 			Add(DefaultElement);
 		}
@@ -293,6 +293,21 @@ public:
 	FORCEINLINE bool IsIndexInRange(int32 Index) const
 	{
 		return Index >= 0 && Index < Num();
+	}
+
+	/**
+	 * If no range available (Num()==0), return -1
+	 */
+	FORCEINLINE void ClampIndexParamWithinRange(int32& ToClampIndex) const
+	{
+		if (Num() == 0 || ToClampIndex >= Num())
+		{
+			ToClampIndex = Num() - 1;
+		}
+		else if (ToClampIndex < 0)
+		{
+			ToClampIndex = 0;
+		}
 	}
 
 	FORCEINLINE bool IsFull() const

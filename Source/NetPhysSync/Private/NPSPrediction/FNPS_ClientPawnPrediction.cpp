@@ -53,14 +53,7 @@ const FSavedInput& FNPS_ClientPawnPrediction::GetSavedInput(uint32 ClientTick, b
 
 	if (UseNearestIfOutOfBound)
 	{
-		if (OutArrayIndex < 0)
-		{
-			OutArrayIndex = 0;
-		}
-		else if (OutArrayIndex >= ClientInputBuffers.Num())
-		{
-			OutArrayIndex = ClientInputBuffers.Num() - 1;
-		}
+		ClientInputBuffers.ClampIndexParamWithinRange(OutArrayIndex);
 	}
 
 	if (ClientInputBuffers.IsIndexInRange(OutArrayIndex))

@@ -57,14 +57,7 @@ const FSavedClientRigidBodyState& FNPS_ClientActorPrediction::GetRigidBodyState
 
 	if (bUseNearestIfTickOutOfRange)
 	{
-		if (OutArrayIndex < 0)
-		{
-			OutArrayIndex = 0;
-		}
-		else if(OutArrayIndex >= ClientStateBuffers.Num())
-		{
-			OutArrayIndex = ClientStateBuffers.Num() - 1;
-		}
+		ClientStateBuffers.ClampIndexParamWithinRange(OutArrayIndex);
 	}
 
 	if (ClientStateBuffers.IsIndexInRange(OutArrayIndex))
