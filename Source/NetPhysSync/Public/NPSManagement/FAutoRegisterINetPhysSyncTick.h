@@ -8,7 +8,7 @@
 
 /**
  * Investigate if we need this. A pawn probably not exist until Map is loaded.
- * When BeginPlay is called on client, GameState and PlayerController is probably ready.
+ * When BeginPlay is called on client, GameState and PlayerController probably exist already.
  */
 USTRUCT()
 struct NETPHYSSYNC_API FAutoRegisterINetPhysSyncTick : public FTickFunction
