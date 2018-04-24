@@ -25,13 +25,16 @@ public:
 	void GetReplicatedRigidBodyState(physx::PxRigidDynamic* const RigidDynamic) const;
 	FORCEINLINE const FReplicatedRigidBodyState& GetReplicatedRigidBodyState() const;
 
-	float CalculatedSumDiffSqrtError(const FReplicatedRigidBodyState& OtherReplicatedState) const;
-	float CalculatedSumDiffSqrtError(const FSavedClientRigidBodyState& Other) const;
+	float CalculateSumDiffSqrtError(const FReplicatedRigidBodyState& OtherReplicatedState) const;
+	float CalculateSumDiffSqrtError(const FSavedClientRigidBodyState& Other) const;
 
 	/**
 	 * If create by default constructor, ReplicatedState is not valid.
 	 */
-	FORCEINLINE const bool IsReplicatedStateValid() const;
+	FORCEINLINE bool IsReplicatedStateValid() const
+	{
+		return bIsReplicatedStateValid;
+	}
 
 
 private:

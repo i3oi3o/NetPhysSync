@@ -78,7 +78,7 @@ void FNPS_ClientActorPrediction::ServerCorrectState(const FReplicatedRigidBodySt
 	if (OutArrayIndex >= 0 && OutArrayIndex < ClientStateBuffer.Num())
 	{
 		FSavedClientRigidBodyState& ExistState = ClientStateBuffer[OutArrayIndex];
-		SumSqrError = ExistState.CalculatedSumDiffSqrtError(CorrectState);
+		SumSqrError = ExistState.CalculateSumDiffSqrtError(CorrectState);
 		ExistState.SaveReplicatedRigidBodyState(CorrectState);
 	}
 	else

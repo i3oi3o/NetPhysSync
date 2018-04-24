@@ -221,7 +221,7 @@ bool FClientActorPredictionSaveAndGetTest::RunTest(const FString& Parameters)
 	{
 		float ErrorDiff = ClientActorPrediction
 			.GetRigidBodyState(FakeClientTick+i)
-			.CalculatedSumDiffSqrtError(DummyReplicatedState);
+			.CalculateSumDiffSqrtError(DummyReplicatedState);
 
 		TestEqual(TEXT("Compare Dummy RigidBodyState in buffer."), ErrorDiff, 0.0f);
 	}
@@ -244,14 +244,14 @@ bool FClientActorPredictionSaveAndGetTest::RunTest(const FString& Parameters)
 		{
 			ErrorDiff = ClientActorPrediction
 				.GetRigidBodyState(ToVerifyClientTick + i)
-				.CalculatedSumDiffSqrtError(DummyReplicatedState);
+				.CalculateSumDiffSqrtError(DummyReplicatedState);
 			TestEqual(TEXT("Compare Dummy2 RigidBodyState in buffer."), ErrorDiff, 0.0f);
 		}
 		else
 		{
 			ErrorDiff = ClientActorPrediction
 				.GetRigidBodyState(ToVerifyClientTick + i)
-				.CalculatedSumDiffSqrtError(GenerateClientRigidBodyStates[i- OverflowSize]);
+				.CalculateSumDiffSqrtError(GenerateClientRigidBodyStates[i- OverflowSize]);
 			TestEqual(TEXT("Compare Generated RigidBodyState in buffer."), ErrorDiff, 0.0f);
 		}
 	}
@@ -262,13 +262,13 @@ bool FClientActorPredictionSaveAndGetTest::RunTest(const FString& Parameters)
 
 		float ErrorDiff = ClientActorPrediction
 			.GetRigidBodyState(FakeClientTick + ShiftAmountToOutOfBound)
-			.CalculatedSumDiffSqrtError(GenerateClientRigidBodyStates[OverflowSize-1]);
+			.CalculateSumDiffSqrtError(GenerateClientRigidBodyStates[OverflowSize-1]);
 
 		TestEqual(TEXT("Comapre out of bound state from future using nearest."), ErrorDiff, 0.0f);
 
 		ErrorDiff = ClientActorPrediction
 			.GetRigidBodyState(FakeClientTick - ShiftAmountToOutOfBound)
-			.CalculatedSumDiffSqrtError(DummyReplicatedState);
+			.CalculateSumDiffSqrtError(DummyReplicatedState);
 
 		TestEqual(TEXT("Compare out of bound state from past using nearest."), ErrorDiff, 0.0f);
 
@@ -316,7 +316,7 @@ bool FClientActorPredictionShiftBufferTest::RunTest(const FString& Parameters)
 	{
 		float DiffError = ClientActorPrediction
 			.GetRigidBodyState(FakeClientTick + i + OverflowSize - 5)
-			.CalculatedSumDiffSqrtError(GeneratedSaveState[i+OverflowSize]);
+			.CalculateSumDiffSqrtError(GeneratedSaveState[i+OverflowSize]);
 
 		TestEqual(TEXT("Compare Shift-to-Past Buffer Value"), DiffError, 0.0f);
 	}
@@ -328,7 +328,7 @@ bool FClientActorPredictionShiftBufferTest::RunTest(const FString& Parameters)
 	{
 		float DiffError = ClientActorPrediction
 			.GetRigidBodyState(FakeClientTick + i + OverflowSize + 5)
-			.CalculatedSumDiffSqrtError(GeneratedSaveState[i+OverflowSize]);
+			.CalculateSumDiffSqrtError(GeneratedSaveState[i+OverflowSize]);
 
 		TestEqual(TEXT("Compare Shift-to-Future Buffer Value"), DiffError, 0.0f);
 	}
@@ -427,7 +427,7 @@ bool FClientActorPredictionReplayTickTest::RunTest(const FString& Parameters)
 
 		DiffSqrtError = ClientActorPrediction
 			.GetRigidBodyState(ForQueryReplayTick)
-			.CalculatedSumDiffSqrtError(GeneratedState[TestSize - 1]);
+			.CalculateSumDiffSqrtError(GeneratedState[TestSize - 1]);
 		
 		TestEqual(TEXT("Check replay state at FakeClientTick+TestIndex"), DiffSqrtError, 0.0f);
 	}
@@ -445,7 +445,7 @@ bool FClientActorPredictionReplayTickTest::RunTest(const FString& Parameters)
 
 		DiffSqrtError = ClientActorPrediction
 			.GetRigidBodyState(ForQueryReplayTick)
-			.CalculatedSumDiffSqrtError(GeneratedState[TestSize - 1]);
+			.CalculateSumDiffSqrtError(GeneratedState[TestSize - 1]);
 
 		TestEqual(TEXT("Check replay state at Shifting-to FakeClientTick"), DiffSqrtError, 0.0f);
 	}
@@ -463,7 +463,7 @@ bool FClientActorPredictionReplayTickTest::RunTest(const FString& Parameters)
 
 		DiffSqrtError = ClientActorPrediction
 			.GetRigidBodyState(ForQueryReplayTick)
-			.CalculatedSumDiffSqrtError(GeneratedState[TestSize - 1]);
+			.CalculateSumDiffSqrtError(GeneratedState[TestSize - 1]);
 
 		TestEqual(TEXT("Check replay state at Shifting-back FakeClientTick + TestIndex"), DiffSqrtError, 0.0f);
 	}
@@ -483,7 +483,7 @@ bool FClientActorPredictionReplayTickTest::RunTest(const FString& Parameters)
 
 		DiffSqrtError = ClientActorPrediction
 			.GetRigidBodyState(ForQueryReplayTick)
-			.CalculatedSumDiffSqrtError(GeneratedState[TestSize - 1]);
+			.CalculateSumDiffSqrtError(GeneratedState[TestSize - 1]);
 
 		TestEqual(TEXT("Check replay state at FakeClientTick - 2"), DiffSqrtError, 0.0f);
 	}
@@ -508,7 +508,7 @@ bool FClientActorPredictionReplayTickTest::RunTest(const FString& Parameters)
 
 		DiffSqrtError = ClientActorPrediction
 			.GetRigidBodyState(ForQueryReplayTick, false)
-			.CalculatedSumDiffSqrtError(GeneratedState[TestSize - 1]);
+			.CalculateSumDiffSqrtError(GeneratedState[TestSize - 1]);
 
 		TestEqual(TEXT("Check correct state at FakeClientTick + TestSize + 2U"), DiffSqrtError, 0.0f);
 	}

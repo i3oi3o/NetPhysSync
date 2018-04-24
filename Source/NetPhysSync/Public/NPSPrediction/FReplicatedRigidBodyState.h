@@ -55,7 +55,7 @@ public:
 	FORCEINLINE const FVector& GetLinearAngularVelocity() const { return LinearAngularVelocity;}
 	FORCEINLINE const FVector& GetWorldPos() const { return WorldPos; }
 	FORCEINLINE const FQuat& GetWorldRotation() const { return WorldRotation; }
-	FORCEINLINE const bool IsSleep() const { return bIsSleep; }
+	FORCEINLINE bool IsSleep() const { return bIsSleep; }
 	void RetrivedRigidBodyState(physx::PxRigidDynamic* const RigidDynamic) const;
 	float CalculateSumDiffSqrError(const FReplicatedRigidBodyState& Other) const;
 

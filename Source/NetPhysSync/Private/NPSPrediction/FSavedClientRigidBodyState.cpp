@@ -52,17 +52,13 @@ FORCEINLINE const FReplicatedRigidBodyState& FSavedClientRigidBodyState::GetRepl
 	return ReplicatedRigidBodyStateState;
 }
 
-float FSavedClientRigidBodyState::CalculatedSumDiffSqrtError(const FReplicatedRigidBodyState& OtherReplicatedState) const
+float FSavedClientRigidBodyState::CalculateSumDiffSqrtError(const FReplicatedRigidBodyState& OtherReplicatedState) const
 {
 	return ReplicatedRigidBodyStateState.CalculateSumDiffSqrError(OtherReplicatedState);
 }
 
-float FSavedClientRigidBodyState::CalculatedSumDiffSqrtError(const FSavedClientRigidBodyState& Other) const
+float FSavedClientRigidBodyState::CalculateSumDiffSqrtError(const FSavedClientRigidBodyState& Other) const
 {
 	return ReplicatedRigidBodyStateState.CalculateSumDiffSqrError(Other.ReplicatedRigidBodyStateState);
 }
 
-const bool FSavedClientRigidBodyState::IsReplicatedStateValid() const
-{
-	return bIsReplicatedStateValid;
-}
