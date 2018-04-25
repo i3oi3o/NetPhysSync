@@ -3,6 +3,7 @@
 #include "FNPS_ClientPredictionBase.h"
 
 FNPS_ClientPredictionBase::FNPS_ClientPredictionBase()
+	: Super()
 {
 }
 

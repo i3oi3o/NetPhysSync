@@ -2,10 +2,11 @@
 
 #include "FNPS_ServerPredictionBase.h"
 
-FNPS_NetServerPredictBase::FNPS_NetServerPredictBase()
+FNPS_ServerPredictionBase::FNPS_ServerPredictionBase()
+	: Super()
 {
 }
 
-FNPS_NetServerPredictBase::~FNPS_NetServerPredictBase()
+FNPS_ServerPredictionBase::~FNPS_ServerPredictionBase()
 {
 }

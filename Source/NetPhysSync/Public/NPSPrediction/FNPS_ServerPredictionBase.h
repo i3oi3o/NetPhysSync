@@ -3,13 +3,15 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Interfaces/NetworkPredictionInterface.h"
 
 /**
  * 
  */
-class NETPHYSSYNC_API FNPS_NetServerPredictBase
+class NETPHYSSYNC_API FNPS_ServerPredictionBase : public FNetworkPredictionData_Server, protected FNoncopyable
 {
+	typedef FNetworkPredictionData_Server Super;
 public:
-	FNPS_NetServerPredictBase();
-	virtual ~FNPS_NetServerPredictBase();
+	FNPS_ServerPredictionBase();
+	virtual ~FNPS_ServerPredictionBase();
 };

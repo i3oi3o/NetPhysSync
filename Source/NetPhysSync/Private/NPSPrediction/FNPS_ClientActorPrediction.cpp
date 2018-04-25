@@ -4,7 +4,8 @@
 #include "FNPS_StaticHelperFunction.h"
 
 FNPS_ClientActorPrediction::FNPS_ClientActorPrediction() 
-	: ClientStateBuffer(20),
+	: Super(),
+	ClientStateBuffer(20),
 	ClientStateBufferStartTickIndex(0),
 	LastCorrectedStateTickIndex(0),
 	bNeedReplay(false)

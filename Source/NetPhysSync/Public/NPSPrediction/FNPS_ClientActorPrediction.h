@@ -17,6 +17,8 @@ namespace physx
  */
 class NETPHYSSYNC_API FNPS_ClientActorPrediction : public FNPS_ClientPredictionBase
 {
+	typedef FNPS_ClientPredictionBase Super;
+
 public:
 	FNPS_ClientActorPrediction();
 	virtual ~FNPS_ClientActorPrediction();
