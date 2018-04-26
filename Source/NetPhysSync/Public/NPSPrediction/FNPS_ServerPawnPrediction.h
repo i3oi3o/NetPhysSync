@@ -22,7 +22,7 @@ public:
 
 	void UpdateInputBuffer
 	(
-		const class FAutonomousProxyInput& AutonomousProxyInput,
+		const struct FAutonomousProxyInput& AutonomousProxyInput,
 		uint32 ReceiveServerTickIndex
 	);
 
@@ -32,7 +32,7 @@ public:
 
 	FORCEINLINE bool HasUnprocessedInput() const
 	{
-		return InputBuffer.Num() == 0;
+		return InputBuffer.Num() != 0;
 	}
 
 	FORCEINLINE bool HasLastProcessedClientTickIndex() const
@@ -61,7 +61,34 @@ public:
 		TArray<FSavedInput, AllocatorType>& DestArray
 	)
 	{
-		unimplemented();
+		DestArray.Empty(DestArray.Max());
+
+		if (HasUnprocessedInput())
+		{
+			uint32 CurrentUnprocessedServerTick = LastProcessedServerTickIndex + 1;
+			int32 UnprocessedArrayIndex = 0;
+
+			FNPS_StaticHelperFunction::CalculateBufferArrayIndex
+			(
+				CurrentUnprocessedServerTick, 
+				InputStartServerTickIndex, 
+				UnprocessedArrayIndex
+			);
+
+			if (UnprocessedArrayIndex > 0)
+			{
+				DestArray.AddDefaulted(UnprocessedArrayIndex);
+			}
+			else if(UnprocessedArrayIndex < 0)
+			{
+				UnprocessedArrayIndex = -UnprocessedArrayIndex;
+			}
+
+			for (int32 i = UnprocessedArrayIndex; i < InputBuffer.Num(); ++i)
+			{
+				DestArray.Add(InputBuffer[i]);
+			}
+		}
 	}
 
 private :

@@ -100,7 +100,7 @@ public:
 
 	void RemoveAt(int32 Index, int32 Count=1)
 	{
-		if (Count <= 0)
+		if (Count <= 0 || Num() == 0)
 		{
 			return;
 		}
@@ -288,6 +288,11 @@ public:
 	FORCEINLINE int32 Capacity() const
 	{
 		return MaxCapacity;
+	}
+
+	FORCEINLINE bool IsLastIndex(int32 Index) const
+	{
+		return Index == Num()-1 && Num() > 0;
 	}
 
 	FORCEINLINE bool IsIndexInRange(int32 Index) const
