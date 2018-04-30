@@ -26,6 +26,9 @@ public:
 		uint32 ReceiveServerTickIndex
 	);
 
+	/**
+	 * Should be called every tick.
+	 */
 	const FSavedInput& ProcessServerTick(uint32 ServerTickIndex);
 
 	/**

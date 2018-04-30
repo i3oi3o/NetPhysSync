@@ -346,7 +346,7 @@ bool FClientActorPredictionReplayTickTest::RunTest(const FString& Parameters)
 	FNPS_ClientActorPrediction ClientActorPrediction;
 	const int32 TestSize = static_cast<int32>(0.5f*NPS_BUFFER_SIZE) + 1;
 	
-	checkf(TestSize > 1, TEXT("Test Size is too small."));
+	checkf(TestSize > 3, TEXT("Test Size is too small."));
 
 	FSavedClientRigidBodyState GeneratedState[TestSize];
 	uint32 ForQueryReplayTick;
@@ -364,7 +364,7 @@ bool FClientActorPredictionReplayTickTest::RunTest(const FString& Parameters)
 	}
 
 
-#pragma region Correct Same State
+#pragma region Correct Same State, Test Index
 	{
 		int32 TestIndex = static_cast<int32>(0.2f*TestSize);
 
@@ -381,9 +381,9 @@ bool FClientActorPredictionReplayTickTest::RunTest(const FString& Parameters)
 	}
 #pragma endregion
 
-#pragma region Correct Slightly Different
+#pragma region Correct Slightly Different, Test Index + 1
 	{
-		int32 TestIndex = static_cast<int32>(0.2f*TestSize);
+		int32 TestIndex = static_cast<int32>(0.2f*TestSize)+1;
 		const FReplicatedRigidBodyState& ExistState = ClientActorPrediction
 			.GetRigidBodyState(FakeClientTick + TestIndex)
 			.GetReplicatedRigidBodyState();
@@ -409,9 +409,9 @@ bool FClientActorPredictionReplayTickTest::RunTest(const FString& Parameters)
 	}
 #pragma endregion
 
-#pragma region FakeClientTick + TestIndex
+#pragma region FakeClientTick + TestIndex + 2
 	{
-		int32 TestIndex = static_cast<int32>(0.2f*TestSize);
+		int32 TestIndex = static_cast<int32>(0.2f*TestSize)+2;
 
 		ClientActorPrediction.ServerCorrectState
 		(
@@ -436,9 +436,9 @@ bool FClientActorPredictionReplayTickTest::RunTest(const FString& Parameters)
 	}
 #pragma endregion
 
-#pragma region Shift by -TestIndex
+#pragma region Shift by -(TestIndex+2)
 	{
-		int32 TestIndex = static_cast<int32>(0.2f*TestSize);
+		int32 TestIndex = static_cast<int32>(0.2f*TestSize)+2;
 
 		ClientActorPrediction.ShiftElementsToDifferentTickIndex(-TestIndex);
 
@@ -454,9 +454,9 @@ bool FClientActorPredictionReplayTickTest::RunTest(const FString& Parameters)
 	}
 #pragma endregion
 
-#pragma region Shift by + TestIndex
+#pragma region Shift by + (TestIndex+2)
 	{
-		int32 TestIndex = static_cast<int32>(0.2f*TestSize);
+		int32 TestIndex = static_cast<int32>(0.2f*TestSize)+2;
 
 		ClientActorPrediction.ShiftElementsToDifferentTickIndex(TestIndex);
 
@@ -472,8 +472,10 @@ bool FClientActorPredictionReplayTickTest::RunTest(const FString& Parameters)
 	}
 #pragma endregion
 
-#pragma region FakeClientTick - 2U
+#pragma region FakeClientTick - 2U, Out of date correct tick.
 	{
+		int32 TestIndex = static_cast<int32>(0.2f*TestSize) + 2;
+
 		ClientActorPrediction.ServerCorrectState
 		(
 			GeneratedState[TestSize - 1].GetReplicatedRigidBodyState(),
@@ -482,13 +484,7 @@ bool FClientActorPredictionReplayTickTest::RunTest(const FString& Parameters)
 
 		bool NeedReplay = ClientActorPrediction.TryGetReplayTickIndex(ForQueryReplayTick);
 
-		TestEqual(TEXT("Need replay at FakeClientTick - 2"), NeedReplay && (ForQueryReplayTick == (FakeClientTick - 2)), true);
-
-		DiffSqrtError = ClientActorPrediction
-			.GetRigidBodyState(ForQueryReplayTick)
-			.CalculateSumDiffSqrtError(GeneratedState[TestSize - 1]);
-
-		TestEqual(TEXT("Check replay state at FakeClientTick - 2"), DiffSqrtError, 0.0f);
+		TestEqual(TEXT("Old correction is ignored."), ForQueryReplayTick, FakeClientTick + TestIndex);
 	}
 #pragma endregion
 

@@ -88,7 +88,14 @@ void FNPS_ClientPawnPrediction::ServerCorrectState(const FReplicatedRigidBodySta
 {
 	Super::ServerCorrectState(CorrectState, ClientTickIndex);
 
-	if (HasUnacknowledgedInput())
+
+	if (
+			// This expression mean accepting correct tick index by based class.
+			// Base class ignores correct state with too old tick.
+			LastCorrectedStateTickIndex == ClientTickIndex 
+			&& 
+			HasUnacknowledgedInput()
+	   )
 	{
 		int32 OutArrayIndex;
 		FNPS_StaticHelperFunction::CalculateBufferArrayIndex
@@ -106,18 +113,6 @@ void FNPS_ClientPawnPrediction::ServerCorrectState(const FReplicatedRigidBodySta
 		}
 		else
 		{
-			OldestUnacknowledgedInput = ClientTickIndex;
-		}
-	}
-	else
-	{
-		int32 OutArrayIndex;
-		FNPS_StaticHelperFunction::CalculateBufferArrayIndex(
-			OldestUnacknowledgedInput, ClientTickIndex, OutArrayIndex);
-
-		if (OutArrayIndex > 0.5f*TNumericLimits<int32>::Max())
-		{
-			// Prevent overflow problem if 
 			OldestUnacknowledgedInput = ClientTickIndex;
 		}
 	}

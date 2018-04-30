@@ -8,7 +8,8 @@ FNPS_ClientActorPrediction::FNPS_ClientActorPrediction()
 	ClientStateBuffer(20),
 	ClientStateBufferStartTickIndex(0),
 	LastCorrectedStateTickIndex(0),
-	bNeedReplay(false)
+	bNeedReplay(false),
+	bIsCorrectedStateIndexTooOld(true)
 {
 }
 
@@ -73,6 +74,32 @@ const FSavedClientRigidBodyState& FNPS_ClientActorPrediction::GetRigidBodyState
 
 void FNPS_ClientActorPrediction::ServerCorrectState(const FReplicatedRigidBodyState& CorrectState, uint32 ClientTickIndex)
 {
+	if (!bIsCorrectedStateIndexTooOld)
+	{
+		int32 ToVerifyOldIndex;
+		FNPS_StaticHelperFunction::CalculateBufferArrayIndex
+		(
+			LastCorrectedStateTickIndex,
+			ClientTickIndex,
+			ToVerifyOldIndex
+		);
+
+		UE_LOG
+		(
+			LogTemp, Log, 
+			TEXT("ClientTickIndex:%d, LastCorrectedStateTickIndex:%d, ToVerifyOldIndex:%d"),
+			ClientTickIndex,
+			LastCorrectedStateTickIndex,
+			ToVerifyOldIndex
+		);
+
+		// Ignore old correction.
+		if (ToVerifyOldIndex < 0)
+		{
+			return;
+		}
+	}
+
 	int32 OutArrayIndex;
 	FNPS_StaticHelperFunction::CalculateBufferArrayIndex(ClientStateBufferStartTickIndex, ClientTickIndex, OutArrayIndex);
 	float SumSqrError = 0;
@@ -95,6 +122,7 @@ void FNPS_ClientActorPrediction::ServerCorrectState(const FReplicatedRigidBodySt
 	}
 
 	bNeedReplay = SumSqrError > 1.0f;
+	bIsCorrectedStateIndexTooOld = false;
 	LastCorrectedStateTickIndex = ClientTickIndex;
 }
 
@@ -120,4 +148,20 @@ bool FNPS_ClientActorPrediction::HasClientStateBuffer() const
 	return ClientStateBuffer.Num() > 0;
 }
 
+void FNPS_ClientActorPrediction::Update(uint32 CurrentTickIndex)
+{
+	if (!bIsCorrectedStateIndexTooOld)
+	{
+		int32 Diff;
+		FNPS_StaticHelperFunction::CalculateBufferArrayIndex
+		(
+			LastCorrectedStateTickIndex, 
+			CurrentTickIndex,
+			Diff
+		);
+
+		int32 DiffLimit = TNumericLimits<int32>::Max()-10;
+		bIsCorrectedStateIndexTooOld = FMath::Abs(Diff) > DiffLimit;
+	}
+}
 
