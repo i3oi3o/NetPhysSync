@@ -943,6 +943,65 @@ bool FServerPawnUpdateAndCopyTest::RunTest(const FString& Parameters)
 	return true;
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FServerPawnOutOfOrderPackage, "NetPhysSync.PredictBuffer.Server.Pawn.OutOfOrderPackage", EAutomationTestFlags::EditorContext | EAutomationTestFlags::SmokeFilter)
+bool FServerPawnOutOfOrderPackage::RunTest(const FString& Parameters)
+{
+	// This simulates out of order during server process tick.
+
+	UNPSNetSetting* NetSetting = NewObject<UNPSNetSetting>((UObject*)GetTransientPackage(), TEXT("Test Setting"), EObjectFlags::RF_Transient);
+	// This need to be more than 1
+	NetSetting->JitterWaitPhysTick = 3;
+
+	checkf(NetSetting->JitterWaitPhysTick > 1, TEXT("This test need JitterWaitPhysTick to be more than one."));
+
+	int32 GeneratedInputSize = NPS_BUFFER_SIZE;
+	int32 HalfGeneratedInputSize = GeneratedInputSize / 2;
+	checkf(GeneratedInputSize > 3, TEXT("This test need generated input size at least 3."));
+
+	TArray<FSavedInput> GeneratedInputArray;
+	GeneratedInputArray.AddUninitialized(GeneratedInputSize);
+	GenerateFakedInputFunction(GeneratedInputArray.GetData(), GeneratedInputArray.Num());
+
+	uint32 FakeClientTick = 0 - 10U;
+	uint32 FakeServerTick = 18U;
+
+	TArray<FSavedInput> TmpArray;
+	TmpArray.Append(GeneratedInputArray.GetData()+1, HalfGeneratedInputSize);
+
+	FNPS_ServerPawnPrediction ServerPawnPrediction(NetSetting);
+	ServerPawnPrediction.UpdateInputBuffer(FAutonomousProxyInput(TmpArray, FakeClientTick+1), FakeServerTick);
+	
+	TmpArray.Empty(TmpArray.Max());
+	TmpArray.Append(GeneratedInputArray.GetData(), GeneratedInputArray.Num());
+
+	ServerPawnPrediction.UpdateInputBuffer(FAutonomousProxyInput(TmpArray, FakeClientTick), FakeServerTick);
+
+	ServerPawnPrediction.CopyUnprocessedInputForSimulatedProxyToArray(TmpArray);
+
+	if (TmpArray.Num() != GeneratedInputArray.Num() - 1)
+	{
+		AddError
+		(
+			FString::Printf
+			(
+				TEXT("The size is wrong. Should discard obsolete client tick. CurrentSize:%d, ExpectedSize:%d"), 
+				TmpArray.Num(), 
+				GeneratedInputArray.Num()-1
+			)
+		);
+		return false;
+	}
+
+	for (int32 i = 0; i < TmpArray.Num(); ++i)
+	{
+		int32 GeneratedInputIndex = i + 1;
+		checkf(GeneratedInputIndex >= 0 && GeneratedInputIndex < GeneratedInputArray.Num(), TEXT("Index out of range."));
+		TestEqual(TEXT("Test value from out of order package."), TmpArray[i], GeneratedInputArray[GeneratedInputIndex]);
+	}
+
+	return true;
+}
+
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FServerPawnArriveLatePackage, "NetPhysSync.PredictBuffer.Server.Pawn.ArriveLatePackage", EAutomationTestFlags::EditorContext | EAutomationTestFlags::SmokeFilter)
 bool FServerPawnArriveLatePackage::RunTest(const FString& Parameters)
 {
