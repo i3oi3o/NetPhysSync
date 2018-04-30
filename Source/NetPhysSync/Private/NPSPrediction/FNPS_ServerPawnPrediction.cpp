@@ -61,13 +61,13 @@ void FNPS_ServerPawnPrediction::UpdateInputBuffer
 		.GetArrayStartClientTickIndex();
 
 
-	if (!HasUnprocessedInput())
+	if (!IsProcessingClientInput())
 	{
 		bHasSyncClientTickIndex = true;
 		
 		int32 WaitJitter = NetSetting->JitterWaitPhysTick;
 
-		if (WaitJitter < ProxyInputBuffer.Num())
+		if (WaitJitter > ProxyInputBuffer.Num())
 		{
 			SyncClientTickIndex = ProxyClientTickStartIndex - WaitJitter;
 			InputStartServerTickIndex = ReceiveServerTickIndex + WaitJitter;
@@ -83,6 +83,11 @@ void FNPS_ServerPawnPrediction::UpdateInputBuffer
 		InputBuffer.Empty();
 		for (int32 i = 0; i < ProxyInputBuffer.Num(); ++i)
 		{
+			if (InputBuffer.IsFull())
+			{
+				++InputStartClientTickIndex;
+				++InputStartServerTickIndex;
+			}
 			InputBuffer.Add(ProxyInputBuffer[i]);
 		}
 	}
@@ -96,31 +101,42 @@ void FNPS_ServerPawnPrediction::UpdateInputBuffer
 			OutArrayIndex
 		);
 
-		int32 LastIndex = ProxyInputBuffer.Num() - 1 + OutArrayIndex;
-		int32 CapacityIndex = InputBuffer.Capacity() - 1;
-		if (LastIndex > CapacityIndex)
-		{
-			int32 Overflow = LastIndex - CapacityIndex;
-			InputStartClientTickIndex += Overflow;
-			InputStartServerTickIndex += Overflow;
-		}
+		uint32 OldInputClientTickIndex = InputStartClientTickIndex;
 
-		for (int32 i = 0; i < ProxyInputBuffer.Num(); ++i)
+		if (OutArrayIndex >= 0)
 		{
-			int32 BufferIndex = OutArrayIndex + i;
-
-			if (BufferIndex >= 0)
+			for (int32 i = 0; i < ProxyInputBuffer.Num(); ++i)
 			{
-				if (BufferIndex >= InputBuffer.Num())
-				{
-					InputBuffer.Add(ProxyInputBuffer[i]);
-				}
-				else
-				{
-					InputBuffer[i] = ProxyInputBuffer[BufferIndex];
-				}
+				FNPS_StaticHelperFunction::SetElementToBuffers
+				(
+					InputBuffer, ProxyInputBuffer[i], 
+					InputStartClientTickIndex,
+					ProxyClientTickStartIndex+i
+				);
 			}
 		}
+		else
+		{
+			for (int32 i = -OutArrayIndex; i < ProxyInputBuffer.Num(); ++i)
+			{
+				FNPS_StaticHelperFunction::SetElementToBuffers
+				(
+					InputBuffer, ProxyInputBuffer[i],
+					InputStartClientTickIndex,
+					OldInputClientTickIndex + i + OutArrayIndex
+				);
+			}
+		}
+
+		int32 ShiftAmount;
+		FNPS_StaticHelperFunction::CalculateBufferArrayIndex
+		(
+			OldInputClientTickIndex,
+			InputStartClientTickIndex,
+			ShiftAmount
+		);
+
+		InputStartServerTickIndex += ShiftAmount;
 	}
 
 
@@ -142,7 +158,7 @@ const FSavedInput& FNPS_ServerPawnPrediction::ProcessServerTick(uint32 ServerTic
 
 		ensureMsgf(AdvanceAmount == 1, TEXT("Should call cosecutively by server tick index."));
 
-		if (HasUnprocessedInput())
+		if (IsProcessingClientInput())
 		{
 			int32 ToProcessedIndex;
 
@@ -193,4 +209,26 @@ const FSavedInput& FNPS_ServerPawnPrediction::ProcessServerTick(uint32 ServerTic
 	bHasLastProcessedServerTickIndex = true;
 
 	return *ToReturn;
+}
+
+bool FNPS_ServerPawnPrediction::HasUnprocessedInputForSimulatedProxy() const
+{
+	uint32 CurrentUnprocessedServerTick = LastProcessedServerTickIndex + 1;
+	int32 UnprocessedArrayIndex = 0;
+
+	FNPS_StaticHelperFunction::CalculateBufferArrayIndex
+	(
+		CurrentUnprocessedServerTick,
+		InputStartServerTickIndex,
+		UnprocessedArrayIndex
+	);
+
+	return IsProcessingClientInput() &&
+		(
+			UnprocessedArrayIndex >= 0 ||
+			(
+				-UnprocessedArrayIndex >= 0 &&
+				-UnprocessedArrayIndex < InputBuffer.Num()
+			)
+		);
 }

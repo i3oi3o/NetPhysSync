@@ -28,6 +28,8 @@ public:
 
 	float CalculatedSumDiffSqrtError(const FSavedInput& Other) const;
 
+	FString ToString() const;
+
 	/**
 	 * Use this to mark the end of input buffer that there is no more input.
 	 */

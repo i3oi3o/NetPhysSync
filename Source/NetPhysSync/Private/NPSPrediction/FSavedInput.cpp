@@ -20,6 +20,11 @@ float FSavedInput::CalculatedSumDiffSqrtError(const FSavedInput& Other) const
 	return (TargetWorldSpeed - Other.TargetWorldSpeed).SizeSquared();
 }
 
+FString FSavedInput::ToString() const
+{
+	return TargetWorldSpeed.ToString();
+}
+
 bool FSavedInput::IsEmptyInput() const
 {
 	return TargetWorldSpeed == FVector::ZeroVector;

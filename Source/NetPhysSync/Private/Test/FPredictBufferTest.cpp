@@ -816,6 +816,7 @@ bool FServerPawnUpdateAndCopyTest::RunTest(const FString& Parameters)
 	checkf(SectionSize > 1, TEXT("NPS_BUFFER_SIZE is too small to test."));
 
 	UNPSNetSetting* NetSetting = NewObject<UNPSNetSetting>((UObject*)GetTransientPackage(), TEXT("Test Setting"), EObjectFlags::RF_Transient);
+	// This need to be more than 1
 	NetSetting->JitterWaitPhysTick = 3;
 
 	TArray<FSavedInput> GeneratedInputArray;
@@ -830,18 +831,25 @@ bool FServerPawnUpdateAndCopyTest::RunTest(const FString& Parameters)
 
 	FNPS_ServerPawnPrediction ServerPawnPrediction(NetSetting);
 
-	ForCreateAutonomousProxyInput.Append(GeneratedInputArray.GetData(), SectionSize);
+	ForCreateAutonomousProxyInput.Append(GeneratedInputArray.GetData(), NetSetting->JitterWaitPhysTick-1);
 
 	FAutonomousProxyInput AutonomousProxyInput(ForCreateAutonomousProxyInput, FakeClientTick);
 
-	TestEqual(TEXT("Has unprocessed input test."), ServerPawnPrediction.HasUnprocessedInput(), false);
+	TestEqual(TEXT("Has unprocessed input test."), ServerPawnPrediction.IsProcessingClientInput(), false);
 
 	ServerPawnPrediction.UpdateInputBuffer(AutonomousProxyInput, ServerTick);
 
 
-	TestEqual(TEXT("Has unprocessed input test."), ServerPawnPrediction.HasUnprocessedInput(), true);
+	TestEqual(TEXT("Has unprocessed input test."), ServerPawnPrediction.IsProcessingClientInput(), true);
 
-	ServerPawnPrediction.CopyUnprocessedInputToArray(ForReadUnprocessedInput);
+	ServerPawnPrediction.CopyUnprocessedInputForSimulatedProxyToArray(ForReadUnprocessedInput);
+
+	TestEqual
+	(
+		TEXT("Test unprocessed input size"),
+		ForReadUnprocessedInput.Num(),
+		NetSetting->JitterWaitPhysTick + ForCreateAutonomousProxyInput.Num()
+	);
 
 	for (int32 i = 0; i < ForReadUnprocessedInput.Num(); ++i)
 	{
@@ -864,39 +872,69 @@ bool FServerPawnUpdateAndCopyTest::RunTest(const FString& Parameters)
 		ServerPawnPrediction.ProcessServerTick(ServerTick + i);
 	}
 
-	ServerPawnPrediction.CopyUnprocessedInputToArray(ForReadUnprocessedInput);
+	ServerPawnPrediction.CopyUnprocessedInputForSimulatedProxyToArray(ForReadUnprocessedInput);
 
+	TestEqual
+	(
+		TEXT("Test copy unprocess input size after processed input"),
+		ForReadUnprocessedInput.Num(),
+		NetSetting->JitterWaitPhysTick + ForCreateAutonomousProxyInput.Num() -ProcessedAmount
+	);
+
+	int32 SubProcessedAmount = 0;
 	for (int32 i = 0; i < ForReadUnprocessedInput.Num(); ++i)
 	{
 		int32 GeneratedInputIndex = i + ProcessedAmount - NetSetting->JitterWaitPhysTick;
 		checkf(GeneratedInputIndex >= 0 && GeneratedInputIndex < SectionSize*SectionNumber, TEXT("Index out of bound."));
 		TestEqual(TEXT("Test unprocessed input after processed."), ForReadUnprocessedInput[i], GeneratedInputArray[GeneratedInputIndex]);
+		// process remaining input
+		ServerPawnPrediction.ProcessServerTick(ServerTick + ProcessedAmount + SubProcessedAmount);
+		++SubProcessedAmount;
 	}
 
-	ServerPawnPrediction.ProcessServerTick(ServerTick + ProcessedAmount);
-	++ProcessedAmount;
+	ProcessedAmount += SubProcessedAmount;
+
+	TestEqual
+	(
+		TEXT("Test if we shouldn't have more input for simulated proxy but still wait for more input from client."),
+		ServerPawnPrediction.IsProcessingClientInput() && 
+		!ServerPawnPrediction.HasUnprocessedInputForSimulatedProxy(),
+		true
+	);
 
 	ForCreateAutonomousProxyInput.Empty(ForCreateAutonomousProxyInput.Max());
-	int32 OffsetCopySize = static_cast<int32>(0.5f*SectionSize);
+	//int32 OffsetCopySize = static_cast<int32>(0.5f*SectionSize);
 	ForCreateAutonomousProxyInput.Append
 	(
-		GeneratedInputArray.GetData() + OffsetCopySize,
+		GeneratedInputArray.GetData(),
 		2*SectionSize
 	);
 
-	AutonomousProxyInput = FAutonomousProxyInput(ForCreateAutonomousProxyInput, FakeClientTick + OffsetCopySize);
+	AutonomousProxyInput = FAutonomousProxyInput(ForCreateAutonomousProxyInput, FakeClientTick);
 
 
 	ServerPawnPrediction.UpdateInputBuffer(AutonomousProxyInput, ServerTick + ProcessedAmount);
 	ServerPawnPrediction.ProcessServerTick(ServerTick + ProcessedAmount);
 	++ProcessedAmount;
-	ServerPawnPrediction.CopyUnprocessedInputToArray(ForReadUnprocessedInput);
+
+	TestEqual
+	(
+		TEXT("Test if we should have simulated proxy unprocessed input"),
+		ServerPawnPrediction.HasUnprocessedInputForSimulatedProxy(),
+		true
+	);
+
+	ServerPawnPrediction.CopyUnprocessedInputForSimulatedProxyToArray
+	(
+		ForReadUnprocessedInput
+	);
 
 
 	for (int32 i = 0; i < ForReadUnprocessedInput.Num(); ++i)
 	{
 		int32 GeneratedInputIndex = i + ProcessedAmount - NetSetting->JitterWaitPhysTick;
 		checkf(GeneratedInputIndex >= 0 && GeneratedInputIndex < SectionSize*SectionNumber, TEXT("Index out of bound."));
+
 		TestEqual(TEXT("Test unprocessed input after updated."), ForReadUnprocessedInput[i], GeneratedInputArray[GeneratedInputIndex]);
 	}
 

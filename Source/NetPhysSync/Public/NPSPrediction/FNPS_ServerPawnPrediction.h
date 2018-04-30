@@ -28,12 +28,17 @@ public:
 
 	const FSavedInput& ProcessServerTick(uint32 ServerTickIndex);
 
-
-
-	FORCEINLINE bool HasUnprocessedInput() const
+	/**
+	 * If we process all input but doesn't received input that marking the end of input,
+	 * This return true.
+	 */
+	FORCEINLINE bool IsProcessingClientInput() const
 	{
-		return InputBuffer.Num() != 0;
+		return InputBuffer.Num() > 0;
 	}
+
+	bool HasUnprocessedInputForSimulatedProxy() const;
+
 
 	FORCEINLINE bool HasLastProcessedClientTickIndex() const
 	{
@@ -56,14 +61,14 @@ public:
 	}
 
 	template<typename AllocatorType>
-	void CopyUnprocessedInputToArray
+	void CopyUnprocessedInputForSimulatedProxyToArray
 	(
 		TArray<FSavedInput, AllocatorType>& DestArray
 	)
 	{
 		DestArray.Empty(DestArray.Max());
 
-		if (HasUnprocessedInput())
+		if (IsProcessingClientInput())
 		{
 			uint32 CurrentUnprocessedServerTick = LastProcessedServerTickIndex + 1;
 			int32 UnprocessedArrayIndex = 0;
@@ -78,6 +83,7 @@ public:
 			if (UnprocessedArrayIndex > 0)
 			{
 				DestArray.AddDefaulted(UnprocessedArrayIndex);
+				UnprocessedArrayIndex = 0;
 			}
 			else if(UnprocessedArrayIndex < 0)
 			{
