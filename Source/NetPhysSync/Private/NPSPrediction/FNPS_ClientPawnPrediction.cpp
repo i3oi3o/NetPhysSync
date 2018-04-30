@@ -6,6 +6,7 @@ FNPS_ClientPawnPrediction::FNPS_ClientPawnPrediction()
 	: Super()
 	, ClientInputBuffers(20)
 	, ClientInputBuffersStartTickIndex(0)
+	, bIsOldestUnacknowledgeInputTooOld(true)
 {
 }
 
@@ -33,7 +34,8 @@ void FNPS_ClientPawnPrediction::SaveInput(const FSavedInput& ToSave, uint32 Clie
 	{
 		if (ClientInputBuffers.Num() == 0)
 		{
-			OldestUnacknowledgedInput = ClientTickIndex;
+			bIsOldestUnacknowledgeInputTooOld = false;
+			OldestUnacknowledgedInputTick = ClientTickIndex;
 		}
 
 		FNPS_StaticHelperFunction::SetElementToBuffers
@@ -72,16 +74,17 @@ bool FNPS_ClientPawnPrediction::HasUnacknowledgedInput() const
 	return ClientInputBuffers.Num() > 0;
 }
 
-uint32 FNPS_ClientPawnPrediction::GetOldestUnacknowledgeInputClientTickIndex() const
+bool FNPS_ClientPawnPrediction::TryGetOldestUnacknowledgeInputTickIndex(uint32& OutTickIndex) const
 {
-	return OldestUnacknowledgedInput;
+	OutTickIndex = OldestUnacknowledgedInputTick;
+	return !bIsOldestUnacknowledgeInputTooOld;
 }
 
 void FNPS_ClientPawnPrediction::ShiftElementsToDifferentTickIndex(int32 ShiftAmount)
 {
 	Super::ShiftElementsToDifferentTickIndex(ShiftAmount);
 	ClientInputBuffersStartTickIndex += ShiftAmount;
-	OldestUnacknowledgedInput += ShiftAmount;
+	OldestUnacknowledgedInputTick += ShiftAmount;
 }
 
 void FNPS_ClientPawnPrediction::ServerCorrectState(const FReplicatedRigidBodyState& CorrectState, uint32 ClientTickIndex)
@@ -107,14 +110,37 @@ void FNPS_ClientPawnPrediction::ServerCorrectState(const FReplicatedRigidBodySta
 
 		if (OutArrayIndex >= ClientInputBuffers.Num())
 		{
-			OldestUnacknowledgedInput = ClientInputBuffersStartTickIndex
+			OldestUnacknowledgedInputTick = ClientInputBuffersStartTickIndex
 				+ ClientInputBuffers.Num() - 1;
 			ClientInputBuffers.Empty();
 		}
 		else
 		{
-			OldestUnacknowledgedInput = ClientTickIndex;
+			OldestUnacknowledgedInputTick = ClientTickIndex;
 		}
+
+		bIsOldestUnacknowledgeInputTooOld = false;
 	}
 }
+
+void FNPS_ClientPawnPrediction::Update(uint32 CurrentTickIndex)
+{
+	Super::Update(CurrentTickIndex);
+	if (!bIsOldestUnacknowledgeInputTooOld)
+	{
+		int32 Diff;
+
+		FNPS_StaticHelperFunction::CalculateBufferArrayIndex
+		(
+			OldestUnacknowledgedInputTick,
+			CurrentTickIndex,
+			Diff
+		);
+
+		int32 DiffLimit = TNumericLimits<int32>::Max()-10;
+
+		bIsOldestUnacknowledgeInputTooOld = FMath::Abs(Diff) > DiffLimit;
+	}
+}
+
 

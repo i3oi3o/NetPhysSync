@@ -138,6 +138,14 @@ bool FNPS_ClientActorPrediction::TryGetReplayTickIndex(uint32& OutTickIndex) con
 	return bNeedReplay;
 }
 
+
+
+bool FNPS_ClientActorPrediction::TryGetLastCorrectStateTickIndex(uint32& OutTickIndex) const
+{
+	OutTickIndex = LastCorrectedStateTickIndex;
+	return !bIsCorrectedStateIndexTooOld;
+}
+
 void FNPS_ClientActorPrediction::ConsumeReplayFlag()
 {
 	bNeedReplay = false;

@@ -36,20 +36,15 @@ public:
 	virtual void ServerCorrectState(const FReplicatedRigidBodyState& CorrectState, uint32 ClientTickIndex);
 	virtual void ShiftElementsToDifferentTickIndex(int32 ShiftAmount);
 	bool TryGetReplayTickIndex(uint32& OutTickIndex) const;
+	bool TryGetLastCorrectStateTickIndex(uint32& OutTickIndex) const;
 	void ConsumeReplayFlag();
 	bool HasClientStateBuffer() const;
+
+
 	/**
 	 * Should be call every tick.
 	 */
 	virtual void Update(uint32 CurrentTickIndex);
-
-	/**
-	 * Currently for testing. This logic handle tick overflow.
-	 */
-	FORCEINLINE bool IsCorrectStateIndexTooOld() const 
-	{
-		return bIsCorrectedStateIndexTooOld;
-	}
 
 protected:
 	TNPSCircularBuffer<FSavedClientRigidBodyState, TInlineAllocator<NPS_BUFFER_SIZE>> ClientStateBuffer;

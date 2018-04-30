@@ -28,9 +28,13 @@ public:
 	 * If current don't have any unacknowledged input, 
 	 * this return TickIndex for comparing with server replication's last acknowledged input.
 	 */
-	uint32 GetOldestUnacknowledgeInputClientTickIndex() const;
+	bool TryGetOldestUnacknowledgeInputTickIndex(uint32& OutTickIndex) const;
 	virtual void ShiftElementsToDifferentTickIndex(int32 ShiftAmount) override;
 	virtual void ServerCorrectState(const FReplicatedRigidBodyState& CorrectState, uint32 ClientTickIndex);
+	/**
+	 * Should be called every tick.
+	 */
+	virtual void Update(uint32 CurrentTickIndex) override;
 
 	template<typename ArrayAllocator>
 	void CopyUnacknowledgedInputToArray
@@ -47,7 +51,7 @@ public:
 			FNPS_StaticHelperFunction::CalculateBufferArrayIndex
 			(
 				ClientInputBuffersStartTickIndex,
-				GetOldestUnacknowledgeInputClientTickIndex(),
+				OldestUnacknowledgedInputTick,
 				OutArrayIndex
 			);
 
@@ -58,7 +62,7 @@ public:
 			}
 			else
 			{
-				CopyUnacknowledgedStartTickIndex = GetOldestUnacknowledgeInputClientTickIndex();
+				CopyUnacknowledgedStartTickIndex = OldestUnacknowledgedInputTick;
 			}
 
 
@@ -79,5 +83,6 @@ public:
 protected:
 	TNPSCircularBuffer<FSavedInput, TInlineAllocator<NPS_BUFFER_SIZE>> ClientInputBuffers;
 	uint32 ClientInputBuffersStartTickIndex;
-	uint32 OldestUnacknowledgedInput;
+	uint32 OldestUnacknowledgedInputTick;
+	bool bIsOldestUnacknowledgeInputTooOld;
 };

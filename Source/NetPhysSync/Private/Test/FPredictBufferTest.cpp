@@ -661,6 +661,7 @@ bool FClientPawnPredictionUnacknowledgedInputTest::RunTest(const FString& Parame
 	TArray<FSavedInput, TInlineAllocator<TestSize+1>> UnacknowledgedInputArray;
 
 	FSavedInput GeneratedSaveInput[TestSize];
+	uint32 QueryOldestUnacknowledged;
 
 	GenerateFakedInputFunction(GeneratedSaveInput, TestSize);
 
@@ -685,19 +686,21 @@ bool FClientPawnPredictionUnacknowledgedInputTest::RunTest(const FString& Parame
 
 	ClientPawnPredicton.ShiftElementsToDifferentTickIndex(-5);
 
+	ClientPawnPredicton.TryGetOldestUnacknowledgeInputTickIndex(QueryOldestUnacknowledged);
 	TestEqual
 	(
 		TEXT("Test shift-to-past unacknowledged input index."),
-		ClientPawnPredicton.GetOldestUnacknowledgeInputClientTickIndex(),
+		QueryOldestUnacknowledged,
 		FakeClientTick - 5
 	);
 
 	ClientPawnPredicton.ShiftElementsToDifferentTickIndex(10);
 
+	ClientPawnPredicton.TryGetOldestUnacknowledgeInputTickIndex(QueryOldestUnacknowledged);
 	TestEqual
 	(
 		TEXT("Test shift-to-future unacknowledged input index."),
-		ClientPawnPredicton.GetOldestUnacknowledgeInputClientTickIndex(),
+		QueryOldestUnacknowledged,
 		FakeClientTick + 5
 	);
 
