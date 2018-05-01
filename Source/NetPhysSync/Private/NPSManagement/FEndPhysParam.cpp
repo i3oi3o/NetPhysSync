@@ -8,11 +8,11 @@ FEndPhysParam::FEndPhysParam
 (
 	uint32 SceneTypeParam, 
 	float StartDeltaTimeParam, 
-	uint32 LocalPhysTickIndexParam
+	uint32 NextPhysTickIndexParam
 )
 	: SceneType(static_cast<EPhysicsSceneType>(SceneTypeParam))
 	, StartDeltaTime(StartDeltaTimeParam)
-	, LocalPhysTickIndex(LocalPhysTickIndexParam)
+	, NextPhysTickIndex(NextPhysTickIndexParam)
 {
 
 }

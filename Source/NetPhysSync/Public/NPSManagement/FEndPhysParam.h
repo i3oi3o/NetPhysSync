@@ -14,12 +14,12 @@ public:
 	FEndPhysParam
 	(
 		uint32 SceneTypeParam, float StartDeltaTimeParam, 
-		uint32 LocalPhysTickIndexParam
+		uint32 NextPhysTickIndexParam
 	);
 	~FEndPhysParam();
 
 public:
 	const enum EPhysicsSceneType SceneType;
 	const float StartDeltaTime;
-	const uint32 LocalPhysTickIndex;
+	const uint32 NextPhysTickIndex;
 };

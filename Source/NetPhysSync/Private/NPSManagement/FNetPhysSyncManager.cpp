@@ -80,6 +80,8 @@ void FNetPhysSyncManager::OnTickPostPhysic()
 		}
 	}
 
+	++LocalPhysTickIndex;
+
 	FEndPhysParam EndParam(CachSceneType, CachStartDeltaTime, LocalPhysTickIndex);
 	for (auto It = INetPhysSyncPtrList.CreateIterator(); It; ++It)
 	{
@@ -90,7 +92,7 @@ void FNetPhysSyncManager::OnTickPostPhysic()
 		}
 	}
 
-	++LocalPhysTickIndex;
+	
 }
 
 void FNetPhysSyncManager::TickStartPhys(FPhysScene* PhysScene, uint32 SceneType, float StartDeltaTime)
