@@ -31,6 +31,8 @@ public:
 	bool TryGetOldestUnacknowledgeInputTickIndex(uint32& OutTickIndex) const;
 	virtual void ShiftElementsToDifferentTickIndex(int32 ShiftAmount) override;
 	virtual void ServerCorrectState(const FReplicatedRigidBodyState& CorrectState, uint32 ClientTickIndex);
+	FORCEINLINE FBufferInfo GetInputBufferInfo() const;
+	
 	/**
 	 * Should be called every tick.
 	 */
@@ -50,7 +52,7 @@ public:
 			
 			FNPS_StaticHelperFunction::CalculateBufferArrayIndex
 			(
-				ClientInputBuffersStartTickIndex,
+				ClientInputBufferStartTickIndex,
 				OldestUnacknowledgedInputTick,
 				OutArrayIndex
 			);
@@ -58,7 +60,7 @@ public:
 			if (OutArrayIndex < 0)
 			{
 				OutArrayIndex = 0;
-				CopyUnacknowledgedStartTickIndex = ClientInputBuffersStartTickIndex;
+				CopyUnacknowledgedStartTickIndex = ClientInputBufferStartTickIndex;
 			}
 			else
 			{
@@ -66,14 +68,14 @@ public:
 			}
 
 
-			if (OutArrayIndex >= 0 && OutArrayIndex < ClientInputBuffers.Num())
+			if (OutArrayIndex >= 0 && OutArrayIndex < ClientInputBuffer.Num())
 			{
-				int32 Amount = ClientInputBuffers.Num() - OutArrayIndex;
+				int32 Amount = ClientInputBuffer.Num() - OutArrayIndex;
 				DestArray.SetNumUninitialized(Amount, false);
 				
-				for (int32 i = OutArrayIndex; i < ClientInputBuffers.Num(); ++i)
+				for (int32 i = OutArrayIndex; i < ClientInputBuffer.Num(); ++i)
 				{
-					DestArray[i-OutArrayIndex] = ClientInputBuffers[i];
+					DestArray[i-OutArrayIndex] = ClientInputBuffer[i];
 				}
 			}
 		}
@@ -81,8 +83,8 @@ public:
 
 
 protected:
-	TNPSCircularBuffer<FSavedInput, TInlineAllocator<NPS_BUFFER_SIZE>> ClientInputBuffers;
-	uint32 ClientInputBuffersStartTickIndex;
+	TNPSCircularBuffer<FSavedInput, TInlineAllocator<NPS_BUFFER_SIZE>> ClientInputBuffer;
+	uint32 ClientInputBufferStartTickIndex;
 	uint32 OldestUnacknowledgedInputTick;
 	bool bIsOldestUnacknowledgeInputTooOld;
 };

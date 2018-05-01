@@ -6,6 +6,7 @@
 #include "FNPS_ClientPredictionBase.h"
 #include "FSavedClientRigidBodyState.h"
 #include "TNPSCircularBuffer.h"
+#include "FBufferInfo.h"
 
 namespace physx
 {
@@ -35,10 +36,14 @@ public:
 	const FSavedClientRigidBodyState& GetRigidBodyState(uint32 ClientTickIndex, bool bUseNearestIfOutOfBound = true) const;
 	virtual void ServerCorrectState(const FReplicatedRigidBodyState& CorrectState, uint32 ClientTickIndex);
 	virtual void ShiftElementsToDifferentTickIndex(int32 ShiftAmount);
-	bool TryGetReplayTickIndex(uint32& OutTickIndex) const;
-	bool TryGetLastCorrectStateTickIndex(uint32& OutTickIndex) const;
+	FORCEINLINE bool IsReplayTickIndex(uint32 TickIndex) const;
+	FORCEINLINE bool TryGetReplayTickIndex(uint32& OutTickIndex) const;
+	FORCEINLINE bool TryGetLastCorrectStateTickIndex(uint32& OutTickIndex) const;
+	FORCEINLINE bool HasClientStateBuffer() const;
+	FORCEINLINE FBufferInfo GetStateBufferInfo() const;
 	void ConsumeReplayFlag();
-	bool HasClientStateBuffer() const;
+
+
 
 
 	/**

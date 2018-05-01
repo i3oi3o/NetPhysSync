@@ -132,6 +132,11 @@ void FNPS_ClientActorPrediction::ShiftElementsToDifferentTickIndex(int32 ShiftAm
 	LastCorrectedStateTickIndex += ShiftAmount;
 }
 
+bool FNPS_ClientActorPrediction::IsReplayTickIndex(uint32 TickIndex) const
+{
+	return bNeedReplay && LastCorrectedStateTickIndex == TickIndex;
+}
+
 bool FNPS_ClientActorPrediction::TryGetReplayTickIndex(uint32& OutTickIndex) const
 {
 	OutTickIndex = LastCorrectedStateTickIndex;
@@ -154,6 +159,11 @@ void FNPS_ClientActorPrediction::ConsumeReplayFlag()
 bool FNPS_ClientActorPrediction::HasClientStateBuffer() const
 {
 	return ClientStateBuffer.Num() > 0;
+}
+
+FBufferInfo FNPS_ClientActorPrediction::GetStateBufferInfo() const
+{
+	return FBufferInfo(ClientStateBufferStartTickIndex, ClientStateBuffer.Num());
 }
 
 void FNPS_ClientActorPrediction::Update(uint32 CurrentTickIndex)

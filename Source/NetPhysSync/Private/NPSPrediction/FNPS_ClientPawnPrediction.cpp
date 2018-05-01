@@ -4,8 +4,8 @@
 
 FNPS_ClientPawnPrediction::FNPS_ClientPawnPrediction()
 	: Super()
-	, ClientInputBuffers(20)
-	, ClientInputBuffersStartTickIndex(0)
+	, ClientInputBuffer(20)
+	, ClientInputBufferStartTickIndex(0)
 	, bIsOldestUnacknowledgeInputTooOld(true)
 {
 }
@@ -27,12 +27,12 @@ void FNPS_ClientPawnPrediction::SaveInput(const FSavedInput& ToSave, uint32 Clie
 			(
 				// This condition prevent putting many empty inputs 
 				// at the end of buffer.
-				ClientInputBuffers.Num() > 0 &&
-				!ClientInputBuffers[ClientInputBuffers.Num()-1].IsEmptyInput()
+				ClientInputBuffer.Num() > 0 &&
+				!ClientInputBuffer[ClientInputBuffer.Num()-1].IsEmptyInput()
 			)
 	   )
 	{
-		if (ClientInputBuffers.Num() == 0)
+		if (ClientInputBuffer.Num() == 0)
 		{
 			bIsOldestUnacknowledgeInputTooOld = false;
 			OldestUnacknowledgedInputTick = ClientTickIndex;
@@ -40,8 +40,8 @@ void FNPS_ClientPawnPrediction::SaveInput(const FSavedInput& ToSave, uint32 Clie
 
 		FNPS_StaticHelperFunction::SetElementToBuffers
 		(
-			ClientInputBuffers, ToSave,
-			ClientInputBuffersStartTickIndex, ClientTickIndex
+			ClientInputBuffer, ToSave,
+			ClientInputBufferStartTickIndex, ClientTickIndex
 		);
 
 	}
@@ -51,16 +51,16 @@ const FSavedInput& FNPS_ClientPawnPrediction::GetSavedInput(uint32 ClientTick, b
 {
 	int32 OutArrayIndex;
 	FNPS_StaticHelperFunction::CalculateBufferArrayIndex(
-		ClientInputBuffersStartTickIndex, ClientTick, OutArrayIndex);
+		ClientInputBufferStartTickIndex, ClientTick, OutArrayIndex);
 
 	if (bUseNearestIfOutOfBound)
 	{
-		ClientInputBuffers.ClampIndexParamWithinRange(OutArrayIndex);
+		ClientInputBuffer.ClampIndexParamWithinRange(OutArrayIndex);
 	}
 
-	if (ClientInputBuffers.IsIndexInRange(OutArrayIndex))
+	if (ClientInputBuffer.IsIndexInRange(OutArrayIndex))
 	{
-		return ClientInputBuffers[OutArrayIndex];
+		return ClientInputBuffer[OutArrayIndex];
 	}
 	else
 	{
@@ -71,7 +71,7 @@ const FSavedInput& FNPS_ClientPawnPrediction::GetSavedInput(uint32 ClientTick, b
 
 bool FNPS_ClientPawnPrediction::HasUnacknowledgedInput() const
 {
-	return ClientInputBuffers.Num() > 0;
+	return ClientInputBuffer.Num() > 0;
 }
 
 bool FNPS_ClientPawnPrediction::TryGetOldestUnacknowledgeInputTickIndex(uint32& OutTickIndex) const
@@ -83,7 +83,7 @@ bool FNPS_ClientPawnPrediction::TryGetOldestUnacknowledgeInputTickIndex(uint32& 
 void FNPS_ClientPawnPrediction::ShiftElementsToDifferentTickIndex(int32 ShiftAmount)
 {
 	Super::ShiftElementsToDifferentTickIndex(ShiftAmount);
-	ClientInputBuffersStartTickIndex += ShiftAmount;
+	ClientInputBufferStartTickIndex += ShiftAmount;
 	OldestUnacknowledgedInputTick += ShiftAmount;
 }
 
@@ -103,16 +103,16 @@ void FNPS_ClientPawnPrediction::ServerCorrectState(const FReplicatedRigidBodySta
 		int32 OutArrayIndex;
 		FNPS_StaticHelperFunction::CalculateBufferArrayIndex
 		(
-			ClientInputBuffersStartTickIndex,
+			ClientInputBufferStartTickIndex,
 			ClientTickIndex,
 			OutArrayIndex
 		);
 
-		if (OutArrayIndex >= ClientInputBuffers.Num())
+		if (OutArrayIndex >= ClientInputBuffer.Num())
 		{
-			OldestUnacknowledgedInputTick = ClientInputBuffersStartTickIndex
-				+ ClientInputBuffers.Num() - 1;
-			ClientInputBuffers.Empty();
+			OldestUnacknowledgedInputTick = ClientInputBufferStartTickIndex
+				+ ClientInputBuffer.Num() - 1;
+			ClientInputBuffer.Empty();
 		}
 		else
 		{
@@ -121,6 +121,11 @@ void FNPS_ClientPawnPrediction::ServerCorrectState(const FReplicatedRigidBodySta
 
 		bIsOldestUnacknowledgeInputTooOld = false;
 	}
+}
+
+FBufferInfo FNPS_ClientPawnPrediction::GetInputBufferInfo() const
+{
+	return FBufferInfo(ClientInputBufferStartTickIndex, ClientInputBuffer.Num());
 }
 
 void FNPS_ClientPawnPrediction::Update(uint32 CurrentTickIndex)
