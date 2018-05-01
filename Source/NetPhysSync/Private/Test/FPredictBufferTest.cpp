@@ -770,6 +770,86 @@ bool FClientPawnPredictionUnacknowledgedInputTest::RunTest(const FString& Parame
 	return true;
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FClientHandleOverflowCachTick, "NetPhysSync.PredictBuffer.Client.HandleOverflowCachTickForIgnoreOldCorrectState", EAutomationTestFlags::EditorContext | EAutomationTestFlags::SmokeFilter)
+bool FClientHandleOverflowCachTick::RunTest(const FString& Paramters)
+{
+	const int32 GeneratedSize = static_cast<int32>(0.5f*NPS_BUFFER_SIZE);
+
+	checkf(GeneratedSize > 3, TEXT("Generated Size is too small."));
+
+	FSavedInput GeneratedInput[GeneratedSize];
+	FSavedClientRigidBodyState GeneratedState[GeneratedSize];
+
+	GenerateFakedInputFunction(GeneratedInput, GeneratedSize);
+	GenerateFakedStateFunction(GeneratedState, GeneratedSize);
+
+	FNPS_ClientPawnPrediction ClientPawnPrediction;
+
+	uint32 FakeClientTick = 0-8U;
+
+	for (int32 i = 0; i < GeneratedSize; ++i)
+	{
+		ClientPawnPrediction.SaveInput(GeneratedInput[i], FakeClientTick+i);
+		ClientPawnPrediction.SaveRigidBodyState(GeneratedState[i], FakeClientTick+i);
+	}
+
+	ClientPawnPrediction.ServerCorrectState
+	(
+		GeneratedState[0].GetReplicatedRigidBodyState(), 
+		FakeClientTick + 3
+	);
+
+	uint32 ForQueryTick;
+
+	// This correct state should be ignored. 
+	ClientPawnPrediction.ServerCorrectState
+	(
+		GeneratedState[GeneratedSize-1].GetReplicatedRigidBodyState(),
+		FakeClientTick
+	);
+
+	TestEqual
+	(
+		TEXT("Verify LastCorrectedStateIndex"),
+		(
+			ClientPawnPrediction.TryGetLastCorrectStateTickIndex(ForQueryTick)
+			&&
+			ForQueryTick == (FakeClientTick + 3)
+		), 
+		true
+	);
+
+	TestEqual
+	(
+		TEXT("Verify OldestUnacknowledgedIndex"),
+		(
+			ClientPawnPrediction.TryGetOldestUnacknowledgeInputTickIndex(ForQueryTick)
+			&&
+			ForQueryTick == (FakeClientTick + 3)
+		),
+		true
+	);
+
+	uint32 ToUpdateOutdateOverflow = TNumericLimits<int32>::Max() - 2;
+	ClientPawnPrediction.Update(FakeClientTick + ToUpdateOutdateOverflow);
+
+	TestEqual
+	(
+		TEXT("LastCorrectedStateIndex become too old"),
+		ClientPawnPrediction.TryGetLastCorrectStateTickIndex(ForQueryTick),
+		false
+	);
+
+	TestEqual
+	(
+		TEXT("OldestUnacknowledgedIndex become too old"),
+		ClientPawnPrediction.TryGetOldestUnacknowledgeInputTickIndex(ForQueryTick),
+		false
+	);
+
+	return true;
+}
+
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FAutonomousProxyInputConstructorTest, "NetPhysSync.PredictBuffer.Replication.AutonomousProxyInput", EAutomationTestFlags::EditorContext | EAutomationTestFlags::SmokeFilter)
 bool FAutonomousProxyInputConstructorTest::RunTest(const FString& Parameters)
 {
