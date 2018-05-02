@@ -7,9 +7,11 @@
 /**
  * 
  */
-class NETPHYSSYNC_API FVisualUpdateParam
+struct NETPHYSSYNC_API FVisualUpdateParam
 {
 public:
-	FVisualUpdateParam();
+	FVisualUpdateParam(const float GameFrameDeltaTimeParam);
 	~FVisualUpdateParam();
+
+	const float GameFrameDeltaTime;
 };

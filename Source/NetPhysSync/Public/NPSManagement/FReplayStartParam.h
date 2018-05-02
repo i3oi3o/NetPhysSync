@@ -3,13 +3,29 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Engine/EngineTypes.h"
+#include "FOnNewSyncPointInfo.h"
+
+class FPhysScene;
 
 /**
  * 
  */
-class NETPHYSSYNC_API FReplayStartParam
+struct NETPHYSSYNC_API FReplayStartParam
 {
 public:
-	FReplayStartParam();
+	FReplayStartParam
+	(
+		FPhysScene* const PhysSceneParam,
+		const EPhysicsSceneType SceneTypeParam,
+		const FOnNewSyncPointInfo NewSyncPointInfoParam,
+		const uint32 StartReplayTickIndexParam
+	);
 	~FReplayStartParam();
+
+
+	FPhysScene* const PhysScene;
+	const EPhysicsSceneType SceneType;
+	const FOnNewSyncPointInfo NewSyncPointInfo;
+	const uint32 StartReplayTickIndex;
 };

@@ -3,13 +3,23 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "FTickSyncPoint.h"
 
 /**
  * 
  */
-class NETPHYSSYNC_API FOnNewSyncPointInfo
+struct NETPHYSSYNC_API FOnNewSyncPointInfo
 {
 public:
-	FOnNewSyncPointInfo();
+	FOnNewSyncPointInfo
+	(
+		const FTickSyncPoint& OldSyncPointParam,
+		const FTickSyncPoint& NewSyncPointParam
+	);
 	~FOnNewSyncPointInfo();
+
+
+	const FTickSyncPoint OldSyncPoint;
+	const FTickSyncPoint NewSyncPoint;
+	const uint32 ShiftClientTickAmountForReplayPrediction;
 };

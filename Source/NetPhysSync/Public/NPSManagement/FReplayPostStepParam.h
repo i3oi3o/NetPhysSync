@@ -3,13 +3,27 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Engine/EngineTypes.h"
+
+class FPhysScene;
 
 /**
  * 
  */
-class NETPHYSSYNC_API FReplayPostStepParam
+struct NETPHYSSYNC_API FReplayPostStepParam
 {
 public:
-	FReplayPostStepParam();
+	FReplayPostStepParam
+	(
+		FPhysScene* const PhysSceneParam,
+		const EPhysicsSceneType SceneTypeParam,
+		const float StepDeltaTimeParam,
+		const uint32 ReplayTickIndexParam
+	);
 	~FReplayPostStepParam();
+
+	FPhysScene* const PhysScene;
+	const EPhysicsSceneType SceneType;
+	const float StepDeltaTime;
+	const uint32 ReplayTickIndex;
 };

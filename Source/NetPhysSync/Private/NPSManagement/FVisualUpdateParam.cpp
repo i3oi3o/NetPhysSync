@@ -2,7 +2,8 @@
 
 #include "FVisualUpdateParam.h"
 
-FVisualUpdateParam::FVisualUpdateParam()
+FVisualUpdateParam::FVisualUpdateParam(const float GameFrameDeltaTimeParam)
+	: GameFrameDeltaTime(GameFrameDeltaTimeParam)
 {
 }
 

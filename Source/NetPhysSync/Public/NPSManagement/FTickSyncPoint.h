@@ -7,9 +7,19 @@
 /**
  * 
  */
-class NETPHYSSYNC_API FTickSyncPoint
+struct NETPHYSSYNC_API FTickSyncPoint
 {
 public:
-	FTickSyncPoint();
+	FTickSyncPoint
+	(
+		const uint32 ClientTickSyncPointParam,
+		const uint32 ServerTickSyncPointParam
+	);
 	~FTickSyncPoint();
+
+	const uint32 ClientTickSyncPoint;
+	const uint32 ServerTickSyncPoint;
+
+	uint32 ServerTick2ClientTick(uint32 ServerTick) const;
+	uint32 ClientTick2ServerTick(uint32 ClientTick) const;
 };

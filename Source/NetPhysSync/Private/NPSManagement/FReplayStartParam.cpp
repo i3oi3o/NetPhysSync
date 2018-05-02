@@ -2,7 +2,17 @@
 
 #include "FReplayStartParam.h"
 
-FReplayStartParam::FReplayStartParam()
+FReplayStartParam::FReplayStartParam
+(
+	FPhysScene* const PhysSceneParam,
+	const EPhysicsSceneType SceneTypeParam,
+	const FOnNewSyncPointInfo NewSyncPointInfoParam,
+	const uint32 StartReplayTickIndexParam
+)
+	: PhysScene(PhysSceneParam)
+	, SceneType(SceneTypeParam)
+	, NewSyncPointInfo(NewSyncPointInfoParam)
+	, StartReplayTickIndex(StartReplayTickIndexParam)
 {
 }
 
