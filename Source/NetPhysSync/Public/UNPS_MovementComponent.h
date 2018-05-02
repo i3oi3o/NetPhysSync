@@ -7,12 +7,13 @@
 #include "INetPhysSync.h"
 #include "FAutoRegisterINetPhysSyncTick.h"
 #include <GameFramework/PawnMovementComponent.h>
+#include "Interfaces/NetworkPredictionInterface.h"
 #include "UNPS_MovementComponent.generated.h"
 
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class NETPHYSSYNC_API UNPS_MovementComponent : public UPawnMovementComponent, 
-	public INetPhysSync
+	public INetPhysSync, public INetworkPredictionInterface
 {
 	GENERATED_BODY()
 
@@ -23,6 +24,7 @@ public:
 	UPROPERTY(Transient)
 	class USceneComponent* ForSmoothVisualComponent;
 
+#pragma region INetPhysSync
 	// Called every frame
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
@@ -53,6 +55,41 @@ public:
 	virtual bool TryGetNewSyncTick(FTickSyncPoint& OutNewSyncPoint) const override;
 
 	virtual bool IsLocalPlayerControlPawn() const override;
+#pragma endregion INetPhysSync
+
+
+#pragma region INetworkPredictionInterface
+	//--------------------------------
+	// Server hooks
+	//--------------------------------
+
+	/** (Server) Call by UNetDriver from server. */
+	virtual void SendClientAdjustment();
+
+	/** (Server) Call by PlayerController. Need to update FNetworkPredictionData_Server.ServerTimestamp everytime replication is received.*/
+	virtual void ForcePositionUpdate(float DeltaTime);
+
+	//--------------------------------
+	// Client hooks
+	//--------------------------------
+
+	
+	virtual void SmoothCorrection(const FVector& OldLocation, const FQuat& OldRotation, const FVector& NewLocation, const FQuat& NewRotation);
+
+	virtual class FNetworkPredictionData_Client* GetPredictionData_Client() const;
+
+	virtual class FNetworkPredictionData_Server* GetPredictionData_Server() const;
+
+	virtual bool HasPredictionData_Client() const;
+
+	virtual bool HasPredictionData_Server() const;
+
+	/* This actually call by ACharacter but mine is not character so need to manually call this.*/
+	virtual void ResetPredictionData_Client();
+
+	virtual void ResetPredictionData_Server();
+
+#pragma endregion INetworkPredictionInterface
 
 protected:
 
@@ -74,6 +111,10 @@ protected:
 	virtual void SimulatedInput(FVector MoveSpeedVecParam);
 
 private:
+	class FNPS_ClientPawnPrediction* ClientPawnPrediction;
+
+	class FNPS_ServerPawnPrediction* ServerPawnPrediction;
+
 	FAutoRegisterINetPhysSyncTick AutoRegisterTick;
 
 	UPROPERTY(VisibleAnywhere, Category=Movement)

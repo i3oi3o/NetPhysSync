@@ -187,8 +187,62 @@ bool UNPS_MovementComponent::TryGetNewSyncTick(FTickSyncPoint& OutNewSyncPoint) 
 
 bool UNPS_MovementComponent::IsLocalPlayerControlPawn() const
 {
+	APawn* Pawn = Cast<APawn>(GetOwner());
+	return Pawn != nullptr && Pawn->IsLocallyControlled();
+}
+
+#pragma region INetworkPredictionInterface
+void UNPS_MovementComponent::SendClientAdjustment()
+{
+
+}
+
+void UNPS_MovementComponent::ForcePositionUpdate(float DeltaTime)
+{
+
+}
+
+void UNPS_MovementComponent::SmoothCorrection(const FVector& OldLocation, const FQuat& OldRotation, const FVector& NewLocation, const FQuat& NewRotation)
+{
+	/* We don't use this. 
+	*  Smoothing is happened through INetPhysSync.
+	*/
+}
+
+FNetworkPredictionData_Client* UNPS_MovementComponent::GetPredictionData_Client() const
+{
+	return nullptr;
+}
+
+FNetworkPredictionData_Server* UNPS_MovementComponent::GetPredictionData_Server() const
+{
+	return nullptr;
+}
+
+bool UNPS_MovementComponent::HasPredictionData_Client() const
+{
 	return false;
 }
+
+bool UNPS_MovementComponent::HasPredictionData_Server() const
+{
+	return false;
+}
+
+void UNPS_MovementComponent::ResetPredictionData_Client()
+{
+	/**
+	 * Need to investigate what should we do here.
+	 */
+}
+
+void UNPS_MovementComponent::ResetPredictionData_Server()
+{
+	/*
+	* Need to investigate what should we do here.
+	*/
+}
+#pragma endregion INetworkPredictionInterface
 
 void UNPS_MovementComponent::BeginDestroy()
 {
