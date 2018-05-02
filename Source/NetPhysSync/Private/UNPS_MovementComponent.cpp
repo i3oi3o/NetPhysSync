@@ -92,12 +92,16 @@ void UNPS_MovementComponent::SimulatedInput(FVector MoveSpeedVecParam)
 bool UNPS_MovementComponent::IsTickEnabled(const FIsTickEnableParam& param) const
 {
 	AActor* Owner = GetOwner();
-	return param.SceneType == EPhysicsSceneType::PST_Sync && 
-		UpdatedPrimitive != nullptr && 
-		!IsPendingKill() && 
-		Owner != nullptr && 
+	return param.SceneType == EPhysicsSceneType::PST_Sync &&
+		UpdatedPrimitive != nullptr &&
+		!IsPendingKill() &&
+		Owner != nullptr &&
 		Owner->GetWorld() != nullptr;
 }
+
+
+#pragma region PhysicTick
+
 
 void UNPS_MovementComponent::TickStartPhysic(const FStartPhysParam& param)
 {
@@ -105,7 +109,7 @@ void UNPS_MovementComponent::TickStartPhysic(const FStartPhysParam& param)
 
 	float InputSize = InputVector.Size();
 	MoveSpeed = FMath::Min(InputSize*Speed, Speed);
-	
+
 	if (InputSize > 0.05f) // Death Zone for Controller.
 	{
 		FVector InputDir = InputVector / InputSize;
@@ -139,6 +143,51 @@ void UNPS_MovementComponent::TickEndPhysic(const FEndPhysParam& param)
 		GEngine->AddOnScreenDebugMessage(0, 1.0f, FColor::Cyan,
 			FString::Printf(TEXT("Velocity=%f"), CurrentVelocity.Size2D()));
 	}
+}
+#pragma endregion PhysicTick
+
+#pragma region ReplayPhys
+
+void UNPS_MovementComponent::TickReplayStart(const FReplayStartParam& param) 
+{
+	
+}
+
+void UNPS_MovementComponent::TickReplaySubstep(const FReplaySubstepParam& param) 
+{
+	
+}
+
+void UNPS_MovementComponent::TickReplayPostSubstep(const FReplayPostStepParam& param) 
+{
+	
+}
+
+void UNPS_MovementComponent::TickReplayEnd(const FReplayEndParam& param)
+{
+	
+}
+
+#pragma endregion ReplayPhys
+
+void UNPS_MovementComponent::VisualUpdate(const FVisualUpdateParam& param)
+{
+	
+}
+
+bool UNPS_MovementComponent::TryGetReplayIndex(uint32& OutTickIndex) const
+{
+	return false;
+}
+
+bool UNPS_MovementComponent::TryGetNewSyncTick(FTickSyncPoint& OutNewSyncPoint) const
+{
+	return false;
+}
+
+bool UNPS_MovementComponent::IsLocalPlayerControlPawn() const
+{
+	return false;
 }
 
 void UNPS_MovementComponent::BeginDestroy()

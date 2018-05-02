@@ -9,6 +9,11 @@
 #include "FPostPhysStepParam.h"
 #include "FEndPhysParam.h"
 #include "FIsTickEnableParam.h"
+#include "FReplayStartParam.h"
+#include "FReplaySubstepParam.h"
+#include "FReplayEndParam.h"
+#include "FReplayPostStepParam.h"
+#include "FVisualUpdateParam.h"
 #include "INetPhysSync.generated.h"
 
 // This class does not need to be modified.
@@ -50,4 +55,43 @@ public:
 	 */
 	virtual void TickEndPhysic(const FEndPhysParam& param) PURE_VIRTUAL(INetPhysSync::TickPhysStep,);
 	
+	/**
+	 * Call from game thread.
+	 */
+	virtual void TickReplayStart(const FReplayStartParam& param) PURE_VIRTUAL(INetPhysSync::TickReplayStart, );
+
+	/**
+	 * Call from game thread.
+	 */
+	virtual void TickReplaySubstep(const FReplaySubstepParam& param) PURE_VIRTUAL(INetPhysSync::TickReplaySubstep, );
+
+	/**
+	 * Call from game thread.
+	 */
+	virtual void TickReplayPostSubstep(const FReplayPostStepParam& param) PURE_VIRTUAL(INetPhysSync::TickReplayPostSubstep, );
+
+	/**
+	 * Call from game thread.
+	 */
+	virtual void TickReplayEnd(const FReplayEndParam& param) PURE_VIRTUAL(INetPhysSync::TickReplayEnd, );
+
+	/**
+	* Call from game thread.
+	*/
+	virtual void VisualUpdate(const FVisualUpdateParam& param) PURE_VIRTUAL(INetPhysSync::VisualUpdate, );
+
+	/**
+	 * Call from game thread.
+	 */
+	virtual bool TryGetReplayIndex(uint32& OutTickIndex) const PURE_VIRTUAL(INetPhysSync::TryGetReplayIndex, return false; );
+
+	/**
+	 * Call from game thread.
+	 */
+	virtual bool TryGetNewSyncTick(FTickSyncPoint& OutNewSyncPoint) const PURE_VIRTUAL(INetPhysSync::TryGetNewSyncTick, return false; );
+
+	/**
+	* Call from game thread.
+	*/
+	virtual bool IsLocalPlayerControlPawn() const PURE_VIRTUAL(INetPhysSync::IsLocalPlayerControlPawn, return false; );
 };

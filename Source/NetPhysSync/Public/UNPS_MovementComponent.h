@@ -38,6 +38,22 @@ public:
 
 	virtual bool IsTickEnabled(const FIsTickEnableParam& param) const override;
 
+	virtual void TickReplayStart(const FReplayStartParam& param) override;
+
+	virtual void TickReplaySubstep(const FReplaySubstepParam& param) override;
+
+	virtual void TickReplayPostSubstep(const FReplayPostStepParam& param) override;
+
+	virtual void TickReplayEnd(const FReplayEndParam& param) override;
+
+	virtual void VisualUpdate(const FVisualUpdateParam& param) override;
+
+	virtual bool TryGetReplayIndex(uint32& OutTickIndex) const override;
+
+	virtual bool TryGetNewSyncTick(FTickSyncPoint& OutNewSyncPoint) const override;
+
+	virtual bool IsLocalPlayerControlPawn() const override;
+
 protected:
 
 	UPROPERTY(EditDefaultsOnly, Category=Movement)

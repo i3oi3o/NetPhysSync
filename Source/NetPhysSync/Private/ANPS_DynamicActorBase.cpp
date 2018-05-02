@@ -79,6 +79,7 @@ bool ANPS_DynamicActorBase::IsTickEnabled(const FIsTickEnableParam& param) const
 		!UpdatedPrimitive->IsPendingKill();
 }
 
+#pragma region PhysicTick
 void ANPS_DynamicActorBase::TickStartPhysic(const FStartPhysParam& param) 
 {
 	
@@ -97,6 +98,49 @@ void ANPS_DynamicActorBase::TickPostPhysStep(const FPostPhysStepParam& param)
 void ANPS_DynamicActorBase::TickEndPhysic(const FEndPhysParam& param) 
 {
 	
+}
+#pragma endregion PhysicTick
+
+#pragma region ReplayPhys
+void ANPS_DynamicActorBase::TickReplayStart(const FReplayStartParam& param)
+{
+
+}
+
+void ANPS_DynamicActorBase::TickReplaySubstep(const FReplaySubstepParam& param)
+{
+
+}
+
+void ANPS_DynamicActorBase::TickReplayPostSubstep(const FReplayPostStepParam& param)
+{
+
+}
+
+void ANPS_DynamicActorBase::TickReplayEnd(const FReplayEndParam& param)
+{
+
+}
+#pragma endregion ReplayPhys
+
+void ANPS_DynamicActorBase::VisualUpdate(const FVisualUpdateParam& param)
+{
+
+}
+
+bool ANPS_DynamicActorBase::TryGetReplayIndex(uint32& OutTickIndex) const
+{
+	return false;
+}
+
+bool ANPS_DynamicActorBase::TryGetNewSyncTick(FTickSyncPoint& OutNewSyncPoint) const
+{
+	return false;
+}
+
+bool ANPS_DynamicActorBase::IsLocalPlayerControlPawn() const
+{
+	return false;
 }
 
 // Called every frame
