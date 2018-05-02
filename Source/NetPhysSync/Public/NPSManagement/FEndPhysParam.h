@@ -4,6 +4,8 @@
 
 #include "CoreMinimal.h"
 
+enum EPhysicsSceneType;
+
 /**
  * 
  */
@@ -13,13 +15,14 @@ struct NETPHYSSYNC_API FEndPhysParam
 public:
 	FEndPhysParam
 	(
-		uint32 SceneTypeParam, float StartDeltaTimeParam, 
-		uint32 NextPhysTickIndexParam
+		const EPhysicsSceneType SceneTypeParam, 
+		const float StartDeltaTimeParam,
+		const uint32 NextPhysTickIndexParam
 	);
 	~FEndPhysParam();
 
 public:
-	const enum EPhysicsSceneType SceneType;
+	const EPhysicsSceneType SceneType;
 	const float StartDeltaTime;
 	const uint32 NextPhysTickIndex;
 };

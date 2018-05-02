@@ -89,15 +89,20 @@ void FNetPhysSyncManager::OnTickPostPhysic()
 
 void FNetPhysSyncManager::TickStartPhys(FPhysScene* PhysScene, uint32 SceneType, float StartDeltaTime)
 {
-	checkf(!StartPhysicYet, TEXT("Currently only support sync physic scene."));
+	if (SceneType != EPhysicsSceneType::PST_Sync)
+	{
+		// Currently support only PST_Sync
+		return;
+	}
+
 	StartPhysicYet = true;
 	StartTickPostPhysicSubstepYet = false;
 	CachStartDeltaTime = StartDeltaTime;
-	CachSceneType = SceneType;
+	CachSceneType = static_cast<EPhysicsSceneType>(SceneType);
 
 	FlushDeferedRegisteeAndCleanNull();
 
-	FIsTickEnableParam IsTickEnableParam(SceneType);
+	FIsTickEnableParam IsTickEnableParam(CachSceneType);
 	FStartPhysParam StartParam(PhysScene, SceneType, StartDeltaTime, LocalPhysTickIndex);
 	CallINetPhysSyncFunction
 	(
@@ -108,11 +113,17 @@ void FNetPhysSyncManager::TickStartPhys(FPhysScene* PhysScene, uint32 SceneType,
 
 void FNetPhysSyncManager::TickStepPhys(FPhysScene* PhysScene, uint32 SceneType, float StepDeltaTime)
 {
-	FIsTickEnableParam IsTickEnableParam(SceneType);
+	if (!StartPhysicYet)
+	{
+		return;
+	}
+
+	EPhysicsSceneType SceneTypeEnum = static_cast<EPhysicsSceneType>(SceneType);
+	FIsTickEnableParam IsTickEnableParam(SceneTypeEnum);
 
 	if (StartTickPostPhysicSubstepYet)
 	{
-		FPostPhysStepParam PostStepParam(PhysScene, SceneType, StepDeltaTime, LocalPhysTickIndex);
+		FPostPhysStepParam PostStepParam(PhysScene, SceneTypeEnum, StepDeltaTime, LocalPhysTickIndex);
 		CallINetPhysSyncFunction
 		(
 			&INetPhysSync::TickPostPhysStep, 
@@ -125,7 +136,7 @@ void FNetPhysSyncManager::TickStepPhys(FPhysScene* PhysScene, uint32 SceneType, 
 		CachStepDeltaTime = StepDeltaTime;
 	}
 
-	FPhysStepParam StepParam(PhysScene, SceneType, StepDeltaTime, LocalPhysTickIndex);
+	FPhysStepParam StepParam(PhysScene, SceneTypeEnum, StepDeltaTime, LocalPhysTickIndex);
 
 	CallINetPhysSyncFunction
 	(

@@ -3,10 +3,10 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Engine/EngineTypes.h"
 #include "FOnNewSyncPointInfo.h"
 
 class FPhysScene;
+enum EPhysicsSceneType;
 
 /**
  * 

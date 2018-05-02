@@ -4,12 +4,21 @@
 
 #include "CoreMinimal.h"
 
+enum EPhysicsSceneType;
+
 /**
  * 
  */
-class NETPHYSSYNC_API FReplayEndParam
+struct NETPHYSSYNC_API FReplayEndParam
 {
 public:
-	FReplayEndParam();
+	FReplayEndParam
+	(
+		const EPhysicsSceneType SceneTypeParam, 
+		const uint32 CurrentTickIndexParam
+	);
 	~FReplayEndParam();
+
+	const EPhysicsSceneType SceneType;
+	const uint32 CurrentTickIndex;
 };

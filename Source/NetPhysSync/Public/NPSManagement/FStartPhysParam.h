@@ -4,6 +4,9 @@
 
 #include "CoreMinimal.h"
 
+class FPhysScene;
+enum EPhysicsSceneType;
+
 /**
  * Encapsulate parameters to avoid re-implementation of function signature change by parameter.
  */
@@ -12,15 +15,15 @@ struct NETPHYSSYNC_API FStartPhysParam
 public:
 	FStartPhysParam
 	(
-		class FPhysScene* const PhysSceneParam, 
+		FPhysScene* const PhysSceneParam, 
 		uint32 SceneTypeParam, float StartDeltaTimeParam,
 		uint32 LocalPhysTickIndexParam
 	);
 	~FStartPhysParam();
 
 public:
-	class FPhysScene* const PhysScene;
-	const enum EPhysicsSceneType SceneType;
+	FPhysScene* const PhysScene;
+	const EPhysicsSceneType SceneType;
 	const float StartDeltaTime;
 	const uint32 LocalPhysTickIndex;
 };

@@ -7,11 +7,13 @@
 
 FPhysStepParam::FPhysStepParam
 (
-	FPhysScene* const PhysSceneParam, const uint32 SceneTypeParam, 
-	float StepDeltaTimeParam, uint32 LocalPhysTickIndexParam
+	FPhysScene* const PhysSceneParam, 
+	const EPhysicsSceneType SceneTypeParam,
+	float StepDeltaTimeParam, 
+	uint32 LocalPhysTickIndexParam
 )
 	: PhysScene(PhysSceneParam)
-	, SceneType(static_cast<EPhysicsSceneType>(SceneTypeParam))
+	, SceneType(SceneTypeParam)
 	, StepDeltaTime(StepDeltaTimeParam)
 	, LocalPhysTickIndex(LocalPhysTickIndexParam)
 {

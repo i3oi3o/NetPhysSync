@@ -1,16 +1,16 @@
 // This is licensed under the BSD License 2.0 found in the LICENSE file in project's root directory.
 
 #include "FEndPhysParam.h"
-
+#include "Engine/EngineTypes.h"
 
 
 FEndPhysParam::FEndPhysParam
 (
-	uint32 SceneTypeParam, 
+	const EPhysicsSceneType SceneTypeParam,
 	float StartDeltaTimeParam, 
 	uint32 NextPhysTickIndexParam
 )
-	: SceneType(static_cast<EPhysicsSceneType>(SceneTypeParam))
+	: SceneType(SceneTypeParam)
 	, StartDeltaTime(StartDeltaTimeParam)
 	, NextPhysTickIndex(NextPhysTickIndexParam)
 {

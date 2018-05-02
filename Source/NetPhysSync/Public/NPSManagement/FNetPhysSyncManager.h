@@ -9,6 +9,7 @@ typedef TScriptInterface<class INetPhysSync> INetPhysSyncPtr;
 
 class FPhysScene;
 class FDelegateHandle;
+enum EPhysicsSceneType;
 
 /**
  * 
@@ -79,7 +80,7 @@ private:
 
 	float CachStepDeltaTime;
 
-	uint32 CachSceneType;
+	EPhysicsSceneType CachSceneType;
 
 	FDelegateHandle TickStartPhysHandle;
 

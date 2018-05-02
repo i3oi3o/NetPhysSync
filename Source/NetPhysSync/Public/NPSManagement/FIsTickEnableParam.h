@@ -3,8 +3,8 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Engine/EngineTypes.h"
 
+enum EPhysicsSceneType;
 
 /**
  * 
@@ -12,7 +12,7 @@
 class NETPHYSSYNC_API FIsTickEnableParam
 {
 public:
-	FIsTickEnableParam(const uint32 SceneTypeParam);
+	FIsTickEnableParam(const EPhysicsSceneType SceneTypeParam);
 	~FIsTickEnableParam();
 
 	const EPhysicsSceneType SceneType;
