@@ -15,67 +15,85 @@ class FDelegateHandle;
  */
 class NETPHYSSYNC_API FNetPhysSyncManager
 {
-	public:
-		FNetPhysSyncManager();
-		~FNetPhysSyncManager();
+public:
+	FNetPhysSyncManager();
+	~FNetPhysSyncManager();
 
-	public:
-		/**
-		 * Lazy initialization to get FPhysScene from UWorld later.
-		 */
-		void Initialize(FPhysScene* PhysScene);
+	/**
+	 * Lazy initialization to get FPhysScene from UWorld later.
+	 */
+	void Initialize(FPhysScene* PhysScene);
 		
-		void RegisterINetPhysSync(INetPhysSyncPtr PtrToUObj);
+	void RegisterINetPhysSync(INetPhysSyncPtr PtrToUObj);
 		
-		void UnregisterINetPhysSync(INetPhysSyncPtr PtrToUObj);
+	void UnregisterINetPhysSync(INetPhysSyncPtr PtrToUObj);
 		
-		/**
-		 * Call from actor's PostPhysicTick.
-		 */
-		void OnTickPostPhysic();
+	/**
+	 * Call from actor's PostPhysicTick.
+	 */
+	void OnTickPostPhysic();
 
-	private:
-		TArray<INetPhysSyncPtr> INetPhysSyncPtrList;
+protected:
+	template<typename FunctionArgument>
+	void CallINetPhysSyncFunction
+	(
+		void (INetPhysSync::*Func)(const FunctionArgument&),
+		const FunctionArgument& Argument,
+		const FIsTickEnableParam& IsTickEnableParam
+	)
+	{
+		for (auto It = INetPhysSyncPtrList.CreateIterator(); It; ++It)
+		{
+			INetPhysSyncPtr& InterfacePtr = *It;
+
+			if (InterfacePtr != nullptr &&
+				InterfacePtr->IsTickEnabled(IsTickEnableParam))
+			{
+				((*InterfacePtr).*Func)(Argument);
+			}
+		}
+	}
+
+private:
+	TArray<INetPhysSyncPtr> INetPhysSyncPtrList;
 		
-		TArray<INetPhysSyncPtr> DeferedRegister;
+	TArray<INetPhysSyncPtr> DeferedRegister;
 
-		TArray<INetPhysSyncPtr> DeferedUnregister;
+	TArray<INetPhysSyncPtr> DeferedUnregister;
 
-		/**
-		 * To check if UWorld owning FPhysScene is not destroyed yet.
-		 * Is this necessary?
-		 */
-		TWeakObjectPtr<UWorld> WorldOwningPhysScene;
+	/**
+	 * To check if UWorld owning FPhysScene is not destroyed yet.
+	 * Is this necessary?
+	 */
+	TWeakObjectPtr<UWorld> WorldOwningPhysScene;
 		
-		FPhysScene* PhysScene;
+	FPhysScene* PhysScene;
 
-		uint32 LocalPhysTickIndex;
+	uint32 LocalPhysTickIndex;
 
-		bool StartTickPostPhysicSubstepYet;
+	bool StartTickPostPhysicSubstepYet;
 
-		bool StartPhysicYet;
+	bool StartPhysicYet;
 
-		float CachStartDeltaTime;
+	float CachStartDeltaTime;
 
-		float CachStepDeltaTime;
+	float CachStepDeltaTime;
 
-		uint32 CachSceneType;
+	uint32 CachSceneType;
 
-		FDelegateHandle TickStartPhysHandle;
+	FDelegateHandle TickStartPhysHandle;
 
-		FDelegateHandle TickStepPhysHandle;
+	FDelegateHandle TickStepPhysHandle;
 
-		/**
-		 * Register to FPhysScene's delegate.
-		 */
-		void TickStartPhys(FPhysScene* PhysScene, uint32 SceneType, float StartDeltaTime);
+	/**
+	 * Register to FPhysScene's delegate.
+	 */
+	void TickStartPhys(FPhysScene* PhysScene, uint32 SceneType, float StartDeltaTime);
 		
-		/**
-		 * Register to FPhysScene's delegate.
-		 */
-		void TickStepPhys(FPhysScene* PhysScene, uint32 SceneType, float StepDeltaTime);
+	/**
+	 * Register to FPhysScene's delegate.
+	 */
+	void TickStepPhys(FPhysScene* PhysScene, uint32 SceneType, float StepDeltaTime);
 
-		INetPhysSync* TryGetTickableINetPhysSync(const INetPhysSyncPtr& TargetPrt);
-
-		void FlushDeferedRegisteeAndCleanNull();
+	void FlushDeferedRegisteeAndCleanNull();
 };

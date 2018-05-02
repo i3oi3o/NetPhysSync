@@ -89,10 +89,11 @@ void UNPS_MovementComponent::SimulatedInput(FVector MoveSpeedVecParam)
 	}
 }
 
-bool UNPS_MovementComponent::IsTickEnabled() const
+bool UNPS_MovementComponent::IsTickEnabled(const FIsTickEnableParam& param) const
 {
 	AActor* Owner = GetOwner();
-	return UpdatedPrimitive != nullptr && 
+	return param.SceneType == EPhysicsSceneType::PST_Sync && 
+		UpdatedPrimitive != nullptr && 
 		!IsPendingKill() && 
 		Owner != nullptr && 
 		Owner->GetWorld() != nullptr;

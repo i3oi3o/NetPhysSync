@@ -27,7 +27,7 @@ public:
 
 	UPrimitiveComponent* GetUpdatedPrimitive() const;
 
-	virtual bool IsTickEnabled() const  override;
+	virtual bool IsTickEnabled(const FIsTickEnableParam& param) const  override;
 
 	virtual void TickStartPhysic(const FStartPhysParam& param) override;
 

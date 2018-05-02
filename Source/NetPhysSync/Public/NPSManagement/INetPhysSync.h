@@ -8,6 +8,7 @@
 #include "FPhysStepParam.h"
 #include "FPostPhysStepParam.h"
 #include "FEndPhysParam.h"
+#include "FIsTickEnableParam.h"
 #include "INetPhysSync.generated.h"
 
 // This class does not need to be modified.
@@ -27,7 +28,7 @@ class NETPHYSSYNC_API INetPhysSync
 	// Add interface functions to this class. This is the class that will be inherited to implement this interface.
 public:
 
-	virtual bool IsTickEnabled() const PURE_VIRTUAL(INetPhysSync::IsTickEnabled, return false;);
+	virtual bool IsTickEnabled(const FIsTickEnableParam& param) const PURE_VIRTUAL(INetPhysSync::IsTickEnabled, return false;);
 
 	/**
 	 * Call from game thread.

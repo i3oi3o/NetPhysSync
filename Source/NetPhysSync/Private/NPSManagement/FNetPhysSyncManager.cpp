@@ -70,33 +70,26 @@ void FNetPhysSyncManager::OnTickPostPhysic()
 	}
 
 	StartPhysicYet = false;
+	FIsTickEnableParam IsTickEnableParam(CachSceneType);
 	FPostPhysStepParam PostStepParam(PhysScene, CachSceneType, CachStepDeltaTime, LocalPhysTickIndex);
-	for (auto It = INetPhysSyncPtrList.CreateIterator(); It; ++It)
-	{
-		INetPhysSync* Interface = TryGetTickableINetPhysSync(*It);
-		if (Interface != nullptr)
-		{
-			Interface->TickPostPhysStep(PostStepParam);
-		}
-	}
-
+	CallINetPhysSyncFunction
+	(
+		&INetPhysSync::TickPostPhysStep,
+		PostStepParam, IsTickEnableParam
+	);
 	++LocalPhysTickIndex;
 
 	FEndPhysParam EndParam(CachSceneType, CachStartDeltaTime, LocalPhysTickIndex);
-	for (auto It = INetPhysSyncPtrList.CreateIterator(); It; ++It)
-	{
-		INetPhysSync* Interface = TryGetTickableINetPhysSync(*It);
-		if (Interface != nullptr)
-		{
-			Interface->TickEndPhysic(EndParam);
-		}
-	}
-
-	
+	CallINetPhysSyncFunction
+	(
+		&INetPhysSync::TickEndPhysic,
+		EndParam, IsTickEnableParam
+	);
 }
 
 void FNetPhysSyncManager::TickStartPhys(FPhysScene* PhysScene, uint32 SceneType, float StartDeltaTime)
 {
+	checkf(!StartPhysicYet, TEXT("Currently only support sync physic scene."));
 	StartPhysicYet = true;
 	StartTickPostPhysicSubstepYet = false;
 	CachStartDeltaTime = StartDeltaTime;
@@ -104,31 +97,27 @@ void FNetPhysSyncManager::TickStartPhys(FPhysScene* PhysScene, uint32 SceneType,
 
 	FlushDeferedRegisteeAndCleanNull();
 
+	FIsTickEnableParam IsTickEnableParam(SceneType);
 	FStartPhysParam StartParam(PhysScene, SceneType, StartDeltaTime, LocalPhysTickIndex);
-	for (auto It = INetPhysSyncPtrList.CreateIterator(); It; ++It)
-	{
-		INetPhysSync* Interface = TryGetTickableINetPhysSync(*It);
-		if (Interface != nullptr)
-		{
-			Interface->TickStartPhysic(StartParam);
-		}
-	}
+	CallINetPhysSyncFunction
+	(
+		&INetPhysSync::TickStartPhysic,
+		StartParam, IsTickEnableParam
+	);
 }
 
 void FNetPhysSyncManager::TickStepPhys(FPhysScene* PhysScene, uint32 SceneType, float StepDeltaTime)
 {
+	FIsTickEnableParam IsTickEnableParam(SceneType);
+
 	if (StartTickPostPhysicSubstepYet)
 	{
 		FPostPhysStepParam PostStepParam(PhysScene, SceneType, StepDeltaTime, LocalPhysTickIndex);
-		for (auto It = INetPhysSyncPtrList.CreateIterator(); It; ++It)
-		{
-			INetPhysSync* Interface = TryGetTickableINetPhysSync(*It);
-			if (Interface != nullptr)
-			{
-				Interface->TickPostPhysStep(PostStepParam);
-			}
-		}
-
+		CallINetPhysSyncFunction
+		(
+			&INetPhysSync::TickPostPhysStep, 
+			PostStepParam, IsTickEnableParam
+		);
 		++LocalPhysTickIndex;
 	}
 	else
@@ -138,31 +127,13 @@ void FNetPhysSyncManager::TickStepPhys(FPhysScene* PhysScene, uint32 SceneType, 
 
 	FPhysStepParam StepParam(PhysScene, SceneType, StepDeltaTime, LocalPhysTickIndex);
 
-	for (auto It = INetPhysSyncPtrList.CreateIterator(); It; ++It)
-	{
-		INetPhysSync* Interface = TryGetTickableINetPhysSync(*It);
-		if (Interface != nullptr)
-		{
-			Interface->TickPhysStep(StepParam);
-		}
-	}
+	CallINetPhysSyncFunction
+	(
+		&INetPhysSync::TickPhysStep,
+		StepParam, IsTickEnableParam
+	);
 
 	StartTickPostPhysicSubstepYet = true;
-	
-}
-
-INetPhysSync* FNetPhysSyncManager::TryGetTickableINetPhysSync(const INetPhysSyncPtr& TargetPtr)
-{
-	INetPhysSync* ToReturn = static_cast<INetPhysSync*>(TargetPtr.GetInterface());
-
-	if (ToReturn != nullptr && ToReturn->IsTickEnabled())
-	{
-		return ToReturn;
-	}
-	else
-	{
-		return nullptr;
-	}
 	
 }
 

@@ -36,7 +36,7 @@ public:
 
 	virtual void BeginDestroy() override;
 
-	virtual bool IsTickEnabled() const override;
+	virtual bool IsTickEnabled(const FIsTickEnableParam& param) const override;
 
 protected:
 

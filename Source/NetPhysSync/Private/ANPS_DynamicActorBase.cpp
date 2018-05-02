@@ -71,9 +71,10 @@ void ANPS_DynamicActorBase::BeginDestroy()
 	FNPS_StaticHelperFunction::UnregisterINetPhySync(this);
 }
 
-bool ANPS_DynamicActorBase::IsTickEnabled() const
+bool ANPS_DynamicActorBase::IsTickEnabled(const FIsTickEnableParam& param) const
 {
-	return !IsPendingKill() && 
+	return param.SceneType == EPhysicsSceneType::PST_Sync && 
+		!IsPendingKill() && 
 		UpdatedPrimitive != nullptr && 
 		!UpdatedPrimitive->IsPendingKill();
 }
