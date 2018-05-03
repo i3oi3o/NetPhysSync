@@ -97,6 +97,7 @@ bool UNPS_MovementComponent::IsTickEnabled(const FIsTickEnableParam& param) cons
 	AActor* Owner = GetOwner();
 	return param.SceneType == EPhysicsSceneType::PST_Sync &&
 		UpdatedPrimitive != nullptr &&
+		UpdatedPrimitive->Mobility == EComponentMobility::Movable &&
 		!IsPendingKill() &&
 		Owner != nullptr &&
 		Owner->GetWorld() != nullptr;
@@ -152,12 +153,28 @@ void UNPS_MovementComponent::TickEndPhysic(const FEndPhysParam& param)
 
 void UNPS_MovementComponent::TickReplayStart(const FReplayStartParam& param) 
 {
-	
+	FBodyInstance* BodyInstance = UpdatedPrimitive->GetBodyInstance();
+	PxRigidDynamic* RigidDynamic = BodyInstance->GetPxRigidDynamic_AssumesLocked();
+
+	FNPS_ClientPawnPrediction* ClientPrediction =
+		static_cast<FNPS_ClientPawnPrediction*>(GetPredictionData_Client());
+	ClientPrediction->GetRigidBodyState(RigidDynamic, param.StartReplayTickIndex);
+	// Initialize visual update here later.
 }
 
 void UNPS_MovementComponent::TickReplaySubstep(const FReplaySubstepParam& param) 
 {
-	
+	FBodyInstance* BodyInstance = UpdatedPrimitive->GetBodyInstance();
+	PxRigidDynamic* RigidDynamic = BodyInstance->GetPxRigidDynamic_AssumesLocked();
+
+	FNPS_ClientPawnPrediction* ClientPrediction =
+		static_cast<FNPS_ClientPawnPrediction*>(GetPredictionData_Client());
+	if (ClientPrediction->IsReplayTickIndex(param.ReplayTickIndex))
+	{
+		ClientPrediction->GetRigidBodyState(RigidDynamic, param.ReplayTickIndex);
+	}
+
+	SimulatedInput(ClientPrediction->GetSavedInput(param.ReplayTickIndex));
 }
 
 void UNPS_MovementComponent::TickReplayPostSubstep(const FReplayPostStepParam& param) 
