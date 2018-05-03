@@ -10,6 +10,7 @@
 #include "Interfaces/NetworkPredictionInterface.h"
 #include "UNPS_MovementComponent.generated.h"
 
+struct FSavedInput;
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class NETPHYSSYNC_API UNPS_MovementComponent : public UPawnMovementComponent, 
@@ -108,7 +109,7 @@ protected:
 	// Called when the game starts
 	virtual void BeginPlay() override;
 
-	virtual void SimulatedInput(FVector MoveSpeedVecParam);
+	virtual void SimulatedInput(const FSavedInput& SavedInput);
 
 private:
 	class FNPS_ClientPawnPrediction* ClientPawnPrediction;

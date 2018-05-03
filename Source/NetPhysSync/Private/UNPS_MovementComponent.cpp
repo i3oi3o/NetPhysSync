@@ -9,6 +9,8 @@
 #include <Engine/Engine.h>
 #include <Color.h>
 #include "FNPS_StaticHelperFunction.h"
+#include "FNPS_ClientPawnPrediction.h"
+#include "FNPS_ServerPawnPrediction.h"
 
 using namespace physx;
 
@@ -44,8 +46,9 @@ void UNPS_MovementComponent::BeginPlay()
 }
 
 
-void UNPS_MovementComponent::SimulatedInput(FVector MoveSpeedVecParam)
+void UNPS_MovementComponent::SimulatedInput(const FSavedInput& SavedInput)
 {
+	FVector MoveSpeedVecParam = SavedInput.GetTargetSpeed();
 	float CurrentSpeedSizeSqrt = MoveSpeedVecParam.SizeSquared2D();
 	if (CurrentSpeedSizeSqrt > 0.0001f)
 	{
@@ -125,7 +128,13 @@ void UNPS_MovementComponent::TickStartPhysic(const FStartPhysParam& param)
 
 void UNPS_MovementComponent::TickPhysStep(const FPhysStepParam& param)
 {
-	SimulatedInput(MoveSpeedVec);
+	FNPS_ClientPawnPrediction* ClientPrecition = 
+		static_cast<FNPS_ClientPawnPrediction*>(GetPredictionData_Client());
+	ClientPrecition->SaveInput(MoveSpeedVec, param.LocalPhysTickIndex);
+	FBodyInstance* BodyInstance = UpdatedPrimitive->GetBodyInstance();
+	PxRigidDynamic* RigidDynamic = BodyInstance->GetPxRigidDynamic_AssumesLocked();
+	ClientPrecition->SaveRigidBodyState(RigidDynamic, param.LocalPhysTickIndex);
+	SimulatedInput(ClientPrecition->GetSavedInput(param.LocalPhysTickIndex));
 }
 
 void UNPS_MovementComponent::TickPostPhysStep(const FPostPhysStepParam& param)
@@ -135,14 +144,7 @@ void UNPS_MovementComponent::TickPostPhysStep(const FPostPhysStepParam& param)
 
 void UNPS_MovementComponent::TickEndPhysic(const FEndPhysParam& param)
 {
-	FBodyInstance* BodyInstance = UpdatedPrimitive->GetBodyInstance();
-	PxRigidDynamic* RigidBody = BodyInstance->GetPxRigidDynamic_AssumesLocked();
-	FVector CurrentVelocity = P2UVector(RigidBody->getLinearVelocity());
-	if (GEngine != nullptr)
-	{
-		GEngine->AddOnScreenDebugMessage(0, 1.0f, FColor::Cyan,
-			FString::Printf(TEXT("Velocity=%f"), CurrentVelocity.Size2D()));
-	}
+
 }
 #pragma endregion PhysicTick
 
@@ -175,9 +177,58 @@ void UNPS_MovementComponent::VisualUpdate(const FVisualUpdateParam& param)
 	
 }
 
+bool bHasLastReplayTickIndex;
+uint32 LastReplayTickIndex;
 bool UNPS_MovementComponent::TryGetReplayIndex(uint32& OutTickIndex) const
 {
-	return false;
+	/**
+	 * Currently for manually testing replay.
+	 * Replay every 7 ticks.
+	 */
+	FNPS_ClientPawnPrediction* ClientPrediction = 
+		static_cast<FNPS_ClientPawnPrediction*>(GetPredictionData_Client());
+
+	FBufferInfo StateBufferInfo = ClientPrediction->GetStateBufferInfo();
+
+	if (StateBufferInfo.BufferNum > 7)
+	{
+		uint32 TestReplayTickIndex = StateBufferInfo.BufferStartTickIndex + 2;
+
+		if (bHasLastReplayTickIndex)
+		{
+			int32 OutDiff;
+			FNPS_StaticHelperFunction::CalculateBufferArrayIndex
+			(
+				LastReplayTickIndex,
+				TestReplayTickIndex,
+				OutDiff
+			);
+
+			if (OutDiff > 7)
+			{
+				LastReplayTickIndex = TestReplayTickIndex;
+				OutTickIndex = TestReplayTickIndex;
+				return true;
+			}
+			else
+			{
+				return false;
+			}
+		}
+		else
+		{
+			LastReplayTickIndex = TestReplayTickIndex;
+			OutTickIndex = TestReplayTickIndex;
+			bHasLastReplayTickIndex = true;
+			return true;
+		}
+	}
+	else
+	{
+		return false;
+	}
+
+	
 }
 
 bool UNPS_MovementComponent::TryGetNewSyncTick(FTickSyncPoint& OutNewSyncPoint) const
@@ -194,12 +245,17 @@ bool UNPS_MovementComponent::IsLocalPlayerControlPawn() const
 #pragma region INetworkPredictionInterface
 void UNPS_MovementComponent::SendClientAdjustment()
 {
-
+	/**
+	 * This is periodically call by UNetDriver.
+	 */
 }
 
 void UNPS_MovementComponent::ForcePositionUpdate(float DeltaTime)
 {
-
+	/**
+	 * This is call by APlayerController, using FNetworkPredictionData_Server::Timestamp , This is the last received update.,
+	 * to determined when we should force update.
+	 */
 }
 
 void UNPS_MovementComponent::SmoothCorrection(const FVector& OldLocation, const FQuat& OldRotation, const FVector& NewLocation, const FQuat& NewRotation)
@@ -211,22 +267,39 @@ void UNPS_MovementComponent::SmoothCorrection(const FVector& OldLocation, const 
 
 FNetworkPredictionData_Client* UNPS_MovementComponent::GetPredictionData_Client() const
 {
-	return nullptr;
+	if (ClientPawnPrediction == nullptr)
+	{
+		UNPS_MovementComponent* MutableThis = const_cast<UNPS_MovementComponent*>(this);
+		MutableThis->ClientPawnPrediction = new FNPS_ClientPawnPrediction();
+	}
+	return ClientPawnPrediction;
 }
 
 FNetworkPredictionData_Server* UNPS_MovementComponent::GetPredictionData_Server() const
 {
-	return nullptr;
+	if (ServerPawnPrediction == nullptr)
+	{
+		UNPS_MovementComponent* MutableThis = const_cast<UNPS_MovementComponent*>(this);
+		MutableThis->ServerPawnPrediction = new FNPS_ServerPawnPrediction
+		(
+			FNPS_StaticHelperFunction::GetNetSetting()
+		);
+	}
+	return ServerPawnPrediction;
 }
 
 bool UNPS_MovementComponent::HasPredictionData_Client() const
 {
-	return false;
+	return ClientPawnPrediction != nullptr && 
+		UpdatedPrimitive != nullptr &&
+		!IsPendingKill();
 }
 
 bool UNPS_MovementComponent::HasPredictionData_Server() const
 {
-	return false;
+	return ServerPawnPrediction != nullptr &&
+		UpdatedPrimitive != nullptr &&
+		!IsPendingKill();
 }
 
 void UNPS_MovementComponent::ResetPredictionData_Client()
