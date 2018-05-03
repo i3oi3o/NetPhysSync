@@ -11,6 +11,7 @@
 ANPSGameState::ANPSGameState()
 {
 	bBeginDestroy = false;
+	PrimaryActorTick.bCanEverTick = true;
 }
 
 void ANPSGameState::RegisterINetPhysSync(TScriptInterface<INetPhysSync> ToRegister)
@@ -94,10 +95,16 @@ void ANPSGameState::BeginPlay()
 	
 }
 
+void ANPSGameState::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime);
+	GetOrCreateNetPhysSyncManager()->OnTickPrePhysic();
+}
+
 void FNPSGameStatePostPhysicsTickFunction::ExecuteTick(float DeltaTime, ELevelTick TickType, ENamedThreads::Type CurrentThread, const FGraphEventRef& MyCompletionGraphEvent)
 {
 	if (Target != nullptr)
 	{
-		Target->OnTickPostPhysic();
+		Target->OnTickPostPhysic(DeltaTime);
 	}
 }

@@ -3,14 +3,16 @@
 #include "FNetPhysSyncManager.h"
 #include <PhysicsPublic.h>
 #include "INetPhysSync.h"
+#include "FNPS_StaticHelperFunction.h"
+#include "PhysicsEngine/PhysicsSettings.h"
 
 FNetPhysSyncManager::FNetPhysSyncManager()
 	: PhysScene(nullptr)
 	, WorldOwningPhysScene(nullptr)
 	, LocalPhysTickIndex(0)
 	, INetPhysSyncPtrList()
-	, StartTickPostPhysicSubstepYet(false)
-	, StartPhysicYet(false)
+	, bStartTickPostPhysicSubstepYet(false)
+	, bStartPhysicYet(false)
 {
 }
 
@@ -62,14 +64,103 @@ void FNetPhysSyncManager::UnregisterINetPhysSync(INetPhysSyncPtr iNetPhysSyncPtr
 	}
 }
 
-void FNetPhysSyncManager::OnTickPostPhysic()
+void FNetPhysSyncManager::OnTickPrePhysic()
 {
-	if (!StartPhysicYet)
+	uint32 OutReplayIndex;
+	if (TryGetReplayIndex(OutReplayIndex) && WorldOwningPhysScene != nullptr)
+	{
+		bIsReplaying = true;
+		int32 ReplayNumber;
+
+		FNPS_StaticHelperFunction::CalculateBufferArrayIndex
+		(
+			OutReplayIndex,
+			LocalPhysTickIndex,
+			ReplayNumber
+		);
+
+		checkf(ReplayNumber > 0, TEXT("Why isn't replay number positive?"));
+		LocalPhysTickIndex = OutReplayIndex;
+
+		bStartTickReplayStepYet = false;
+		// Currently only support PST_Sync;
+		EPhysicsSceneType SceneTypeEnum = EPhysicsSceneType::PST_Sync;
+		FIsTickEnableParam IsTickEnableParam(SceneTypeEnum);
+		
+		FPhysScene* PhysScene = WorldOwningPhysScene->GetPhysicsScene();
+		FReplayStartParam ReplayStartParam
+		(
+			PhysScene,
+			SceneTypeEnum,
+			FOnNewSyncPointInfo(FTickSyncPoint(0, 0), FTickSyncPoint(0, 0)),
+			LocalPhysTickIndex
+		);
+		
+		CallINetPhysSyncFunction
+		(
+			&INetPhysSync::TickReplayStart,
+			ReplayStartParam,
+			IsTickEnableParam
+		);
+
+		FVector DefaultGravity(0.0f, 0.0f, WorldOwningPhysScene->GetGravityZ());
+		float SubstepDeltaTime = UPhysicsSettings::Get()->MaxSubstepDeltaTime;
+		float MaxPhysicsDeltaTime = UPhysicsSettings::Get()->MaxPhysicsDeltaTime;
+		for (int32 i = 0; i < ReplayNumber; ++i)
+		{
+			PhysScene->SetUpForFrame
+			(
+				&DefaultGravity,
+				SubstepDeltaTime,
+				MaxPhysicsDeltaTime
+			);
+			PhysScene->StartFrame();
+			PhysScene->WaitPhysScenes();
+			PhysScene->EndFrame(nullptr);
+		}
+
+		FReplayPostStepParam ReplayPostStepParam
+		(
+			PhysScene,
+			SceneTypeEnum,
+			SubstepDeltaTime,
+			// This get increased in delegate callback.
+			LocalPhysTickIndex
+		);
+
+		CallINetPhysSyncFunction
+		(
+			&INetPhysSync::TickReplayPostSubstep,
+			ReplayPostStepParam,
+			IsTickEnableParam
+		);
+
+		++LocalPhysTickIndex;
+
+		checkf
+		(
+			LocalPhysTickIndex == OutReplayIndex + ReplayNumber, 
+			TEXT("Replay steps are incomplete.")
+		);
+
+		FReplayEndParam ReplayEndParam(SceneTypeEnum, LocalPhysTickIndex);
+		CallINetPhysSyncFunction
+		(
+			&INetPhysSync::TickReplayEnd,
+			ReplayEndParam,
+			IsTickEnableParam
+		);
+	}
+}
+
+void FNetPhysSyncManager::OnTickPostPhysic(float GameFrameDeltaTime)
+{
+	if (!bStartPhysicYet || bIsReplaying)
 	{
 		return;
 	}
 
-	StartPhysicYet = false;
+	bStartPhysicYet = false;
 	FIsTickEnableParam IsTickEnableParam(CachSceneType);
 	FPostPhysStepParam PostStepParam(PhysScene, CachSceneType, CachStepDeltaTime, LocalPhysTickIndex);
 	CallINetPhysSyncFunction
@@ -89,14 +180,14 @@ void FNetPhysSyncManager::OnTickPostPhysic()
 
 void FNetPhysSyncManager::TickStartPhys(FPhysScene* PhysScene, uint32 SceneType, float StartDeltaTime)
 {
-	if (SceneType != EPhysicsSceneType::PST_Sync)
+	if (SceneType != EPhysicsSceneType::PST_Sync || bIsReplaying)
 	{
 		// Currently support only PST_Sync
 		return;
 	}
 
-	StartPhysicYet = true;
-	StartTickPostPhysicSubstepYet = false;
+	bStartPhysicYet = true;
+	bStartTickPostPhysicSubstepYet = false;
 	CachStartDeltaTime = StartDeltaTime;
 	CachSceneType = static_cast<EPhysicsSceneType>(SceneType);
 
@@ -113,7 +204,16 @@ void FNetPhysSyncManager::TickStartPhys(FPhysScene* PhysScene, uint32 SceneType,
 
 void FNetPhysSyncManager::TickStepPhys(FPhysScene* PhysScene, uint32 SceneType, float StepDeltaTime)
 {
-	if (!StartPhysicYet)
+	if (bIsReplaying)
+	{
+		/**
+		 * Route delegate call to replay.
+		 */
+		TickStepRelay(PhysScene, SceneType, StepDeltaTime);
+		return;
+	}
+
+	if (!bStartPhysicYet)
 	{
 		return;
 	}
@@ -121,7 +221,7 @@ void FNetPhysSyncManager::TickStepPhys(FPhysScene* PhysScene, uint32 SceneType, 
 	EPhysicsSceneType SceneTypeEnum = static_cast<EPhysicsSceneType>(SceneType);
 	FIsTickEnableParam IsTickEnableParam(SceneTypeEnum);
 
-	if (StartTickPostPhysicSubstepYet)
+	if (bStartTickPostPhysicSubstepYet)
 	{
 		FPostPhysStepParam PostStepParam(PhysScene, SceneTypeEnum, StepDeltaTime, LocalPhysTickIndex);
 		CallINetPhysSyncFunction
@@ -144,8 +244,42 @@ void FNetPhysSyncManager::TickStepPhys(FPhysScene* PhysScene, uint32 SceneType, 
 		StepParam, IsTickEnableParam
 	);
 
-	StartTickPostPhysicSubstepYet = true;
+	bStartTickPostPhysicSubstepYet = true;
 	
+}
+
+void FNetPhysSyncManager::TickStepRelay(FPhysScene* PhysScene, uint32 SceneType, float StepDeltaTime)
+{
+	EPhysicsSceneType SceneTypeEnum = static_cast<EPhysicsSceneType>(SceneType);
+	FIsTickEnableParam IsTickEnableParam(SceneTypeEnum);
+
+	if (bStartTickReplayStepYet)
+	{
+		FReplayPostStepParam ReplayPostStepParam
+		(
+			PhysScene, SceneTypeEnum, StepDeltaTime, LocalPhysTickIndex
+		);
+
+		CallINetPhysSyncFunction
+		(
+			&INetPhysSync::TickReplayPostSubstep,
+			ReplayPostStepParam, IsTickEnableParam
+		);
+		++LocalPhysTickIndex;
+	}
+
+	FReplaySubstepParam ReplayStepParam
+	(
+		PhysScene, SceneTypeEnum, StepDeltaTime, LocalPhysTickIndex
+	);
+
+	CallINetPhysSyncFunction
+	(
+		&INetPhysSync::TickReplaySubstep,
+		ReplayStepParam, IsTickEnableParam
+	);
+
+	bStartTickReplayStepYet = true;
 }
 
 void FNetPhysSyncManager::FlushDeferedRegisteeAndCleanNull()
@@ -177,4 +311,56 @@ void FNetPhysSyncManager::FlushDeferedRegisteeAndCleanNull()
 			++idx;
 		}
 	}
+}
+
+bool FNetPhysSyncManager::TryGetNewSyncPoint(FTickSyncPoint& OutSyncPoint)
+{
+	if (WorldOwningPhysScene != nullptr)
+	{
+		for (int32 i = 0; i < INetPhysSyncPtrList.Num(); ++i)
+		{
+			if (INetPhysSyncPtrList[i]->IsLocalPlayerControlPawn())
+			{
+				return INetPhysSyncPtrList[i]->TryGetNewSyncTick(OutSyncPoint);
+			}
+		}
+	}
+	
+	
+	return false;
+	
+}
+
+bool FNetPhysSyncManager::TryGetReplayIndex(uint32& OutReplayIndex)
+{
+	if (WorldOwningPhysScene != nullptr)
+	{
+		int32 OldestDiff = TNumericLimits<int32>::Max();
+
+		for (int32 i = 0; i < INetPhysSyncPtrList.Num(); ++i)
+		{
+			uint32 QueryReplayTickIndex;
+			if (INetPhysSyncPtrList[i]->TryGetReplayIndex(QueryReplayTickIndex))
+			{
+				int32 NewDiff;
+				FNPS_StaticHelperFunction::CalculateBufferArrayIndex
+				(
+					LocalPhysTickIndex,
+					QueryReplayTickIndex,
+					NewDiff
+				);
+
+				// Find the oldest.
+				if (NewDiff < OldestDiff)
+				{
+					OldestDiff = NewDiff;
+					OutReplayIndex = QueryReplayTickIndex;
+				}
+			}
+		}
+
+		return OldestDiff != TNumericLimits<int32>::Max();
+	}
+
+	return false;
 }

@@ -28,11 +28,17 @@ public:
 	void RegisterINetPhysSync(INetPhysSyncPtr PtrToUObj);
 		
 	void UnregisterINetPhysSync(INetPhysSyncPtr PtrToUObj);
-		
+	
+	/**
+	 * Call from actor's PrePhysicTick.
+	 * This is call before physic scene determining if there is any sub-step tick.
+	 */
+	void OnTickPrePhysic();
+
 	/**
 	 * Call from actor's PostPhysicTick.
 	 */
-	void OnTickPostPhysic();
+	void OnTickPostPhysic(float GameFrameDeltaTime);
 
 protected:
 	template<typename FunctionArgument>
@@ -72,9 +78,13 @@ private:
 
 	uint32 LocalPhysTickIndex;
 
-	bool StartTickPostPhysicSubstepYet;
+	bool bStartTickPostPhysicSubstepYet;
 
-	bool StartPhysicYet;
+	bool bStartTickReplayStepYet;
+
+	bool bStartPhysicYet;
+
+	bool bIsReplaying;
 
 	float CachStartDeltaTime;
 
@@ -96,5 +106,11 @@ private:
 	 */
 	void TickStepPhys(FPhysScene* PhysScene, uint32 SceneType, float StepDeltaTime);
 
+	void TickStepRelay(FPhysScene* PhysScene, uint32 SceneType, float StepDeltaTime);
+
 	void FlushDeferedRegisteeAndCleanNull();
+
+	bool TryGetNewSyncPoint(FTickSyncPoint& OutSyncPoint);
+
+	bool TryGetReplayIndex(uint32& OutReplayIndex);
 };
