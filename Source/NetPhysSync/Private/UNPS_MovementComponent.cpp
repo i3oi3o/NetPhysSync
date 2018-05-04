@@ -175,6 +175,9 @@ void UNPS_MovementComponent::TickReplaySubstep(const FReplaySubstepParam& param)
 		ClientPrediction->GetRigidBodyState(RigidDynamic, param.ReplayTickIndex);
 	}
 
+	// Override exist tick.
+	ClientPrediction->SaveRigidBodyState(RigidDynamic, param.ReplayTickIndex);
+
 	SimulatedInput(ClientPrediction->GetSavedInput(param.ReplayTickIndex));
 }
 
