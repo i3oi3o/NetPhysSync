@@ -96,6 +96,8 @@ private:
 
 	int32 PxScratchReplayBufferSize;
 
+	FTickSyncPoint CurrentSyncPoint;
+
 	/**
 	 * Register to FPhysScene's delegate.
 	 */

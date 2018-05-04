@@ -43,7 +43,7 @@ FNetPhysSyncManager::FNetPhysSyncManager()
 
 FNetPhysSyncManager::~FNetPhysSyncManager()
 {
-	if (WorldOwningPhysScene.IsValid())
+	if (WorldOwningPhysScene.IsValid() && !WorldOwningPhysScene->IsPendingKill())
 	{
 		this->PhysScene->OnPhysScenePreTick.Remove(TickStartPhysHandle);
 		this->PhysScene->OnPhysSceneStep.Remove(TickStepPhysHandle);
@@ -97,6 +97,36 @@ void FNetPhysSyncManager::UnregisterINetPhysSync(INetPhysSyncPtr iNetPhysSyncPtr
 void FNetPhysSyncManager::OnTickPrePhysic()
 {
 	uint32 OutReplayIndex;
+
+	FTickSyncPoint NewSyncPoint;
+	bool bHasNewSyncPoint = false;
+	if (TryGetNewSyncPoint(NewSyncPoint))
+	{
+		bHasNewSyncPoint = true;
+	}
+
+	FOnNewSyncPointInfo NewSyncPointInfo
+	(
+		CurrentSyncPoint,
+		bHasNewSyncPoint ? NewSyncPoint : CurrentSyncPoint
+	);
+
+	// Currently only support PST_Sync;
+	EPhysicsSceneType SceneTypeEnum = EPhysicsSceneType::PST_Sync;
+	FIsTickEnableParam IsTickEnableParam(SceneTypeEnum);
+
+	FOnReadReplicationParam OnReadReplicationParam
+	(
+		NewSyncPointInfo
+	);
+	CallINetPhysSyncFunction
+	(
+		&INetPhysSync::OnReadReplication,
+		OnReadReplicationParam,
+		IsTickEnableParam
+	);
+
+
 	if (TryGetReplayIndex(OutReplayIndex) && WorldOwningPhysScene != nullptr)
 	{
 		int32 ReplayNumber;
@@ -110,17 +140,12 @@ void FNetPhysSyncManager::OnTickPrePhysic()
 
 		checkf(ReplayNumber > 0, TEXT("Why isn't replay number positive?"));
 		LocalPhysTickIndex = OutReplayIndex;
-
-		// Currently only support PST_Sync;
-		EPhysicsSceneType SceneTypeEnum = EPhysicsSceneType::PST_Sync;
-		FIsTickEnableParam IsTickEnableParam(SceneTypeEnum);
-		
 		FPhysScene* PhysScene = WorldOwningPhysScene->GetPhysicsScene();
 		FReplayStartParam ReplayStartParam
 		(
 			PhysScene,
 			SceneTypeEnum,
-			FOnNewSyncPointInfo(FTickSyncPoint(0, 0), FTickSyncPoint(0, 0)),
+			NewSyncPointInfo,
 			LocalPhysTickIndex
 		);
 		
@@ -188,6 +213,10 @@ void FNetPhysSyncManager::OnTickPrePhysic()
 				UE_LOG(LogTemp, Log, TEXT("REPLAY PHYSX FETCHRESULTS ERROR: %d"), OutErrorCode);
 			}
 
+			/**
+			 * FPhysScene hold event notification from PhysX.
+			 * My modified engine source code always dispatch event before calling post step
+			 */
 			PhysScene->DispatchPhysNotifications_AssumesLocked();
 
 			FReplayPostStepParam ReplayPostStepParam

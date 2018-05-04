@@ -3,6 +3,14 @@
 #include "FTickSyncPoint.h"
 #include "FNPS_StaticHelperFunction.h"
 
+FTickSyncPoint::FTickSyncPoint()
+	: ClientTickSyncPoint(0)
+	, ServerTickSyncPoint(0)
+	, bIsValid(false)
+{
+
+}
+
 FTickSyncPoint::FTickSyncPoint
 (
 	const uint32 ClientTickSyncPointParam,
@@ -10,6 +18,7 @@ FTickSyncPoint::FTickSyncPoint
 )
 	: ClientTickSyncPoint(ClientTickSyncPointParam)
 	, ServerTickSyncPoint(ServerTickSyncPointParam)
+	, bIsValid(true)
 {
 }
 

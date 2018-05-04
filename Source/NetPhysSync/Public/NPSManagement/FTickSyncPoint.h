@@ -10,6 +10,8 @@
 struct NETPHYSSYNC_API FTickSyncPoint
 {
 public:
+	FTickSyncPoint();
+
 	FTickSyncPoint
 	(
 		const uint32 ClientTickSyncPointParam,
@@ -19,6 +21,7 @@ public:
 
 	const uint32 ClientTickSyncPoint;
 	const uint32 ServerTickSyncPoint;
+	const bool bIsValid;
 
 	uint32 ServerTick2ClientTick(uint32 ServerTick) const;
 	uint32 ClientTick2ServerTick(uint32 ClientTick) const;
