@@ -60,7 +60,7 @@ void ANPSGameState::BeginDestroy()
 	}
 }
 
-bool ANPSGameState::TryGetNewestUnprocessedServerTick(uint32& OutServerTickIndex)
+bool ANPSGameState::TryGetNewestUnprocessedServerTick(uint32& OutServerTickIndex) const
 {
 	// Implement this later.
 	return false;

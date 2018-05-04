@@ -44,7 +44,7 @@ public:
 	void UnregisterINetPhysSync(TScriptInterface<class INetPhysSync> ToUnregister);
 	virtual void RegisterActorTickFunctions(bool bRegister) override;
 	virtual void BeginDestroy() override;
-	virtual bool TryGetNewestUnprocessedServerTick(uint32& OutServerTickIndex) override;
+	virtual bool TryGetNewestUnprocessedServerTick(uint32& OutServerTickIndex) const override;
 
 protected:
 	virtual void BeginPlay() override;
