@@ -33,7 +33,8 @@ struct TStructOpsTypeTraits<FNPSGameStatePostPhysicsTickFunction>
  * 
  */
 UCLASS()
-class NETPHYSSYNC_API ANPSGameState : public AGameStateBase
+class NETPHYSSYNC_API ANPSGameState : public AGameStateBase, 
+	public IQueryReceivedPackage
 {
 	GENERATED_BODY()
 
@@ -43,6 +44,7 @@ public:
 	void UnregisterINetPhysSync(TScriptInterface<class INetPhysSync> ToUnregister);
 	virtual void RegisterActorTickFunctions(bool bRegister) override;
 	virtual void BeginDestroy() override;
+	virtual bool TryGetNewestUnprocessedServerTick(uint32& OutServerTickIndex) override;
 
 protected:
 	virtual void BeginPlay() override;

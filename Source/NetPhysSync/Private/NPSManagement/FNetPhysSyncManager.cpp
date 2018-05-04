@@ -400,7 +400,48 @@ bool FNetPhysSyncManager::TryGetNewestUnprocessedServerTick
 	uint32& OutNewestUnprocessedServerTick
 )
 {
-	return false;
+	bool bFoundYet = false;
+
+	const IQueryReceivedPackage* QueryInterface = Cast<IQueryReceivedPackage>(OwningActor);
+	bFoundYet = 
+	(
+		QueryInterface != nullptr &&
+		QueryInterface->TryGetNewestUnprocessedServerTick(OutNewestUnprocessedServerTick)
+	);
+
+	for (auto It = INetPhysSyncPtrList.CreateIterator(); It; ++It)
+	{
+		INetPhysSyncPtr InterfacePtr = *It;
+		uint32 NewQueryServerTick;
+		if (
+				InterfacePtr != nullptr &&
+				InterfacePtr->TryGetNewestUnprocessedServerTick(NewQueryServerTick)
+		   )
+		{
+			if (!bFoundYet)
+			{
+				bFoundYet = true;
+				OutNewestUnprocessedServerTick = NewQueryServerTick;
+			}
+			else
+			{
+				int32 Diff;
+				FNPS_StaticHelperFunction::CalculateBufferArrayIndex
+				(
+					OutNewestUnprocessedServerTick,
+					NewQueryServerTick,
+					Diff
+				);
+
+				if (Diff > 0)
+				{
+					OutNewestUnprocessedServerTick = NewQueryServerTick;
+				}
+			}
+		}
+	}
+
+	return bFoundYet;
 }
 
 bool FNetPhysSyncManager::TryGetNewSyncPoint(FTickSyncPoint& OutSyncPoint)
@@ -409,16 +450,18 @@ bool FNetPhysSyncManager::TryGetNewSyncPoint(FTickSyncPoint& OutSyncPoint)
 	{
 		for (int32 i = 0; i < INetPhysSyncPtrList.Num(); ++i)
 		{
-			if (INetPhysSyncPtrList[i]->IsLocalPlayerControlPawn())
+			if (INetPhysSyncPtrList[i] != nullptr && 
+				INetPhysSyncPtrList[i]->IsLocalPlayerControlPawn())
 			{
-				bool Success = INetPhysSyncPtrList[i]->TryGetNewSyncTick(OutSyncPoint);
-
-				if (Success)
+				if (INetPhysSyncPtrList[i]->TryGetNewSyncTick(OutSyncPoint))
 				{
 					LastTickGettingSyncPoint = LocalPhysTickIndex;
 					return true;
 				}
-				break;
+				else
+				{
+					break;
+				}
 			}
 		}
 

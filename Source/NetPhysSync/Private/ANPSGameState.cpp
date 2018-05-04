@@ -60,6 +60,12 @@ void ANPSGameState::BeginDestroy()
 	}
 }
 
+bool ANPSGameState::TryGetNewestUnprocessedServerTick(uint32& OutServerTickIndex)
+{
+	// Implement this later.
+	return false;
+}
+
 class FNetPhysSyncManager* ANPSGameState::GetOrCreateNetPhysSyncManager()
 {
 	checkf(!bBeginDestroy, TEXT("Don't call this if we begin destroy."));
