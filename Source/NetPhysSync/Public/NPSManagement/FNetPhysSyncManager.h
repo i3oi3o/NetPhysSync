@@ -80,11 +80,7 @@ private:
 
 	bool bStartTickPostPhysicSubstepYet;
 
-	bool bStartTickReplayStepYet;
-
 	bool bStartPhysicYet;
-
-	bool bIsReplaying;
 
 	float CachStartDeltaTime;
 
@@ -96,6 +92,10 @@ private:
 
 	FDelegateHandle TickStepPhysHandle;
 
+	uint8* PxScratchReplayBuffer;
+
+	int32 PxScratchReplayBufferSize;
+
 	/**
 	 * Register to FPhysScene's delegate.
 	 */
@@ -105,8 +105,6 @@ private:
 	 * Register to FPhysScene's delegate.
 	 */
 	void TickStepPhys(FPhysScene* PhysScene, uint32 SceneType, float StepDeltaTime);
-
-	void TickStepRelay(FPhysScene* PhysScene, uint32 SceneType, float StepDeltaTime);
 
 	void FlushDeferedRegisteeAndCleanNull();
 

@@ -159,7 +159,8 @@ void UNPS_MovementComponent::TickReplayStart(const FReplayStartParam& param)
 	FNPS_ClientPawnPrediction* ClientPrediction =
 		static_cast<FNPS_ClientPawnPrediction*>(GetPredictionData_Client());
 	ClientPrediction->GetRigidBodyState(RigidDynamic, param.StartReplayTickIndex);
-	// Initialize visual update here later.
+	
+	// Initialize smooth visual logic here later.
 }
 
 void UNPS_MovementComponent::TickReplaySubstep(const FReplaySubstepParam& param) 
@@ -209,7 +210,7 @@ bool UNPS_MovementComponent::TryGetReplayIndex(uint32& OutTickIndex) const
 
 	if (StateBufferInfo.BufferNum > 7)
 	{
-		uint32 TestReplayTickIndex = StateBufferInfo.BufferStartTickIndex + 2;
+		uint32 TestReplayTickIndex = StateBufferInfo.BufferLastTickIndex - 7;
 
 		if (bHasLastReplayTickIndex)
 		{
@@ -244,8 +245,6 @@ bool UNPS_MovementComponent::TryGetReplayIndex(uint32& OutTickIndex) const
 	{
 		return false;
 	}
-
-	
 }
 
 bool UNPS_MovementComponent::TryGetNewSyncTick(FTickSyncPoint& OutNewSyncPoint) const

@@ -11,6 +11,7 @@
 ANPSGameState::ANPSGameState()
 {
 	bBeginDestroy = false;
+	PrimaryActorTick.TickGroup = ETickingGroup::TG_PrePhysics;
 	PrimaryActorTick.bCanEverTick = true;
 }
 
