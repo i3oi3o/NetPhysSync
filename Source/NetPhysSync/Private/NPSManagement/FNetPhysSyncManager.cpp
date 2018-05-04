@@ -6,6 +6,9 @@
 #include "FNPS_StaticHelperFunction.h"
 #include "PhysicsEngine/PhysicsSettings.h"
 #include "PhysXPublic.h"
+#include "GameFramework/PlayerController.h"
+#include "GameFramework/PlayerState.h"
+#include "UNPSNetSetting.h"
 
 using namespace physx;
 
@@ -27,6 +30,7 @@ FNetPhysSyncManager::FNetPhysSyncManager(const AActor* OwningActorParam)
 	, PxScratchReplayBuffer(nullptr)
 	, PxScratchReplayBufferSize(0)
 	, OwningActor(OwningActorParam)
+	, LastTickGettingSyncPoint(10-TNumericLimits<int32>::Max())
 {
 	checkf(OwningActor != nullptr, TEXT("Missing owning actor."));
 	int32 SceneScratchBufferSize = UPhysicsSettings::Get()->SimulateScratchMemorySize;
@@ -391,19 +395,63 @@ void FNetPhysSyncManager::FlushDeferedRegisteeAndCleanNull()
 	}
 }
 
+bool FNetPhysSyncManager::TryGetNewestUnprocessedServerTick
+(
+	uint32& OutNewestUnprocessedServerTick
+)
+{
+	return false;
+}
+
 bool FNetPhysSyncManager::TryGetNewSyncPoint(FTickSyncPoint& OutSyncPoint)
 {
-	if (WorldOwningPhysScene != nullptr)
+	if (WorldOwningPhysScene != nullptr && DoWeNeedReplay())
 	{
 		for (int32 i = 0; i < INetPhysSyncPtrList.Num(); ++i)
 		{
 			if (INetPhysSyncPtrList[i]->IsLocalPlayerControlPawn())
 			{
-				return INetPhysSyncPtrList[i]->TryGetNewSyncTick(OutSyncPoint);
+				bool Success = INetPhysSyncPtrList[i]->TryGetNewSyncTick(OutSyncPoint);
+
+				if (Success)
+				{
+					LastTickGettingSyncPoint = LocalPhysTickIndex;
+					return true;
+				}
+				break;
 			}
 		}
+
+		int32 OutDiff;
+		FNPS_StaticHelperFunction::CalculateBufferArrayIndex
+		(
+			LastTickGettingSyncPoint,
+			LocalPhysTickIndex,
+			OutDiff
+		);
+
+		// Use value from configure file later.
+		bool IsCurrentSyncPointTooOld = OutDiff < -1000 || OutDiff > 1000;
+
+		uint32 NewestUnprocessedServerTick;
+		if (IsCurrentSyncPointTooOld && 
+			TryGetNewestUnprocessedServerTick(NewestUnprocessedServerTick))
+		{
+			const APlayerController* PlayerController = WorldOwningPhysScene->GetFirstPlayerController();
+			float RTT = PlayerController->PlayerState->ExactPing;
+			UNPSNetSetting* NetSetting = FNPS_StaticHelperFunction::GetNetSetting();
+			float StepDeltaTime = UPhysicsSettings::Get()->MaxSubstepDeltaTime;
+			int32 TotalPredictSteps = FMath::FloorToInt(RTT / StepDeltaTime) + 
+				NetSetting->JitterWaitPhysTick;
+
+			// Current client tick will sync with predict NewServerSyncTick.
+			uint32 NewClientSyncTick = LocalPhysTickIndex;
+			uint32 NewServerSyncTick = NewestUnprocessedServerTick + TotalPredictSteps;
+			OutSyncPoint = FTickSyncPoint(NewClientSyncTick, NewServerSyncTick);
+			LastTickGettingSyncPoint = LocalPhysTickIndex;
+			return true;
+		}
 	}
-	
 	
 	return false;
 	

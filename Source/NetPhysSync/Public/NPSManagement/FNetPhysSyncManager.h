@@ -100,6 +100,8 @@ private:
 
 	FTickSyncPoint CurrentSyncPoint;
 
+	uint32 LastTickGettingSyncPoint;
+
 	bool DoWeNeedReplay() const;
 
 	/**
@@ -114,7 +116,11 @@ private:
 
 	void FlushDeferedRegisteeAndCleanNull();
 
+	bool TryGetNewestUnprocessedServerTick(uint32& OutNewestUnprocessedServerTick);
+
 	bool TryGetNewSyncPoint(FTickSyncPoint& OutSyncPoint);
 
 	bool TryGetReplayIndex(uint32& OutReplayIndex);
+
+
 };
