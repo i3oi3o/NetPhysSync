@@ -22,4 +22,9 @@ public:
 	const FTickSyncPoint OldSyncPoint;
 	const FTickSyncPoint NewSyncPoint;
 	const uint32 ShiftClientTickAmountForReplayPrediction;
+
+	FORCEINLINE bool HasNewSyncPoint() const
+	{
+		return ShiftClientTickAmountForReplayPrediction == 0;
+	}
 };

@@ -53,6 +53,8 @@ public:
 
 	virtual bool IsLocalPlayerControlPawn() const override;
 
+	virtual void OnReadReplication(const FOnReadReplicationParam& ReadReplicationParam) override;
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;

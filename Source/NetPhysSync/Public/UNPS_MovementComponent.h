@@ -56,6 +56,8 @@ public:
 	virtual bool TryGetNewSyncTick(FTickSyncPoint& OutNewSyncPoint) const override;
 
 	virtual bool IsLocalPlayerControlPawn() const override;
+
+	virtual void OnReadReplication(const FOnReadReplicationParam& ReadReplicationParam) override;
 #pragma endregion INetPhysSync
 
 

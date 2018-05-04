@@ -258,6 +258,11 @@ bool UNPS_MovementComponent::IsLocalPlayerControlPawn() const
 	return Pawn != nullptr && Pawn->IsLocallyControlled();
 }
 
+void UNPS_MovementComponent::OnReadReplication(const FOnReadReplicationParam& ReadReplicationParam)
+{
+
+}
+
 #pragma region INetworkPredictionInterface
 void UNPS_MovementComponent::SendClientAdjustment()
 {

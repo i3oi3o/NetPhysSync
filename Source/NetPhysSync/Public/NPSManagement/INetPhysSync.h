@@ -14,6 +14,7 @@
 #include "FReplayEndParam.h"
 #include "FReplayPostStepParam.h"
 #include "FVisualUpdateParam.h"
+#include "FOnReadReplicationParam.h"
 #include "INetPhysSync.generated.h"
 
 // This class does not need to be modified.
@@ -94,4 +95,9 @@ public:
 	* Call from game thread.
 	*/
 	virtual bool IsLocalPlayerControlPawn() const PURE_VIRTUAL(INetPhysSync::IsLocalPlayerControlPawn, return false; );
+
+	/**
+	 * Call from game thread.
+	 */
+	virtual void OnReadReplication(const FOnReadReplicationParam& ReadReplicationParam) PURE_VIRTUAL(INetPhysSync::OnReadReplication, );
 };

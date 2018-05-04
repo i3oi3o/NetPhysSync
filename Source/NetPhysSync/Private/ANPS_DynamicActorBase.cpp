@@ -143,6 +143,11 @@ bool ANPS_DynamicActorBase::IsLocalPlayerControlPawn() const
 	return false;
 }
 
+void ANPS_DynamicActorBase::OnReadReplication(const FOnReadReplicationParam& ReadReplicationParam)
+{
+
+}
+
 // Called every frame
 void ANPS_DynamicActorBase::Tick(float DeltaTime)
 {
