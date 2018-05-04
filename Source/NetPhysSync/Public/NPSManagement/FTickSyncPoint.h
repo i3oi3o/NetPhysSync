@@ -19,10 +19,26 @@ public:
 	);
 	~FTickSyncPoint();
 
-	const uint32 ClientTickSyncPoint;
-	const uint32 ServerTickSyncPoint;
-	const bool bIsValid;
+	FORCEINLINE uint32 GetClientTickSyncPoint() const
+	{
+		return ClientTickSyncPoint;
+	}
+
+	FORCEINLINE uint32 GetServerTickSyncPoint() const
+	{
+		return ServerTickSyncPoint;
+	}
+
+	FORCEINLINE bool IsValid() const
+	{
+		return bIsValid;
+	}
 
 	uint32 ServerTick2ClientTick(uint32 ServerTick) const;
 	uint32 ClientTick2ServerTick(uint32 ClientTick) const;
+
+private:
+	uint32 ClientTickSyncPoint;
+	uint32 ServerTickSyncPoint;
+	bool bIsValid;
 };

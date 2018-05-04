@@ -17,7 +17,7 @@ enum EPhysicsSceneType;
 class NETPHYSSYNC_API FNetPhysSyncManager
 {
 public:
-	FNetPhysSyncManager();
+	FNetPhysSyncManager(const AActor* OwningActorParam);
 	~FNetPhysSyncManager();
 
 	/**
@@ -68,6 +68,8 @@ private:
 
 	TArray<INetPhysSyncPtr> DeferedUnregister;
 
+	const AActor* OwningActor;
+
 	/**
 	 * To check if UWorld owning FPhysScene is not destroyed yet.
 	 * Is this necessary?
@@ -97,6 +99,8 @@ private:
 	int32 PxScratchReplayBufferSize;
 
 	FTickSyncPoint CurrentSyncPoint;
+
+	bool DoWeNeedReplay() const;
 
 	/**
 	 * Register to FPhysScene's delegate.

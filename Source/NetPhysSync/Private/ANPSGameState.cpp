@@ -62,9 +62,10 @@ void ANPSGameState::BeginDestroy()
 
 class FNetPhysSyncManager* ANPSGameState::GetOrCreateNetPhysSyncManager()
 {
+	checkf(!bBeginDestroy, TEXT("Don't call this if we begin destroy."));
 	if (NetPhysSyncManager == nullptr)
 	{
-		NetPhysSyncManager = new FNetPhysSyncManager();
+		NetPhysSyncManager = new FNetPhysSyncManager(this);
 	}
 
 	return NetPhysSyncManager;

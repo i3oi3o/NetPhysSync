@@ -17,7 +17,7 @@ typedef PxScene PxApexScene;
 #endif
 #endif
 
-FNetPhysSyncManager::FNetPhysSyncManager()
+FNetPhysSyncManager::FNetPhysSyncManager(const AActor* OwningActorParam)
 	: PhysScene(nullptr)
 	, WorldOwningPhysScene(nullptr)
 	, LocalPhysTickIndex(0)
@@ -26,7 +26,9 @@ FNetPhysSyncManager::FNetPhysSyncManager()
 	, bStartPhysicYet(false)
 	, PxScratchReplayBuffer(nullptr)
 	, PxScratchReplayBufferSize(0)
+	, OwningActor(OwningActorParam)
 {
+	checkf(OwningActor != nullptr, TEXT("Missing owning actor."));
 	int32 SceneScratchBufferSize = UPhysicsSettings::Get()->SimulateScratchMemorySize;
 	checkf(SceneScratchBufferSize > 0, TEXT("SceneScratchBufferSize should be more than zero."));
 
@@ -55,6 +57,7 @@ FNetPhysSyncManager::~FNetPhysSyncManager()
 	FMemory::Free(PxScratchReplayBuffer);
 	PxScratchReplayBuffer = nullptr;
 	PxScratchReplayBufferSize = 0;
+	OwningActor = nullptr;
 }
 
 void FNetPhysSyncManager::Initialize(FPhysScene* PhysScene)
@@ -96,19 +99,28 @@ void FNetPhysSyncManager::UnregisterINetPhysSync(INetPhysSyncPtr iNetPhysSyncPtr
 
 void FNetPhysSyncManager::OnTickPrePhysic()
 {
+	if (!DoWeNeedReplay())
+	{
+		return;
+	}
 	uint32 OutReplayIndex;
 
-	FTickSyncPoint NewSyncPoint;
+	FTickSyncPoint OldSyncPoint = CurrentSyncPoint;
 	bool bHasNewSyncPoint = false;
-	if (TryGetNewSyncPoint(NewSyncPoint))
+	if (TryGetNewSyncPoint(CurrentSyncPoint))
 	{
 		bHasNewSyncPoint = true;
 	}
 
-	FOnNewSyncPointInfo NewSyncPointInfo
+	if(!CurrentSyncPoint.IsValid())
+	{
+		return;
+	}
+
+	FOnNewSyncPointInfo OnNewSyncPointInfo
 	(
-		CurrentSyncPoint,
-		bHasNewSyncPoint ? NewSyncPoint : CurrentSyncPoint
+		bHasNewSyncPoint ? OldSyncPoint : CurrentSyncPoint,
+		CurrentSyncPoint
 	);
 
 	// Currently only support PST_Sync;
@@ -117,7 +129,7 @@ void FNetPhysSyncManager::OnTickPrePhysic()
 
 	FOnReadReplicationParam OnReadReplicationParam
 	(
-		NewSyncPointInfo
+		OnNewSyncPointInfo
 	);
 	CallINetPhysSyncFunction
 	(
@@ -145,7 +157,7 @@ void FNetPhysSyncManager::OnTickPrePhysic()
 		(
 			PhysScene,
 			SceneTypeEnum,
-			NewSyncPointInfo,
+			OnNewSyncPointInfo,
 			LocalPhysTickIndex
 		);
 		
@@ -278,9 +290,18 @@ void FNetPhysSyncManager::OnTickPostPhysic(float GameFrameDeltaTime)
 	);
 }
 
+bool FNetPhysSyncManager::DoWeNeedReplay() const
+{
+	return OwningActor != nullptr &&
+		OwningActor->GetNetMode() == ENetMode::NM_Client;
+}
+
 void FNetPhysSyncManager::TickStartPhys(FPhysScene* PhysScene, uint32 SceneType, float StartDeltaTime)
 {
-	if (SceneType != EPhysicsSceneType::PST_Sync)
+	if (
+		 SceneType != EPhysicsSceneType::PST_Sync || 
+		 (DoWeNeedReplay() && !CurrentSyncPoint.IsValid()) // Wait until we have sync point.
+	   )
 	{
 		// Currently support only PST_Sync
 		return;
