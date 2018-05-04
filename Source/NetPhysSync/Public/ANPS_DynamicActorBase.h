@@ -47,6 +47,8 @@ public:
 
 	virtual void VisualUpdate(const FVisualUpdateParam& param) override;
 
+	virtual bool TryGetNewestUnprocessedServerTick(uint32& OutServerTick) const override;
+
 	virtual bool TryGetReplayIndex(uint32& OutTickIndex) const override;
 
 	virtual bool TryGetNewSyncTick(FTickSyncPoint& OutNewSyncPoint) const override;

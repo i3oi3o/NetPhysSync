@@ -15,11 +15,12 @@
 #include "FReplayPostStepParam.h"
 #include "FVisualUpdateParam.h"
 #include "FOnReadReplicationParam.h"
+#include "IQueryReceivedPackage.h"
 #include "INetPhysSync.generated.h"
 
 // This class does not need to be modified.
 UINTERFACE(MinimalAPI)
-class UNetPhysSync : public UInterface
+class UNetPhysSync : public UQueryReceivedPackage
 {
 	GENERATED_BODY()
 };
@@ -27,7 +28,7 @@ class UNetPhysSync : public UInterface
 /**
  * 
  */
-class NETPHYSSYNC_API INetPhysSync
+class NETPHYSSYNC_API INetPhysSync : public IQueryReceivedPackage
 {
 	GENERATED_BODY()
 

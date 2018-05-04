@@ -128,6 +128,11 @@ void ANPS_DynamicActorBase::VisualUpdate(const FVisualUpdateParam& param)
 
 }
 
+bool ANPS_DynamicActorBase::TryGetNewestUnprocessedServerTick(uint32& OutServerTick) const
+{
+	return false;
+}
+
 bool ANPS_DynamicActorBase::TryGetReplayIndex(uint32& OutTickIndex) const
 {
 	return false;

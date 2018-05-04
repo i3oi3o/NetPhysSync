@@ -22,6 +22,6 @@ class NETPHYSSYNC_API IQueryReceivedPackage
 
 	// Add interface functions to this class. This is the class that will be inherited to implement this interface.
 public:
-	bool TryGetNewestUnprocessedServerTick(uint32& OutServerTick) const PURE_VIRTUAL(IQueryReceivedPackage::TryGetNewestUnprocessedServerTick, return false;);
+	virtual bool TryGetNewestUnprocessedServerTick(uint32& OutServerTick) const PURE_VIRTUAL(IQueryReceivedPackage::TryGetNewestUnprocessedServerTick, return false;);
 	
 };

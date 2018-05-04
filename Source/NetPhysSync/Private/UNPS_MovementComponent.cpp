@@ -198,6 +198,11 @@ void UNPS_MovementComponent::VisualUpdate(const FVisualUpdateParam& param)
 	
 }
 
+bool UNPS_MovementComponent::TryGetNewestUnprocessedServerTick(uint32& OutServerTick) const
+{
+	return false;
+}
+
 bool bHasLastReplayTickIndex;
 uint32 LastReplayTickIndex;
 bool UNPS_MovementComponent::TryGetReplayIndex(uint32& OutTickIndex) const
