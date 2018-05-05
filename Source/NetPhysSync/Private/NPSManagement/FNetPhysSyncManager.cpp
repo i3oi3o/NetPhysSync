@@ -9,6 +9,7 @@
 #include "GameFramework/PlayerController.h"
 #include "GameFramework/PlayerState.h"
 #include "UNPSNetSetting.h"
+#include "IOnReplayEnd.h"
 
 using namespace physx;
 
@@ -20,7 +21,7 @@ typedef PxScene PxApexScene;
 #endif
 #endif
 
-FNetPhysSyncManager::FNetPhysSyncManager(const AActor* OwningActorParam)
+FNetPhysSyncManager::FNetPhysSyncManager(AActor* OwningActorParam)
 	: PhysScene(nullptr)
 	, WorldOwningPhysScene(nullptr)
 	, LocalPhysTickIndex(0)
@@ -266,6 +267,13 @@ void FNetPhysSyncManager::OnTickPrePhysic()
 			ReplayEndParam,
 			IsTickEnableParam
 		);
+
+		checkf(OwningActor != nullptr, TEXT("Why is owning actor null?"));
+		IOnReplayEnd* ReplayEndInterface = Cast<IOnReplayEnd>(OwningActor);
+		if (ReplayEndInterface != nullptr)
+		{
+			ReplayEndInterface->OnReplayEnd();
+		}
 	}
 }
 

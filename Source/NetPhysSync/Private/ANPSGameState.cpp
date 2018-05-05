@@ -5,14 +5,25 @@
 #include "INetPhysSync.h"
 #include <Engine/World.h>
 #include "UNPSNetSetting.h"
+#include "UnrealNetwork.h"
 
 
 
 ANPSGameState::ANPSGameState()
 {
 	bBeginDestroy = false;
+	bNewUnprocessedServerTick = false;
 	PrimaryActorTick.TickGroup = ETickingGroup::TG_PrePhysics;
 	PrimaryActorTick.bCanEverTick = true;
+
+	RepServerTick = 0;
+}
+
+void ANPSGameState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty> &OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME_CONDITION(ANPSGameState, RepServerTick, COND_SimulatedOnly);
 }
 
 void ANPSGameState::RegisterINetPhysSync(TScriptInterface<INetPhysSync> ToRegister)
@@ -31,12 +42,22 @@ void ANPSGameState::UnregisterINetPhysSync(TScriptInterface<INetPhysSync> ToUnre
 	}
 }
 
+void ANPSGameState::OnTickPostPhysic(float DeltaTime)
+{
+	if (!bBeginDestroy)
+	{
+		FNetPhysSyncManager* NPSManager = GetOrCreateNetPhysSyncManager();
+		NPSManager->OnTickPostPhysic(DeltaTime);
+		RepServerTick = NPSManager->GetTickIndex();
+	}
+}
+
 void ANPSGameState::RegisterActorTickFunctions(bool bRegister)
 {
 	Super::RegisterActorTickFunctions(bRegister);
 	if (bRegister)
 	{
-		PostPhysicTickFunction.Target = GetOrCreateNetPhysSyncManager();
+		PostPhysicTickFunction.Target = this;
 		PostPhysicTickFunction.SetTickFunctionEnable(true);
 		PostPhysicTickFunction.RegisterTickFunction(GetLevel());
 	}
@@ -63,7 +84,23 @@ void ANPSGameState::BeginDestroy()
 bool ANPSGameState::TryGetNewestUnprocessedServerTick(uint32& OutServerTickIndex) const
 {
 	// Implement this later.
-	return false;
+	if (bNewUnprocessedServerTick)
+	{
+		OutServerTickIndex = RepServerTick;
+	}
+
+	return bNewUnprocessedServerTick;
+}
+
+void ANPSGameState::OnReplayEnd()
+{
+	// Server tick is processed in replay.
+	bNewUnprocessedServerTick = false;
+}
+
+void ANPSGameState::OnRep_ServerTick()
+{
+	bNewUnprocessedServerTick = true;
 }
 
 class FNetPhysSyncManager* ANPSGameState::GetOrCreateNetPhysSyncManager()
@@ -107,6 +144,7 @@ void ANPSGameState::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 	GetOrCreateNetPhysSyncManager()->OnTickPrePhysic();
+
 }
 
 void FNPSGameStatePostPhysicsTickFunction::ExecuteTick(float DeltaTime, ELevelTick TickType, ENamedThreads::Type CurrentThread, const FGraphEventRef& MyCompletionGraphEvent)
@@ -114,5 +152,7 @@ void FNPSGameStatePostPhysicsTickFunction::ExecuteTick(float DeltaTime, ELevelTi
 	if (Target != nullptr)
 	{
 		Target->OnTickPostPhysic(DeltaTime);
+
+
 	}
 }

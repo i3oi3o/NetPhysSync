@@ -17,8 +17,13 @@ enum EPhysicsSceneType;
 class NETPHYSSYNC_API FNetPhysSyncManager
 {
 public:
-	FNetPhysSyncManager(const AActor* OwningActorParam);
+	FNetPhysSyncManager(AActor* OwningActorParam);
 	~FNetPhysSyncManager();
+
+	FORCEINLINE uint32 GetTickIndex() const
+	{
+		return LocalPhysTickIndex;
+	}
 
 	/**
 	 * Lazy initialization to get FPhysScene from UWorld later.
@@ -68,7 +73,7 @@ private:
 
 	TArray<INetPhysSyncPtr> DeferedUnregister;
 
-	const AActor* OwningActor;
+	AActor* OwningActor;
 
 	/**
 	 * To check if UWorld owning FPhysScene is not destroyed yet.

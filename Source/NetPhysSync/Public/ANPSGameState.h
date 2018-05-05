@@ -4,14 +4,17 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/GameStateBase.h"
+#include "IOnReplayEnd.h"
 #include "ANPSGameState.generated.h"
+
+class ANPSGameState;
 
 USTRUCT()
 struct FNPSGameStatePostPhysicsTickFunction : public FTickFunction
 {
 	GENERATED_USTRUCT_BODY()
 
-	class FNetPhysSyncManager* Target;
+	ANPSGameState* Target;
 
 
 private:
@@ -34,17 +37,28 @@ struct TStructOpsTypeTraits<FNPSGameStatePostPhysicsTickFunction>
  */
 UCLASS()
 class NETPHYSSYNC_API ANPSGameState : public AGameStateBase, 
-	public IQueryReceivedPackage
+	public IQueryReceivedPackage, public IOnReplayEnd
 {
 	GENERATED_BODY()
 
 public:
 	ANPSGameState();
+
+	UPROPERTY(ReplicatedUsing=OnRep_ServerTick)
+	uint32 RepServerTick;
+
+	
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty> &OutLifetimeProps) const override;
 	void RegisterINetPhysSync(TScriptInterface<class INetPhysSync> ToRegister);
 	void UnregisterINetPhysSync(TScriptInterface<class INetPhysSync> ToUnregister);
+	virtual void OnTickPostPhysic(float DeltaTime);
 	virtual void RegisterActorTickFunctions(bool bRegister) override;
 	virtual void BeginDestroy() override;
 	virtual bool TryGetNewestUnprocessedServerTick(uint32& OutServerTickIndex) const override;
+	virtual void OnReplayEnd() override;
+
+	UFUNCTION()
+	void OnRep_ServerTick();
 
 protected:
 	virtual void BeginPlay() override;
@@ -55,5 +69,6 @@ private:
 	class FNetPhysSyncManager* GetOrCreateNetPhysSyncManager();
 	FNPSGameStatePostPhysicsTickFunction PostPhysicTickFunction;
 	bool bBeginDestroy;
+	bool bNewUnprocessedServerTick;
 	
 };
