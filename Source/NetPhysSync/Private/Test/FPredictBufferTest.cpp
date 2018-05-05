@@ -9,6 +9,7 @@
 #include "FAutonomousProxyInput.h"
 #include "UNPSNetSetting.h"
 #include "FNPS_ServerPawnPrediction.h"
+#include "FAutoProxySyncCorrect.h"
 
 
 
@@ -882,6 +883,61 @@ bool FAutonomousProxyInputConstructorTest::RunTest(const FString& Parameters)
 			ClientPawnPrediction.GetSavedInput(ToTestTick+i)
 		);
 	}
+
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FAutoProxySyncCorrectTest, "NetPhysSync.PredictBuffer.Replication.AutoProxySyncCorrect", EAutomationTestFlags::EditorContext | EAutomationTestFlags::SmokeFilter)
+bool FAutoProxySyncCorrectTest::RunTest(const FString& Parameters)
+{
+	uint32 ServerTick = 60U;
+	uint32 ClientTick = 0 - 15U;
+
+	FReplicatedRigidBodyState FakeState
+	(
+		FVector(0.0f, 2.0f, 0.0f),
+		FQuat::Identity,
+		FVector(1.0f, 0.0f, 0.0f),
+		FVector(1.0f, 1.1f, 0.0f),
+		false
+	);
+
+
+	FAutoProxySyncCorrect AutoProxySyncCorrect
+	(
+		FakeState, ClientTick, ServerTick
+	);
+
+	FTickSyncPoint TickSyncPoint = AutoProxySyncCorrect.CreateTickSyncPoint();
+
+	TestEqual
+	(
+		TEXT("Test AutoProxyCorrect's RigidBodyStatValue"), 
+		FakeState.CalculateSumDiffSqrError(AutoProxySyncCorrect.GetRigidBodyState()), 
+		0.0f 
+	);
+
+	TestEqual
+	(
+		TEXT("Test AutoProxyCorrect's ServerTickValue"),
+		ServerTick,
+		AutoProxySyncCorrect.GetSyncServerTick()
+	);
+
+	TestEqual
+	(
+		TEXT("Test AutoProxyCorrect's ClientTickValue"),
+		ClientTick,
+		AutoProxySyncCorrect.GetSyncClientTick()
+	);
+
+	TestEqual
+	(
+		TEXT("Test AutoProxyCorrect's SyncPoint."),
+		TickSyncPoint.GetClientTickSyncPoint() == ClientTick &&
+		TickSyncPoint.GetServerTickSyncPoint() == ServerTick,
+		true
+	);
 
 	return true;
 }
