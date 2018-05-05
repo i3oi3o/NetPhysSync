@@ -109,33 +109,57 @@ bool UNPS_MovementComponent::IsTickEnabled(const FIsTickEnableParam& param) cons
 
 void UNPS_MovementComponent::TickStartPhysic(const FStartPhysParam& param)
 {
-	FVector InputVector = this->ConsumeInputVector();
-
-	float InputSize = InputVector.Size();
-	MoveSpeed = FMath::Min(InputSize*Speed, Speed);
-
-	if (InputSize > 0.05f) // Death Zone for Controller.
+	if (IsLocalPlayerControlPawn())
 	{
-		FVector InputDir = InputVector / InputSize;
-		InvMoveSpeed = 1.0f / MoveSpeed;
-		MoveSpeedVec = InputDir * MoveSpeed;
-	}
-	else
-	{
-		InvMoveSpeed = 0.0f;
-		MoveSpeedVec = FVector(0.0f, 0.0f, 0.0f);
+		FVector InputVector = this->ConsumeInputVector();
+
+		float InputSize = InputVector.Size();
+		MoveSpeed = FMath::Min(InputSize*Speed, Speed);
+
+		if (InputSize > 0.05f) // Death Zone for Controller.
+		{
+			FVector InputDir = InputVector / InputSize;
+			InvMoveSpeed = 1.0f / MoveSpeed;
+			MoveSpeedVec = InputDir * MoveSpeed;
+		}
+		else
+		{
+			InvMoveSpeed = 0.0f;
+			MoveSpeedVec = FVector(0.0f, 0.0f, 0.0f);
+		}
 	}
 }
 
 void UNPS_MovementComponent::TickPhysStep(const FPhysStepParam& param)
 {
-	FNPS_ClientPawnPrediction* ClientPrecition = 
-		static_cast<FNPS_ClientPawnPrediction*>(GetPredictionData_Client());
-	ClientPrecition->SaveInput(MoveSpeedVec, param.LocalPhysTickIndex);
 	FBodyInstance* BodyInstance = UpdatedPrimitive->GetBodyInstance();
 	PxRigidDynamic* RigidDynamic = BodyInstance->GetPxRigidDynamic_AssumesLocked();
-	ClientPrecition->SaveRigidBodyState(RigidDynamic, param.LocalPhysTickIndex);
-	SimulatedInput(ClientPrecition->GetSavedInput(param.LocalPhysTickIndex));
+
+	AActor* Owner = GetOwner();
+
+	if (IsLocalPlayerControlPawn())
+	{
+		if (Owner->IsNetMode(NM_Standalone))
+		{
+			SimulatedInput(FSavedInput(MoveSpeedVec));
+		}
+		else
+		{
+			FNPS_ClientPawnPrediction* ClientPrecition =
+				static_cast<FNPS_ClientPawnPrediction*>(GetPredictionData_Client());
+			ClientPrecition->SaveInput(MoveSpeedVec, param.LocalPhysTickIndex);
+			ClientPrecition->SaveRigidBodyState(RigidDynamic, param.LocalPhysTickIndex);
+			SimulatedInput(ClientPrecition->GetSavedInput(param.LocalPhysTickIndex));
+		}
+	}
+	else if (Owner->Role == ENetRole::ROLE_Authority)
+	{
+		// Handle Server Logic here.
+	}
+	else if (Owner->Role == ENetRole::ROLE_SimulatedProxy)
+	{
+		// Handle simulated proxy logic here.
+	}
 }
 
 void UNPS_MovementComponent::TickPostPhysStep(const FPostPhysStepParam& param)
@@ -153,12 +177,21 @@ void UNPS_MovementComponent::TickEndPhysic(const FEndPhysParam& param)
 
 void UNPS_MovementComponent::TickReplayStart(const FReplayStartParam& param) 
 {
-	FBodyInstance* BodyInstance = UpdatedPrimitive->GetBodyInstance();
-	PxRigidDynamic* RigidDynamic = BodyInstance->GetPxRigidDynamic_AssumesLocked();
+	
+	if (GetOwner()->Role == ENetRole::ROLE_AutonomousProxy)
+	{
+		FBodyInstance* BodyInstance = UpdatedPrimitive->GetBodyInstance();
+		PxRigidDynamic* RigidDynamic = BodyInstance->GetPxRigidDynamic_AssumesLocked();
 
-	FNPS_ClientPawnPrediction* ClientPrediction =
-		static_cast<FNPS_ClientPawnPrediction*>(GetPredictionData_Client());
-	ClientPrediction->GetRigidBodyState(RigidDynamic, param.StartReplayTickIndex);
+		FNPS_ClientPawnPrediction* ClientPrediction =
+			static_cast<FNPS_ClientPawnPrediction*>(GetPredictionData_Client());
+		ClientPrediction->GetRigidBodyState(RigidDynamic, param.StartReplayTickIndex);
+	}
+	else if (GetOwner()->Role == ENetRole::ROLE_SimulatedProxy)
+	{
+		// Handle simulated proxy later
+	}
+	
 	
 	// Initialize smooth visual logic here later.
 }
@@ -167,18 +200,25 @@ void UNPS_MovementComponent::TickReplaySubstep(const FReplaySubstepParam& param)
 {
 	FBodyInstance* BodyInstance = UpdatedPrimitive->GetBodyInstance();
 	PxRigidDynamic* RigidDynamic = BodyInstance->GetPxRigidDynamic_AssumesLocked();
-
 	FNPS_ClientPawnPrediction* ClientPrediction =
 		static_cast<FNPS_ClientPawnPrediction*>(GetPredictionData_Client());
-	if (ClientPrediction->IsReplayTickIndex(param.ReplayTickIndex))
+
+	if (GetOwner()->Role == ENetRole::ROLE_AutonomousProxy)
 	{
-		ClientPrediction->GetRigidBodyState(RigidDynamic, param.ReplayTickIndex);
+		if (ClientPrediction->IsReplayTickIndex(param.ReplayTickIndex))
+		{
+			ClientPrediction->GetRigidBodyState(RigidDynamic, param.ReplayTickIndex);
+		}
+
+		// Override exist saved state.
+		ClientPrediction->SaveRigidBodyState(RigidDynamic, param.ReplayTickIndex);
+
+		SimulatedInput(ClientPrediction->GetSavedInput(param.ReplayTickIndex));
 	}
-
-	// Override exist tick.
-	ClientPrediction->SaveRigidBodyState(RigidDynamic, param.ReplayTickIndex);
-
-	SimulatedInput(ClientPrediction->GetSavedInput(param.ReplayTickIndex));
+	else if (GetOwner()->Role == ENetRole::ROLE_SimulatedProxy)
+	{
+		// Handle simulated proxy later.
+	}
 }
 
 void UNPS_MovementComponent::TickReplayPostSubstep(const FReplayPostStepParam& param) 
@@ -188,7 +228,9 @@ void UNPS_MovementComponent::TickReplayPostSubstep(const FReplayPostStepParam& p
 
 void UNPS_MovementComponent::TickReplayEnd(const FReplayEndParam& param)
 {
-	
+	FNPS_ClientPawnPrediction* ClientPrecition =
+		static_cast<FNPS_ClientPawnPrediction*>(GetPredictionData_Client());
+	ClientPrecition->ConsumeReplayFlag();
 }
 
 #pragma endregion ReplayPhys
@@ -203,56 +245,12 @@ bool UNPS_MovementComponent::TryGetNewestUnprocessedServerTick(uint32& OutServer
 	return false;
 }
 
-bool bHasLastReplayTickIndex;
-uint32 LastReplayTickIndex;
+
 bool UNPS_MovementComponent::TryGetReplayIndex(uint32& OutTickIndex) const
 {
-	/**
-	 * Currently for manually testing replay.
-	 * Replay every 7 ticks.
-	 */
 	FNPS_ClientPawnPrediction* ClientPrediction = 
 		static_cast<FNPS_ClientPawnPrediction*>(GetPredictionData_Client());
-
-	FBufferInfo StateBufferInfo = ClientPrediction->GetStateBufferInfo();
-
-	if (StateBufferInfo.BufferNum > 7)
-	{
-		uint32 TestReplayTickIndex = StateBufferInfo.BufferLastTickIndex - 7;
-
-		if (bHasLastReplayTickIndex)
-		{
-			int32 OutDiff;
-			FNPS_StaticHelperFunction::CalculateBufferArrayIndex
-			(
-				LastReplayTickIndex,
-				TestReplayTickIndex,
-				OutDiff
-			);
-
-			if (OutDiff > 7)
-			{
-				LastReplayTickIndex = TestReplayTickIndex;
-				OutTickIndex = TestReplayTickIndex;
-				return true;
-			}
-			else
-			{
-				return false;
-			}
-		}
-		else
-		{
-			LastReplayTickIndex = TestReplayTickIndex;
-			OutTickIndex = TestReplayTickIndex;
-			bHasLastReplayTickIndex = true;
-			return true;
-		}
-	}
-	else
-	{
-		return false;
-	}
+	return ClientPrediction->TryGetReplayTickIndex(OutTickIndex);
 }
 
 bool UNPS_MovementComponent::TryGetNewSyncTick(FTickSyncPoint& OutNewSyncPoint) const
