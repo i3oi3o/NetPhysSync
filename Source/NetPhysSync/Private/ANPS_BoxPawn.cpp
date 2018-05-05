@@ -23,26 +23,3 @@ ANPS_BoxPawn::ANPS_BoxPawn(const FObjectInitializer& OI)
 	BoxComponent->SetSimulatePhysics(true);
 }
 
-// Called when the game starts or when spawned
-void ANPS_BoxPawn::BeginPlay()
-{
-	Super::BeginPlay();
-}
-
-// Called every frame
-void ANPS_BoxPawn::Tick(float DeltaTime)
-{
-	Super::Tick(DeltaTime);
-
-}
-
-UPrimitiveComponent* ANPS_BoxPawn::GetPhysRootComp() const
-{
-	return PhysRootComp;
-}
-
-USceneComponent* ANPS_BoxPawn::GetForSmoothingVisualComp() const
-{
-	return ForSmoothingVisualComp;
-}
-

@@ -9,7 +9,10 @@
 
 // Sets default values
 ANPS_PawnBase::ANPS_PawnBase(const FObjectInitializer& OI)
+	:Super(OI)
 {
+	bReplicateMovement = false;
+	bReplicates = true;
 	PhysRootComp = OI
 		.CreateAbstractDefaultSubobject<UPrimitiveComponent>(this, TEXT("RigidBody"));
 	RootComponent = PhysRootComp;
@@ -43,5 +46,45 @@ ANPS_PawnBase::ANPS_PawnBase(const FObjectInitializer& OI)
 	PrimaryActorTick.bCanEverTick = false;
 }
 
+
+UPrimitiveComponent* ANPS_PawnBase::GetPhysRootComp() const
+{
+	return PhysRootComp;
+}
+
+USceneComponent* ANPS_PawnBase::GetForSmoothingVisualComp() const
+{
+	return ForSmoothingVisualComp;
+}
+
+bool ANPS_PawnBase::Server_UpdateAutonomousInput_Validate(FAutonomousProxyInput AutonomousProxyInput)
+{
+	return true;
+}
+
+void ANPS_PawnBase::Server_UpdateAutonomousInput_Implementation(FAutonomousProxyInput AutonomousProxyInput)
+{
+
+}
+
+bool ANPS_PawnBase::Client_CorrectStateWithSyncTick_Validate(FAutoProxySyncCorrect Correction)
+{
+	return true;
+}
+
+void ANPS_PawnBase::Client_CorrectStateWithSyncTick_Implementation(FAutoProxySyncCorrect Correction)
+{
+	
+}
+
+bool ANPS_PawnBase::Client_CorrectState_Validate(FAutoProxyCorrect Correction)
+{
+	return true;
+}
+
+void ANPS_PawnBase::Client_CorrectState_Implementation(FAutoProxyCorrect Correction)
+{
+
+}
 
 

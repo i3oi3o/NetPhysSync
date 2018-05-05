@@ -16,14 +16,7 @@ public:
 	// Sets default values for this pawn's properties
 	ANPS_BoxPawn(const FObjectInitializer& OI);
 
-protected:
-	// Called when the game starts or when spawned
-	virtual void BeginPlay() override;
 
-public:	
-	// Called every frame
-	virtual void Tick(float DeltaTime) override;
-	UPrimitiveComponent* GetPhysRootComp() const;
-	USceneComponent* GetForSmoothingVisualComp() const;
+
 
 };

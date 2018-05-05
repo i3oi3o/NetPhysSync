@@ -25,6 +25,8 @@ public:
 	UPROPERTY(Transient)
 	class USceneComponent* ForSmoothVisualComponent;
 
+	virtual bool IsComponentDataValid() const;
+
 #pragma region INetPhysSync
 	// Called every frame
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
@@ -97,6 +99,9 @@ public:
 #pragma endregion INetworkPredictionInterface
 
 protected:
+
+	UPROPERTY(Transient, DuplicateTransient)
+	class ANPS_PawnBase* NPS_PawnOwner;
 
 	UPROPERTY(EditDefaultsOnly, Category=Movement)
 	float Speed;

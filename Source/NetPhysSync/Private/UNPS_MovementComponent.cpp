@@ -1,7 +1,7 @@
 // This is licensed under the BSD License 2.0 found in the LICENSE file in project's root directory.
 
 #include "UNPS_MovementComponent.h"
-#include "ANPS_BoxPawn.h"
+#include "ANPS_PawnBase.h"
 #include <Engine/World.h>
 #include "ANPSGameState.h"
 #include <Components/PrimitiveComponent.h>
@@ -27,20 +27,33 @@ UNPS_MovementComponent::UNPS_MovementComponent()
 }
 
 
+bool UNPS_MovementComponent::IsComponentDataValid() const
+{
+	return UpdatedPrimitive != nullptr &&
+		UpdatedPrimitive->Mobility == EComponentMobility::Movable &&
+		!IsPendingKill() &&
+		NPS_PawnOwner != nullptr &&
+		NPS_PawnOwner->GetWorld() != nullptr;
+}
+
+
+
 // Called when the game starts
 void UNPS_MovementComponent::BeginPlay()
 {
 	Super::BeginPlay();
 
+	PawnOwner = Cast<APawn>(GetOwner());
+	NPS_PawnOwner = Cast<ANPS_PawnBase>(PawnOwner);
+
 	// ...
-	ANPS_BoxPawn* Owner = Cast<ANPS_BoxPawn>(GetOwner());
-	if (Owner != nullptr)
+	if (NPS_PawnOwner != nullptr)
 	{
 		// Is there better way than this?
 		AutoRegisterTick.StartAutoRegister(this);
-		UpdatedComponent = Owner->GetPhysRootComp();
+		UpdatedComponent = NPS_PawnOwner->GetPhysRootComp();
 		UpdatedPrimitive = Cast<UPrimitiveComponent>(UpdatedComponent);
-		ForSmoothVisualComponent = Owner->GetForSmoothingVisualComp();
+		ForSmoothVisualComponent = NPS_PawnOwner->GetForSmoothingVisualComp();
 		UpdatedPrimitive->SetPhysicsMaxAngularVelocityInDegrees(MaxAngularVelocityDegree);
 	}
 }
@@ -96,11 +109,7 @@ bool UNPS_MovementComponent::IsTickEnabled(const FIsTickEnableParam& param) cons
 {
 	AActor* Owner = GetOwner();
 	return param.SceneType == EPhysicsSceneType::PST_Sync &&
-		UpdatedPrimitive != nullptr &&
-		UpdatedPrimitive->Mobility == EComponentMobility::Movable &&
-		!IsPendingKill() &&
-		Owner != nullptr &&
-		Owner->GetWorld() != nullptr;
+		IsComponentDataValid();
 }
 
 
@@ -135,11 +144,9 @@ void UNPS_MovementComponent::TickPhysStep(const FPhysStepParam& param)
 	FBodyInstance* BodyInstance = UpdatedPrimitive->GetBodyInstance();
 	PxRigidDynamic* RigidDynamic = BodyInstance->GetPxRigidDynamic_AssumesLocked();
 
-	AActor* Owner = GetOwner();
-
 	if (IsLocalPlayerControlPawn())
 	{
-		if (Owner->IsNetMode(NM_Standalone))
+		if (PawnOwner->IsNetMode(NM_Standalone))
 		{
 			SimulatedInput(FSavedInput(MoveSpeedVec));
 		}
@@ -152,11 +159,11 @@ void UNPS_MovementComponent::TickPhysStep(const FPhysStepParam& param)
 			SimulatedInput(ClientPrecition->GetSavedInput(param.LocalPhysTickIndex));
 		}
 	}
-	else if (Owner->Role == ENetRole::ROLE_Authority)
+	else if (PawnOwner->Role == ENetRole::ROLE_Authority)
 	{
 		// Handle Server Logic here.
 	}
-	else if (Owner->Role == ENetRole::ROLE_SimulatedProxy)
+	else if (PawnOwner->Role == ENetRole::ROLE_SimulatedProxy)
 	{
 		// Handle simulated proxy logic here.
 	}
@@ -178,7 +185,7 @@ void UNPS_MovementComponent::TickEndPhysic(const FEndPhysParam& param)
 void UNPS_MovementComponent::TickReplayStart(const FReplayStartParam& param) 
 {
 	
-	if (GetOwner()->Role == ENetRole::ROLE_AutonomousProxy)
+	if (PawnOwner->Role == ENetRole::ROLE_AutonomousProxy)
 	{
 		FBodyInstance* BodyInstance = UpdatedPrimitive->GetBodyInstance();
 		PxRigidDynamic* RigidDynamic = BodyInstance->GetPxRigidDynamic_AssumesLocked();
@@ -187,7 +194,7 @@ void UNPS_MovementComponent::TickReplayStart(const FReplayStartParam& param)
 			static_cast<FNPS_ClientPawnPrediction*>(GetPredictionData_Client());
 		ClientPrediction->GetRigidBodyState(RigidDynamic, param.StartReplayTickIndex);
 	}
-	else if (GetOwner()->Role == ENetRole::ROLE_SimulatedProxy)
+	else if (PawnOwner->Role == ENetRole::ROLE_SimulatedProxy)
 	{
 		// Handle simulated proxy later
 	}
@@ -203,7 +210,7 @@ void UNPS_MovementComponent::TickReplaySubstep(const FReplaySubstepParam& param)
 	FNPS_ClientPawnPrediction* ClientPrediction =
 		static_cast<FNPS_ClientPawnPrediction*>(GetPredictionData_Client());
 
-	if (GetOwner()->Role == ENetRole::ROLE_AutonomousProxy)
+	if (PawnOwner->Role == ENetRole::ROLE_AutonomousProxy)
 	{
 		if (ClientPrediction->IsReplayTickIndex(param.ReplayTickIndex))
 		{
@@ -215,7 +222,7 @@ void UNPS_MovementComponent::TickReplaySubstep(const FReplaySubstepParam& param)
 
 		SimulatedInput(ClientPrediction->GetSavedInput(param.ReplayTickIndex));
 	}
-	else if (GetOwner()->Role == ENetRole::ROLE_SimulatedProxy)
+	else if (PawnOwner->Role == ENetRole::ROLE_SimulatedProxy)
 	{
 		// Handle simulated proxy later.
 	}
@@ -260,8 +267,7 @@ bool UNPS_MovementComponent::TryGetNewSyncTick(FTickSyncPoint& OutNewSyncPoint) 
 
 bool UNPS_MovementComponent::IsLocalPlayerControlPawn() const
 {
-	APawn* Pawn = Cast<APawn>(GetOwner());
-	return Pawn != nullptr && Pawn->IsLocallyControlled();
+	return PawnOwner != nullptr && PawnOwner->IsLocallyControlled();
 }
 
 void UNPS_MovementComponent::OnReadReplication(const FOnReadReplicationParam& ReadReplicationParam)
