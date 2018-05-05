@@ -98,6 +98,12 @@ void ANPSGameState::OnReplayEnd()
 	bNewUnprocessedServerTick = false;
 }
 
+uint32 ANPSGameState::GetCurrentPhysTickIndex()
+{
+	checkf(!bBeginDestroy, TEXT("ANPSGameState is being destroyed."));
+	return GetOrCreateNetPhysSyncManager()->GetTickIndex();
+}
+
 void ANPSGameState::OnRep_ServerTick()
 {
 	bNewUnprocessedServerTick = true;

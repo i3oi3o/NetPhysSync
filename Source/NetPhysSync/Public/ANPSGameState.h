@@ -57,6 +57,8 @@ public:
 	virtual bool TryGetNewestUnprocessedServerTick(uint32& OutServerTickIndex) const override;
 	virtual void OnReplayEnd() override;
 
+	uint32 GetCurrentPhysTickIndex();
+
 	UFUNCTION()
 	void OnRep_ServerTick();
 

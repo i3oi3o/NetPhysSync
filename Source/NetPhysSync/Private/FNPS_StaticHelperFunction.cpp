@@ -41,7 +41,29 @@ void FNPS_StaticHelperFunction::UnregisterINetPhySync(TScriptInterface<INetPhysS
 	}
 }
 
+uint32 FNPS_StaticHelperFunction::GetCurrentPhysTickIndex(const UObject* Obj)
+{
+	UWorld* World = Obj->GetWorld();
+
+	checkf
+	(
+		World != nullptr && !World->IsPendingKill(),
+		TEXT("World is not available.")
+	);
+
+	ANPSGameState* GameState = World->GetGameState<ANPSGameState>();
+	checkf
+	(
+		GameState != nullptr && !GameState->IsPendingKill(),
+		TEXT("GameState is not available.")
+	);
+
+	return GameState->GetCurrentPhysTickIndex();
+}
+
 UNPSNetSetting* FNPS_StaticHelperFunction::GetNetSetting()
 {
 	return UNPSNetSetting::Get();
 }
+
+
