@@ -133,18 +133,8 @@ void FNPS_ClientPawnPrediction::Update(uint32 CurrentTickIndex)
 	Super::Update(CurrentTickIndex);
 	if (!bIsOldestUnacknowledgeInputTooOld)
 	{
-		int32 Diff;
-
-		FNPS_StaticHelperFunction::CalculateBufferArrayIndex
-		(
-			OldestUnacknowledgedInputTick,
-			CurrentTickIndex,
-			Diff
-		);
-
-		int32 DiffLimit = TNumericLimits<int32>::Max()-10;
-
-		bIsOldestUnacknowledgeInputTooOld = FMath::Abs(Diff) > DiffLimit;
+		bIsOldestUnacknowledgeInputTooOld = FNPS_StaticHelperFunction::
+			IsCachTickTooOld(OldestUnacknowledgedInputTick, CurrentTickIndex);
 	}
 }
 

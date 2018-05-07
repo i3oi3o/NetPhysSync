@@ -170,16 +170,8 @@ void FNPS_ClientActorPrediction::Update(uint32 CurrentTickIndex)
 {
 	if (!bIsCorrectedStateIndexTooOld)
 	{
-		int32 Diff;
-		FNPS_StaticHelperFunction::CalculateBufferArrayIndex
-		(
-			LastCorrectedStateTickIndex, 
-			CurrentTickIndex,
-			Diff
-		);
-
-		int32 DiffLimit = TNumericLimits<int32>::Max()-10;
-		bIsCorrectedStateIndexTooOld = FMath::Abs(Diff) > DiffLimit;
+		bIsCorrectedStateIndexTooOld = FNPS_StaticHelperFunction::
+			IsCachTickTooOld(LastCorrectedStateTickIndex, CurrentTickIndex);
 	}
 }
 

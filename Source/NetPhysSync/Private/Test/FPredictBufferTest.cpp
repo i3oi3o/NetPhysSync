@@ -831,7 +831,7 @@ bool FClientHandleOverflowCachTick::RunTest(const FString& Paramters)
 		true
 	);
 
-	uint32 ToUpdateOutdateOverflow = TNumericLimits<int32>::Max() - 2;
+	uint32 ToUpdateOutdateOverflow = TNumericLimits<int32>::Max() - 1;
 	ClientPawnPrediction.Update(FakeClientTick + ToUpdateOutdateOverflow);
 
 	TestEqual

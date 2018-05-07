@@ -214,11 +214,19 @@ const FSavedInput& FNPS_ServerPawnPrediction::ProcessServerTick(uint32 ServerTic
 				}
 			}
 		}
+		
 
 		if (bHasSyncClientTickIndex)
 		{
 			SyncClientTickIndexForStampRigidBody += AdvanceAmount;
 		}
+		
+		bHasLastProcessedInputClientTickIndex = bHasLastProcessedServerTickIndex &&
+			!FNPS_StaticHelperFunction::IsCachTickTooOld
+			(
+				LastProcessedClientInputTickIndex,
+				SyncClientTickIndexForStampRigidBody
+			);
 	}
 
 

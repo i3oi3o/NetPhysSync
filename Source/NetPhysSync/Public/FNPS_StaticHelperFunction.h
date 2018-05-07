@@ -21,6 +21,19 @@ public:
 	 */
 	static void CalculateBufferArrayIndex(uint32 BufferStartTickIndex, uint32 BufferTargetIndex, int32& ResultArrayIndex);
 
+	static int32 CalculateBufferArrayIndex(uint32 BufferStartTickIndex, uint32 BufferTargetIndex);
+
+	/**
+	 * This prevent warping overflow uint32 for cache tick.
+	 * Tick is always update. So, when warping happen, it can potentially cause bug.
+	 */
+	static bool IsCachTickTooOld(uint32 CachTick, uint32 CurrentTick);
+
+	/**
+	 * Use this to determined if cache old tick is too old
+	 * to prevent warping over overflow uint32.
+	 */
+	static int32 GetPositiveInclusiveThresholdForOldTick();
 
 	static void UnregisterINetPhySync(TScriptInterface<INetPhysSync> ToUnregister);
 

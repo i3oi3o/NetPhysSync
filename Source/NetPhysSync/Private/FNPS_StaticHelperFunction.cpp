@@ -23,6 +23,34 @@ void FNPS_StaticHelperFunction::CalculateBufferArrayIndex(uint32 BufferStartTick
 	}
 }
 
+int32 FNPS_StaticHelperFunction::CalculateBufferArrayIndex(uint32 BufferStartTickIndex, uint32 BufferTargetIndex)
+{
+	int32 ToReturn;
+	CalculateBufferArrayIndex(BufferStartTickIndex, BufferTargetIndex, ToReturn);
+	return ToReturn;
+}
+
+bool FNPS_StaticHelperFunction::IsCachTickTooOld(uint32 CachTick, uint32 CurrentTick)
+{
+	int32 Diff;
+	FNPS_StaticHelperFunction::CalculateBufferArrayIndex
+	(
+		CachTick,
+		CurrentTick,
+		Diff
+	);
+
+	int32 Threshold = FNPS_StaticHelperFunction::
+		GetPositiveInclusiveThresholdForOldTick();
+
+	return FMath::Abs(Diff) > Threshold;
+}
+
+int32 FNPS_StaticHelperFunction::GetPositiveInclusiveThresholdForOldTick()
+{
+	return TNumericLimits<int32>::Max() - NPS_BUFFER_SIZE;
+}
+
 void FNPS_StaticHelperFunction::UnregisterINetPhySync(TScriptInterface<INetPhysSync> ToUnregister)
 {
 	UObject* Obj = ToUnregister.GetObject();
