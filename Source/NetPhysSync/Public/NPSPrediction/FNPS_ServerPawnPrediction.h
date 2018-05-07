@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "TNPSCircularBuffer.h"
 #include "FSavedInput.h"
+#include "FBufferInfo.h"
 #include "FNPS_ServerPredictionBase.h"
 
 class UNPSNetSetting;
@@ -42,6 +43,10 @@ public:
 
 	bool HasUnprocessedInputForSimulatedProxy() const;
 
+	FORCEINLINE FBufferInfo GetInputServerTickBufferInfo() const
+	{
+		return FBufferInfo(InputStartServerTickIndex, InputBuffer.Num());
+	}
 
 	FORCEINLINE bool HasLastProcessedClientTickIndex() const
 	{
@@ -53,14 +58,18 @@ public:
 		return bHasSyncClientTickIndex;
 	}
 
-	FORCEINLINE uint32 GetSyncClientTickIndex() const
+	/**
+	 * This is sync with FNetPhysSyncManager::LocalPhysTickIndex as long as you call
+	 * FNPS_ServerPawnPrediction::ProcessServerTick(uint32) every tick.
+	 */
+	FORCEINLINE uint32 GetSyncClientTickIndexForStampRigidBody() const
 	{
-		return SyncClientTickIndex;
+		return SyncClientTickIndexForStampRigidBody;
 	}
 
-	FORCEINLINE uint32 GetLastProcessedClientTickIndex() const
+	FORCEINLINE uint32 GetLastProcessedClientInputTickIndex() const
 	{
-		return LastProcessedClientTickIndex;
+		return LastProcessedClientInputTickIndex;
 	}
 
 	template<typename AllocatorType>
@@ -104,9 +113,9 @@ private :
 	TNPSCircularBuffer<FSavedInput, TInlineAllocator<NPS_BUFFER_SIZE>> InputBuffer;
 	uint32 InputStartServerTickIndex;
 	uint32 InputStartClientTickIndex;
-	uint32 LastProcessedClientTickIndex;
+	uint32 LastProcessedClientInputTickIndex;
 	uint32 LastProcessedServerTickIndex;
-	uint32 SyncClientTickIndex;
+	uint32 SyncClientTickIndexForStampRigidBody;
 	bool bHasLastProcessedInputClientTickIndex;
 	bool bHasLastProcessedServerTickIndex;
 	bool bHasSyncClientTickIndex;

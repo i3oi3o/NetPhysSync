@@ -16,9 +16,9 @@ FNPS_ServerPawnPrediction::FNPS_ServerPawnPrediction
 	, NetSetting(NetSettingParam)
 	, InputStartServerTickIndex(0)
 	, InputStartClientTickIndex(0)
-	, LastProcessedClientTickIndex(0)
+	, LastProcessedClientInputTickIndex(0)
 	, bHasLastProcessedInputClientTickIndex(false)
-	, SyncClientTickIndex(0)
+	, SyncClientTickIndexForStampRigidBody(0)
 	, bHasSyncClientTickIndex(false)
 	, LastProcessedServerTickIndex(0)
 	, bHasLastProcessedServerTickIndex(false)
@@ -69,12 +69,12 @@ void FNPS_ServerPawnPrediction::UpdateInputBuffer
 
 		if (WaitJitter > ProxyInputBuffer.Num())
 		{
-			SyncClientTickIndex = ProxyClientTickStartIndex - WaitJitter;
+			SyncClientTickIndexForStampRigidBody = ProxyClientTickStartIndex - WaitJitter;
 			InputStartServerTickIndex = ReceiveServerTickIndex + WaitJitter;
 		}
 		else
 		{
-			SyncClientTickIndex = ProxyClientTickStartIndex;
+			SyncClientTickIndexForStampRigidBody = ProxyClientTickStartIndex;
 			InputStartServerTickIndex = ReceiveServerTickIndex;
 		}
 
@@ -177,10 +177,10 @@ const FSavedInput& FNPS_ServerPawnPrediction::ProcessServerTick(uint32 ServerTic
 				
 				if (InputBuffer.IsIndexInRange(ToProcessedIndex))
 				{
-					LastProcessedClientTickIndex = InputStartClientTickIndex + ToProcessedIndex;
+					LastProcessedClientInputTickIndex = InputStartClientTickIndex + ToProcessedIndex;
 					if ( 
 							InputBuffer.IsLastIndex(ToProcessedIndex) &&
-							InputBuffer[ToProcessedIndex].IsEmptyInput()
+							InputBuffer[ToProcessedIndex].IsEmptyInput() // No more input.
 					   )
 					{
 						InputBuffer.Empty();
@@ -190,17 +190,24 @@ const FSavedInput& FNPS_ServerPawnPrediction::ProcessServerTick(uint32 ServerTic
 						ToReturn = &(InputBuffer[ToProcessedIndex]);
 					}
 				}
+				// Buffer is not end yet. 
+				// Because of drop package and latency, We don't receive continuing buffer yet.
 				else if(!(InputBuffer[InputBuffer.Num()-1].IsEmptyInput()))
 				{
 					// Shift buffer element to different server tick index.
-					InputStartServerTickIndex += ToProcessedIndex - InputBuffer.Num() + 1;
+					int32 ShiftAmount = ToProcessedIndex - InputBuffer.Num() + 1;
+					InputStartServerTickIndex += ShiftAmount;
+					ensureMsgf(bHasSyncClientTickIndex, TEXT("Should have sync client tick index."));
+					// Cancel SyncClientTickIndex advancement code below because
+					// We cannot processed missing input.
+					SyncClientTickIndexForStampRigidBody -= AdvanceAmount;
 				}
 			}
 		}
 
 		if (bHasSyncClientTickIndex)
 		{
-			SyncClientTickIndex += AdvanceAmount;
+			SyncClientTickIndexForStampRigidBody += AdvanceAmount;
 		}
 	}
 
