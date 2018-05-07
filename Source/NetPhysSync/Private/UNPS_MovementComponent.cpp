@@ -105,6 +105,8 @@ void UNPS_MovementComponent::SimulatedInput(const FSavedInput& SavedInput)
 	}
 }
 
+// ----------------------- Start INetPhysSync ----------------------
+
 bool UNPS_MovementComponent::IsTickEnabled(const FIsTickEnableParam& param) const
 {
 	AActor* Owner = GetOwner();
@@ -113,9 +115,7 @@ bool UNPS_MovementComponent::IsTickEnabled(const FIsTickEnableParam& param) cons
 }
 
 
-#pragma region PhysicTick
-
-
+// ------------------------- Start INetPhysSync:: Tick interface -------------
 void UNPS_MovementComponent::TickStartPhysic(const FStartPhysParam& param)
 {
 	if (IsLocalPlayerControlPawn())
@@ -178,9 +178,9 @@ void UNPS_MovementComponent::TickEndPhysic(const FEndPhysParam& param)
 {
 
 }
-#pragma endregion PhysicTick
+// ------------------------- End INetPhysSync:: Tick interface -------------
 
-#pragma region ReplayPhys
+// ------------------------- Start INetPhysSync:: Replay intgerface --------------------
 
 void UNPS_MovementComponent::TickReplayStart(const FReplayStartParam& param) 
 {
@@ -240,7 +240,7 @@ void UNPS_MovementComponent::TickReplayEnd(const FReplayEndParam& param)
 	ClientPrecition->ConsumeReplayFlag();
 }
 
-#pragma endregion ReplayPhys
+// ------------------------ End INetPhySync:: Replay interface -----------------------
 
 void UNPS_MovementComponent::VisualUpdate(const FVisualUpdateParam& param)
 {
@@ -274,8 +274,9 @@ void UNPS_MovementComponent::OnReadReplication(const FOnReadReplicationParam& Re
 {
 
 }
+// ---------------------- End INetPhysSync --------------------------------------- 
 
-#pragma region INetworkPredictionInterface
+// ---------------------- Start INetworkdPredictionInterface --------------------
 void UNPS_MovementComponent::SendClientAdjustment()
 {
 	/**
@@ -348,7 +349,44 @@ void UNPS_MovementComponent::ResetPredictionData_Server()
 	* Need to investigate what should we do here.
 	*/
 }
-#pragma endregion INetworkPredictionInterface
+
+// ---------------------- End INetworkdPredictionInterface --------------------
+
+
+// --------------------- Start Re-route RPC Function ----------------------------
+void UNPS_MovementComponent::Server_UpdateAutonomousInput(const FAutonomousProxyInput& AutonomousProxyInpit)
+{
+	checkf(NPS_PawnOwner != nullptr, TEXT("Missing NPS_PawnOwner"));
+	NPS_PawnOwner->Server_UpdateAutonomousInput(AutonomousProxyInpit);
+}
+
+void UNPS_MovementComponent::Server_UpdateAutonomousInput_Imlementation(const FAutonomousProxyInput& AutonomousProxyInpit)
+{
+
+}
+
+void UNPS_MovementComponent::Client_CorrectStateWithSyncTick(const FAutoProxySyncCorrect& AutoProxySyncCorrect)
+{
+	checkf(NPS_PawnOwner != nullptr, TEXT("Missing NPS_PawnOwner"));
+	NPS_PawnOwner->Client_CorrectStateWithSyncTick(AutoProxySyncCorrect);
+}
+
+void UNPS_MovementComponent::Client_CorrectStateWithSyncTick_Implementation(const FAutoProxySyncCorrect& AutoProxySyncCorrect)
+{
+
+}
+
+void UNPS_MovementComponent::Client_CorrectState(const FAutoProxyCorrect& Correction)
+{
+	checkf(NPS_PawnOwner != nullptr, TEXT("Missing NPS_PawnOwner"));
+	NPS_PawnOwner->Client_CorrectState(Correction);
+}
+
+void UNPS_MovementComponent::Client_CorrectState_Implementation(const FAutoProxyCorrect& Correction)
+{
+
+}
+// ------------------------ End Re-route RPC Function ----------------------
 
 void UNPS_MovementComponent::BeginDestroy()
 {

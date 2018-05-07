@@ -3,6 +3,7 @@
 
 #include "ANPS_PawnBase.h"
 #include "GameFramework/SpringArmComponent.h"
+#include "Components/PrimitiveComponent.h"
 #include "Camera/CameraComponent.h"
 #include "UNPS_MovementComponent.h"
 
@@ -57,34 +58,55 @@ USceneComponent* ANPS_PawnBase::GetForSmoothingVisualComp() const
 	return ForSmoothingVisualComp;
 }
 
-bool ANPS_PawnBase::Server_UpdateAutonomousInput_Validate(FAutonomousProxyInput AutonomousProxyInput)
+bool ANPS_PawnBase::Server_UpdateAutonomousInput_Validate
+(
+	FAutonomousProxyInput AutonomousProxyInput
+)
 {
 	return true;
 }
 
-void ANPS_PawnBase::Server_UpdateAutonomousInput_Implementation(FAutonomousProxyInput AutonomousProxyInput)
+void ANPS_PawnBase::Server_UpdateAutonomousInput_Implementation
+(
+	FAutonomousProxyInput AutonomousProxyInput
+)
 {
-
+	checkf(MovementComponent != nullptr, TEXT("Missing movement component."));
+	MovementComponent->Server_UpdateAutonomousInput_Imlementation(AutonomousProxyInput);
 }
 
-bool ANPS_PawnBase::Client_CorrectStateWithSyncTick_Validate(FAutoProxySyncCorrect Correction)
+bool ANPS_PawnBase::Client_CorrectStateWithSyncTick_Validate
+(
+	FAutoProxySyncCorrect Correction
+)
 {
 	return true;
 }
 
-void ANPS_PawnBase::Client_CorrectStateWithSyncTick_Implementation(FAutoProxySyncCorrect Correction)
+void ANPS_PawnBase::Client_CorrectStateWithSyncTick_Implementation
+(
+	FAutoProxySyncCorrect Correction
+)
 {
-	
+	checkf(MovementComponent != nullptr, TEXT("Missing movement component."));
+	MovementComponent->Client_CorrectStateWithSyncTick_Implementation(Correction);
 }
 
-bool ANPS_PawnBase::Client_CorrectState_Validate(FAutoProxyCorrect Correction)
+bool ANPS_PawnBase::Client_CorrectState_Validate
+(
+	FAutoProxyCorrect Correction
+)
 {
 	return true;
 }
 
-void ANPS_PawnBase::Client_CorrectState_Implementation(FAutoProxyCorrect Correction)
+void ANPS_PawnBase::Client_CorrectState_Implementation
+(
+	FAutoProxyCorrect Correction
+)
 {
-
+	checkf(MovementComponent != nullptr, TEXT("Missing movement component."));
+	MovementComponent->Client_CorrectState_Implementation(Correction);
 }
 
 

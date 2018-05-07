@@ -11,6 +11,9 @@
 #include "UNPS_MovementComponent.generated.h"
 
 struct FSavedInput;
+struct FAutonomousProxyInput;
+struct FAutoProxySyncCorrect;
+struct FAutoProxyCorrect;
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class NETPHYSSYNC_API UNPS_MovementComponent : public UPawnMovementComponent, 
@@ -27,7 +30,7 @@ public:
 
 	virtual bool IsComponentDataValid() const;
 
-#pragma region INetPhysSync
+// -------------------- Start INetPhysSync -------------------
 	// Called every frame
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
@@ -62,10 +65,10 @@ public:
 	virtual bool IsLocalPlayerControlPawn() const override;
 
 	virtual void OnReadReplication(const FOnReadReplicationParam& ReadReplicationParam) override;
-#pragma endregion INetPhysSync
+// ----------------- End INetPhysSync -----------------
 
 
-#pragma region INetworkPredictionInterface
+// -------------- Start INetworkPredictionInterface -------------------
 	//--------------------------------
 	// Server hooks
 	//--------------------------------
@@ -96,7 +99,27 @@ public:
 
 	virtual void ResetPredictionData_Server();
 
-#pragma endregion INetworkPredictionInterface
+//	--------------End INetworkPredictionInterface------------------ -
+
+// -------------- Start RPC Function ------------------
+	/*
+	* This component doesn't enable replication flag.
+	* Actor is responsible for replication.
+	* All these function just route call to Actor's RPC.
+	* Received RPC call on client/server, it will call function implementation in this component.
+	*/
+
+
+	void Server_UpdateAutonomousInput(const FAutonomousProxyInput& AutonomousProxyInpit);
+	void Server_UpdateAutonomousInput_Imlementation(const FAutonomousProxyInput& AutonomousProxyInpit);
+
+	void Client_CorrectStateWithSyncTick(const FAutoProxySyncCorrect& AutoProxySyncCorrect);
+	void Client_CorrectStateWithSyncTick_Implementation(const FAutoProxySyncCorrect& AutoProxySyncCorrect);
+
+	void Client_CorrectState(const FAutoProxyCorrect& Correction);
+	void Client_CorrectState_Implementation(const FAutoProxyCorrect& Correction);
+
+// ------------- End RPC Function ------------------
 
 protected:
 
