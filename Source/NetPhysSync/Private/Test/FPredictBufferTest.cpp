@@ -993,6 +993,27 @@ bool FAutoProxySyncCorrectTest::RunTest(const FString& Parameters)
 		true
 	);
 
+	AutoProxySyncCorrect = FAutoProxySyncCorrect
+	(
+		FakeState, 
+		ClientTick + 10, 
+		ServerTick + 10, 
+		ClientTick + 5
+	);
+
+	uint32 QueryLastProcessedClientInputTickIndex;
+	bool QuerySuccess = AutoProxySyncCorrect.TryGetLastProcessedClientInputTick
+	(
+		QueryLastProcessedClientInputTickIndex
+	);
+
+	TestEqual
+	(
+		TEXT("Test LastProcessedClientInputTickIndex."),
+		QuerySuccess && QueryLastProcessedClientInputTickIndex == ClientTick+5,
+		true
+	);
+
 	return true;
 }
 

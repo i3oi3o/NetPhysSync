@@ -26,6 +26,14 @@ public:
 		uint32 SyncServerTickParam
 	);
 
+	FAutoProxySyncCorrect
+	(
+		const FReplicatedRigidBodyState& ReplicateStateParam,
+		uint32 SyncClientTickParam,
+		uint32 SyncServerTickParam,
+		uint32 LastProcessedClientInputTick
+	);
+
 	~FAutoProxySyncCorrect();
 
 	FORCEINLINE const FReplicatedRigidBodyState& GetRigidBodyState() const
@@ -48,7 +56,7 @@ public:
 		return FTickSyncPoint(SyncClientTick, SyncServerTick);
 	}
 
-
+	FORCEINLINE bool TryGetLastProcessedClientInputTick(uint32& OutTick) const;
 
 private:
 	UPROPERTY(meta = (AllowPrivateAccess = "true"))
@@ -57,4 +65,6 @@ private:
 	uint32 SyncClientTick;
 	UPROPERTY(meta = (AllowPrivateAccess = "true"))
 	uint32 SyncServerTick;
+	UPROPERTY(meta = (AllowPrivateAccess = "true"))
+	int32 OffsetClientTickToGetLastProcessedInputTick;
 };
