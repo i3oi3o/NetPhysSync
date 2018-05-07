@@ -851,6 +851,60 @@ bool FClientHandleOverflowCachTick::RunTest(const FString& Paramters)
 	return true;
 }
 
+// This test is very slow.
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FServerHandleOverflowCachTick, "NetPhysSync.Slow.PredictBuffer.Server.HandleOverflowCachTick", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+bool FServerHandleOverflowCachTick::RunTest(const FString& Parameters)
+{
+	const int32 GeneratedSize = 3;
+	UNPSNetSetting* NetSetting = NewObject<UNPSNetSetting>();
+	NetSetting->JitterWaitPhysTick = GeneratedSize;
+
+	TArray<FSavedInput> GeneratedInputs;
+	GeneratedInputs.AddUninitialized(GeneratedSize - 1);
+	GenerateFakedInputFunction(GeneratedInputs.GetData(), GeneratedSize - 1);
+
+	GeneratedInputs.Add(FSavedInput::EmptyInput); // Create empty input at last index.
+
+	uint32 ClientTick = 0;
+	uint32 ServerTick = 5;
+
+	FNPS_ServerPawnPrediction ServerPawnPrediction(NetSetting);
+	FAutonomousProxyInput AutoInput(GeneratedInputs, ClientTick);
+
+	ServerPawnPrediction.UpdateInputBuffer(AutoInput, ServerTick);
+
+	ServerPawnPrediction.ProcessServerTick(ServerTick);
+
+	TestEqual
+	(
+		TEXT("Check LastProcessedInput."), 
+		ServerPawnPrediction.HasLastProcessedClientInputTickIndex() &&
+		ServerPawnPrediction.GetLastProcessedClientInputTickIndex() == ClientTick,
+		true
+	);
+
+	for (int32 i = 1; i < TNumericLimits<int32>::Max(); ++i)
+	{
+		ServerPawnPrediction.ProcessServerTick(ServerTick + i);
+	}
+
+	TestEqual
+	(
+		TEXT("Check after overflow."),
+		!ServerPawnPrediction.HasLastProcessedClientInputTickIndex(),
+		true
+	);
+
+	TestEqual
+	(
+		TEXT("Should still has sync tick."),
+		ServerPawnPrediction.HasSyncClientTickIndex(),
+		true
+	);
+
+	return true;
+}
+
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FAutonomousProxyInputConstructorTest, "NetPhysSync.PredictBuffer.Replication.AutonomousProxyInput", EAutomationTestFlags::EditorContext | EAutomationTestFlags::SmokeFilter)
 bool FAutonomousProxyInputConstructorTest::RunTest(const FString& Parameters)
 {

@@ -48,7 +48,7 @@ public:
 		return FBufferInfo(InputStartServerTickIndex, InputBuffer.Num());
 	}
 
-	FORCEINLINE bool HasLastProcessedClientTickIndex() const
+	FORCEINLINE bool HasLastProcessedClientInputTickIndex() const
 	{
 		return bHasLastProcessedInputClientTickIndex;
 	}
