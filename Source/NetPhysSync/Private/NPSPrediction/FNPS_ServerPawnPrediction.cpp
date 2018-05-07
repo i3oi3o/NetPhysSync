@@ -173,8 +173,6 @@ const FSavedInput& FNPS_ServerPawnPrediction::ProcessServerTick(uint32 ServerTic
 			{
 				bHasLastProcessedInputClientTickIndex = true;
 				
-
-				
 				if (InputBuffer.IsIndexInRange(ToProcessedIndex))
 				{
 					LastProcessedClientInputTickIndex = InputStartClientTickIndex + ToProcessedIndex;
@@ -194,6 +192,14 @@ const FSavedInput& FNPS_ServerPawnPrediction::ProcessServerTick(uint32 ServerTic
 				// Because of drop package and latency, We don't receive continuing buffer yet.
 				else if(!(InputBuffer[InputBuffer.Num()-1].IsEmptyInput()))
 				{
+					/**
+					 * NOTE :This implementation can cause too long buffer on client.
+					 * - Consider downstream implementation later as recommended by 
+					 * Rocket League physic synchronization.
+				     * - Another option is upstream as recommended by Overwatch, 
+					 * But this technique require more effort in implementation.
+					 */
+
 					// Shift buffer element to different server tick index.
 					int32 ShiftAmount = ToProcessedIndex - InputBuffer.Num() + 1;
 					InputStartServerTickIndex += ShiftAmount;
@@ -201,6 +207,10 @@ const FSavedInput& FNPS_ServerPawnPrediction::ProcessServerTick(uint32 ServerTic
 					// Cancel SyncClientTickIndex advancement code below because
 					// We cannot processed missing input.
 					SyncClientTickIndexForStampRigidBody -= AdvanceAmount;
+				}
+				else
+				{
+					ensureMsgf(false, TEXT("Shouldn't reach here."));
 				}
 			}
 		}
