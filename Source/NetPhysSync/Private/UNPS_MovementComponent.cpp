@@ -127,6 +127,38 @@ physx::PxRigidDynamic* UNPS_MovementComponent::GetUpdatedRigidDynamic()
 	return BodyInstance->GetPxRigidDynamic_AssumesLocked();
 }
 
+bool UNPS_MovementComponent::CanUseSyncClientTickWithCurrentInputBuffer
+(
+	const FNPS_ClientPawnPrediction* ClientPrediction, 
+	const FAutoProxySyncCorrect& SyncCorrect
+) const
+{
+	// See UNPS_MovementComponent::Client_CorrectStateWithSyncTick_Implementation(const FAutoProxySyncCorrect&)
+	// for comment about this implementation here.
+	FBufferInfo BufferInfo = ClientPrediction->GetInputBufferInfo();
+
+	bool bCanUseSyncClientTick = false;
+	uint32 QueryLastProcessedInput;
+
+	if (BufferInfo.BufferNum == 0)
+	{
+		bCanUseSyncClientTick = true;
+	}
+	else if (SyncCorrect.TryGetLastProcessedClientInputTick(QueryLastProcessedInput))
+	{
+		int32 Index = FNPS_StaticHelperFunction::
+			CalculateBufferArrayIndex
+			(
+				BufferInfo.BufferStartTickIndex,
+				QueryLastProcessedInput
+			);
+
+		bCanUseSyncClientTick = Index >= 0;
+	}
+
+	return bCanUseSyncClientTick;
+}
+
 // ----------------------- Start INetPhysSync ----------------------
 
 bool UNPS_MovementComponent::IsTickEnabled(const FIsTickEnableParam& param) const
@@ -554,30 +586,11 @@ void UNPS_MovementComponent::Client_CorrectStateWithSyncTick_Implementation
 	bClientHasNewSyncPoint = true;
 
 	FNPS_ClientPawnPrediction* ClientPrediction = GetPredictionData_ClientNPSPawn();
-
-	FBufferInfo BufferInfo = ClientPrediction->GetInputBufferInfo();
 	
-	bool IsCorrectionFromLastProcessedInput = true;
-	uint32 QueryLastProcessedInput;
-
-	if (BufferInfo.BufferNum == 0)
-	{
-		IsCorrectionFromLastProcessedInput = false;
-	}
-	else if(AutoProxySyncCorrect.TryGetLastProcessedClientInputTick(QueryLastProcessedInput))
-	{
-		int32 Index = FNPS_StaticHelperFunction::
-			CalculateBufferArrayIndex
-			(
-				BufferInfo.BufferStartTickIndex, 
-				QueryLastProcessedInput
-			);
-
-		IsCorrectionFromLastProcessedInput = Index < 0;
-	}
+	bool bCanUseSyncClientTick = CanUseSyncClientTickWithCurrentInputBuffer
+						(ClientPrediction, AutoProxySyncCorrect);
 	
-
-	if (!IsCorrectionFromLastProcessedInput)
+	if (bCanUseSyncClientTick)
 	{
 		ClientPrediction->ServerCorrectState
 		(
@@ -589,6 +602,28 @@ void UNPS_MovementComponent::Client_CorrectStateWithSyncTick_Implementation
 	}
 	else
 	{
+
+		/**
+		 * Here if you are coming form comment in UNPS_MovementComponent::
+		 * CanUseSyncClientTickWithCurrentInputBuffer(const FNPS_ClientPawnPrediction*, const FAutoProxySyncCorrect&).
+		 * 
+		 *
+		 * Because of latency, the correct state may not processed input in buffer yet.
+		 * 
+		 * Consider following scenario.
+		 *		- Server have processed client input from tick 10-20
+		 *		- Server send correction which is state from processed last input tick 20.
+		 *		- AutonomousProxy start receive input from player controller at tick 50.
+		 *		- AutonomousProxy received correct input state from processing last input tick 20 
+		 *		  but not form the starting new steam input tick 50.
+		 *		- This scenario create minor discrepancy.
+		 *
+		 * If this correct state is not for current input buffer, 
+		 * we use this to correct state before input buffer start.
+		 *
+		 * 
+		 */
+		FBufferInfo BufferInfo = ClientPrediction->GetInputBufferInfo();
 		ensureMsgf(BufferInfo.BufferNum > 0, TEXT("Buffer shouldn't be empty."));
 		uint32 CorrectClientTick = BufferInfo.BufferStartTickIndex - 1;
 		uint32 SyncServerTick = AutoProxySyncCorrect.GetSyncServerTick();

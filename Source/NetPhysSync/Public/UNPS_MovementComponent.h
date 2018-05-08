@@ -180,6 +180,12 @@ protected:
 
 	physx::PxRigidDynamic* GetUpdatedRigidDynamic();
 
+	bool CanUseSyncClientTickWithCurrentInputBuffer
+	(
+		const FNPS_ClientPawnPrediction* ClientPrediction,
+		const FAutoProxySyncCorrect& SyncCorrect
+	) const;
+
 private:
 	FNPS_ClientPawnPrediction* ClientPawnPrediction;
 
