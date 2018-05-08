@@ -8,12 +8,21 @@
 #include "FAutoRegisterINetPhysSyncTick.h"
 #include <GameFramework/PawnMovementComponent.h>
 #include "Interfaces/NetworkPredictionInterface.h"
+#include "FAutoProxyCorrect.h"
 #include "UNPS_MovementComponent.generated.h"
+
 
 struct FSavedInput;
 struct FAutonomousProxyInput;
 struct FAutoProxySyncCorrect;
 struct FAutoProxyCorrect;
+class FNPS_ClientPawnPrediction;
+class FNPS_ServerPawnPrediction;
+namespace physx
+{
+	class PxRigidDynamic;
+}
+
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class NETPHYSSYNC_API UNPS_MovementComponent : public UPawnMovementComponent, 
@@ -119,6 +128,8 @@ public:
 	void Client_CorrectState(const FAutoProxyCorrect& Correction);
 	void Client_CorrectState_Implementation(const FAutoProxyCorrect& Correction);
 
+	
+
 // ------------- End RPC Function ------------------
 
 protected:
@@ -138,15 +149,41 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = Movement)
 	float MaxAngularVelocityDegree;
 
+	bool bServerHasAutoProxyPendingCorrection;
+
+	bool bClientHasNewSyncPoint;
+
+	bool bClientHasRecieveServerTick;
+
+	uint32 ClientReceivedServerTick;
+
+	FTickSyncPoint ClientReceiveTickSyncPoint;
+
+//----------- Begin Receive Force update on client ----------
+	/*
+	* This is cache and used later in INetPhysSync::OnReadReplication(Args...)
+	*/
+
+	bool bClientHasAutoCorrectWithoutSyncTick;
+
+	FAutoProxyCorrect ClientAutoProxyCorrectWithoutSyncTick;
+//----------- End Receive Force update on client -------------
+
 	// Called when the game starts
 	virtual void BeginPlay() override;
 
 	virtual void SimulatedInput(const FSavedInput& SavedInput);
 
-private:
-	class FNPS_ClientPawnPrediction* ClientPawnPrediction;
+	FNPS_ClientPawnPrediction* GetPredictionData_ClientNPSPawn() const;
 
-	class FNPS_ServerPawnPrediction* ServerPawnPrediction;
+	FNPS_ServerPawnPrediction* GetPredictionData_ServerNPSPawn() const;
+
+	physx::PxRigidDynamic* GetUpdatedRigidDynamic();
+
+private:
+	FNPS_ClientPawnPrediction* ClientPawnPrediction;
+
+	FNPS_ServerPawnPrediction* ServerPawnPrediction;
 
 	FAutoRegisterINetPhysSyncTick AutoRegisterTick;
 

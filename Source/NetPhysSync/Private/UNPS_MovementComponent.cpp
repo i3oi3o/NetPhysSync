@@ -24,6 +24,10 @@ UNPS_MovementComponent::UNPS_MovementComponent()
 	MaxVelocityChange = 500.0f;
 	ApplyForceLocalPos = FVector(0.0f, 0.0f, 10.0f);
 	MaxAngularVelocityDegree = 90.0f;
+	bServerHasAutoProxyPendingCorrection = false;
+	bClientHasNewSyncPoint = false;
+	bClientHasRecieveServerTick = false;
+    bClientHasAutoCorrectWithoutSyncTick = false;
 }
 
 
@@ -105,6 +109,24 @@ void UNPS_MovementComponent::SimulatedInput(const FSavedInput& SavedInput)
 	}
 }
 
+FNPS_ClientPawnPrediction* UNPS_MovementComponent::GetPredictionData_ClientNPSPawn() const
+{
+	return static_cast<FNPS_ClientPawnPrediction*>(GetPredictionData_Client());
+}
+
+FNPS_ServerPawnPrediction* UNPS_MovementComponent::GetPredictionData_ServerNPSPawn() const
+{
+	return static_cast<FNPS_ServerPawnPrediction*>(GetPredictionData_Server());
+}
+
+
+
+physx::PxRigidDynamic* UNPS_MovementComponent::GetUpdatedRigidDynamic()
+{
+	FBodyInstance* BodyInstance = UpdatedPrimitive->GetBodyInstance();
+	return BodyInstance->GetPxRigidDynamic_AssumesLocked();
+}
+
 // ----------------------- Start INetPhysSync ----------------------
 
 bool UNPS_MovementComponent::IsTickEnabled(const FIsTickEnableParam& param) const
@@ -152,8 +174,8 @@ void UNPS_MovementComponent::TickPhysStep(const FPhysStepParam& param)
 		}
 		else
 		{
-			FNPS_ClientPawnPrediction* ClientPrecition =
-				static_cast<FNPS_ClientPawnPrediction*>(GetPredictionData_Client());
+			FNPS_ClientPawnPrediction* ClientPrecition = GetPredictionData_ClientNPSPawn();
+			ClientPrecition->Update(param.LocalPhysTickIndex);
 			ClientPrecition->SaveInput(MoveSpeedVec, param.LocalPhysTickIndex);
 			ClientPrecition->SaveRigidBodyState(RigidDynamic, param.LocalPhysTickIndex);
 			SimulatedInput(ClientPrecition->GetSavedInput(param.LocalPhysTickIndex));
@@ -162,6 +184,18 @@ void UNPS_MovementComponent::TickPhysStep(const FPhysStepParam& param)
 	else if (PawnOwner->Role == ENetRole::ROLE_Authority)
 	{
 		// Handle Server Logic here.
+		ensureMsgf
+		(
+			PawnOwner->GetNetMode() == ENetMode::NM_DedicatedServer ||
+			PawnOwner->GetNetMode() == ENetMode::NM_ListenServer,
+			TEXT("This is not server. Why is the code hit here?")
+		);
+
+		FNPS_ServerPawnPrediction* ServerPrediction = 
+			GetPredictionData_ServerNPSPawn();
+		const FSavedInput& ProcessedInput = ServerPrediction->
+			ProcessServerTick(param.LocalPhysTickIndex);
+		SimulatedInput(ProcessedInput);
 	}
 	else if (PawnOwner->Role == ENetRole::ROLE_SimulatedProxy)
 	{
@@ -176,7 +210,17 @@ void UNPS_MovementComponent::TickPostPhysStep(const FPostPhysStepParam& param)
 
 void UNPS_MovementComponent::TickEndPhysic(const FEndPhysParam& param)
 {
+	if (IsLocalPlayerControlPawn() && 
+		PawnOwner->Role == ENetRole::ROLE_AutonomousProxy)
+	{
+		FNPS_ClientPawnPrediction* ClientPrediction = GetPredictionData_ClientNPSPawn();
 
+		if (ClientPrediction->HasUnacknowledgedInput())
+		{
+			FAutonomousProxyInput ProxyInput(*ClientPrediction);
+			Server_UpdateAutonomousInput(ProxyInput);
+		}
+	}
 }
 // ------------------------- End INetPhysSync:: Tick interface -------------
 
@@ -190,8 +234,7 @@ void UNPS_MovementComponent::TickReplayStart(const FReplayStartParam& param)
 		FBodyInstance* BodyInstance = UpdatedPrimitive->GetBodyInstance();
 		PxRigidDynamic* RigidDynamic = BodyInstance->GetPxRigidDynamic_AssumesLocked();
 
-		FNPS_ClientPawnPrediction* ClientPrediction =
-			static_cast<FNPS_ClientPawnPrediction*>(GetPredictionData_Client());
+		FNPS_ClientPawnPrediction* ClientPrediction = GetPredictionData_ClientNPSPawn();
 		ClientPrediction->GetRigidBodyState(RigidDynamic, param.StartReplayTickIndex);
 	}
 	else if (PawnOwner->Role == ENetRole::ROLE_SimulatedProxy)
@@ -235,9 +278,16 @@ void UNPS_MovementComponent::TickReplayPostSubstep(const FReplayPostStepParam& p
 
 void UNPS_MovementComponent::TickReplayEnd(const FReplayEndParam& param)
 {
+	// Reset all the flag here.
 	FNPS_ClientPawnPrediction* ClientPrecition =
 		static_cast<FNPS_ClientPawnPrediction*>(GetPredictionData_Client());
 	ClientPrecition->ConsumeReplayFlag();
+	
+	bClientHasNewSyncPoint = false;
+
+	bClientHasRecieveServerTick = false;
+
+	bClientHasAutoCorrectWithoutSyncTick = false;
 }
 
 // ------------------------ End INetPhySync:: Replay interface -----------------------
@@ -249,20 +299,21 @@ void UNPS_MovementComponent::VisualUpdate(const FVisualUpdateParam& param)
 
 bool UNPS_MovementComponent::TryGetNewestUnprocessedServerTick(uint32& OutServerTick) const
 {
-	return false;
+	OutServerTick = ClientReceivedServerTick;
+	return bClientHasRecieveServerTick;
 }
 
 
 bool UNPS_MovementComponent::TryGetReplayIndex(uint32& OutTickIndex) const
 {
-	FNPS_ClientPawnPrediction* ClientPrediction = 
-		static_cast<FNPS_ClientPawnPrediction*>(GetPredictionData_Client());
+	FNPS_ClientPawnPrediction* ClientPrediction = GetPredictionData_ClientNPSPawn();
 	return ClientPrediction->TryGetReplayTickIndex(OutTickIndex);
 }
 
 bool UNPS_MovementComponent::TryGetNewSyncTick(FTickSyncPoint& OutNewSyncPoint) const
 {
-	return false;
+	OutNewSyncPoint = ClientReceiveTickSyncPoint;
+	return bClientHasNewSyncPoint;
 }
 
 bool UNPS_MovementComponent::IsLocalPlayerControlPawn() const
@@ -270,32 +321,127 @@ bool UNPS_MovementComponent::IsLocalPlayerControlPawn() const
 	return PawnOwner != nullptr && PawnOwner->IsLocallyControlled();
 }
 
-void UNPS_MovementComponent::OnReadReplication(const FOnReadReplicationParam& ReadReplicationParam)
+void UNPS_MovementComponent::OnReadReplication
+(
+	const FOnReadReplicationParam& ReadReplicationParam
+)
 {
+	FNPS_ClientPawnPrediction* ClientPrecition = GetPredictionData_ClientNPSPawn();
+	int32 ShiftAmount = ReadReplicationParam.NewSyncPointInfo
+		.ShiftClientTickAmountForReplayPrediction;
 
+
+	if (PawnOwner->Role == ENetRole::ROLE_AutonomousProxy &&
+		bClientHasAutoCorrectWithoutSyncTick)
+	{
+		ClientPrecition->ShiftElementsToDifferentTickIndex(ShiftAmount);
+		
+		uint32 ReplayClientTick = ReadReplicationParam
+			.NewSyncPointInfo
+			.NewSyncPoint
+			.ServerTick2ClientTick(ClientReceivedServerTick);
+		
+		ClientPrecition->ServerCorrectState
+		(
+			ClientAutoProxyCorrectWithoutSyncTick.GetRigidBodyState(),
+			ReplayClientTick
+		);
+		
+	}
 }
 // ---------------------- End INetPhysSync --------------------------------------- 
 
 // ---------------------- Start INetworkdPredictionInterface --------------------
 void UNPS_MovementComponent::SendClientAdjustment()
 {
+	checkf(IsComponentDataValid(), TEXT("Component data is not valid anymore why?"));
 	/**
 	 * This is periodically call by UNetDriver.
 	 */
+	if (bServerHasAutoProxyPendingCorrection)
+	{
+		FNPS_ServerPawnPrediction* ServerPrecition = GetPredictionData_ServerNPSPawn();
+
+		uint32 ServerTick = FNPS_StaticHelperFunction::GetCurrentPhysTickIndex(this);
+		FBufferInfo BufferInfo = ServerPawnPrediction->GetInputServerTickBufferInfo();
+
+		int32 ProcessedInputIndex = FNPS_StaticHelperFunction::
+			CalculateBufferArrayIndex(BufferInfo.BufferStartTickIndex, ServerTick);
+		
+		bool ProcessedInputYet =
+			// This condition handle jitter waiting logic. 
+			// If we're waiting, don't send any update yet.
+			ProcessedInputIndex >= 0 || 
+			// if buffer is empty, server already processed all input.
+			BufferInfo.BufferNum == 0;
+
+		if (ProcessedInputYet)
+		{
+			ensureMsgf
+			(
+				ServerPawnPrediction->HasSyncClientTickIndex(),
+				TEXT("We should have sync client tick index.")
+			);
+
+			// LastProcessedClientInputTick can be missing if current tick reach warping point.
+			if (ServerPrecition->HasLastProcessedClientInputTickIndex())
+			{
+				Client_CorrectStateWithSyncTick
+				(
+					FAutoProxySyncCorrect
+					(
+						FReplicatedRigidBodyState(GetUpdatedRigidDynamic()),
+						ServerTick,
+						ServerPrecition->GetSyncClientTickIndexForStampRigidBody(),
+						ServerPrecition->GetLastProcessedClientInputTickIndex()
+					)
+				);
+			}
+			else
+			{
+				Client_CorrectStateWithSyncTick
+				(
+					FAutoProxySyncCorrect
+					(
+						FReplicatedRigidBodyState(GetUpdatedRigidDynamic()),
+						ServerTick,
+						ServerPrecition->GetSyncClientTickIndexForStampRigidBody()
+					)
+				);
+			}
+
+			bServerHasAutoProxyPendingCorrection = false;
+		}
+	}
 }
 
 void UNPS_MovementComponent::ForcePositionUpdate(float DeltaTime)
 {
 	/**
-	 * This is call by APlayerController, using FNetworkPredictionData_Server::Timestamp , This is the last received update.,
+	 * This is call through APlayerController on server, using FNetworkPredictionData_Server::Timestamp , This is the last received update.,
 	 * to determined when we should force update.
 	 */
+	FNPS_ServerPawnPrediction* ServerPrediction = GetPredictionData_ServerNPSPawn();
+
+	if (ServerPrediction->HasSyncClientTickIndex())
+	{
+		// Set flag to true. So, SendClientAdjustment sending data to client.
+		bServerHasAutoProxyPendingCorrection = true;
+		SendClientAdjustment();
+	}
+	else
+	{
+		uint32 ServerTick = FNPS_StaticHelperFunction::GetCurrentPhysTickIndex(this);
+		FReplicatedRigidBodyState RigidBodyState(GetUpdatedRigidDynamic());
+		Client_CorrectState(FAutoProxyCorrect(RigidBodyState, ServerTick));
+	}
+
 }
 
 void UNPS_MovementComponent::SmoothCorrection(const FVector& OldLocation, const FQuat& OldRotation, const FVector& NewLocation, const FQuat& NewRotation)
 {
 	/* We don't use this. 
-	*  Smoothing is happened through INetPhysSync.
+	*  Smoothing is happened through INetPhysSync interface.
 	*/
 }
 
@@ -325,15 +471,13 @@ FNetworkPredictionData_Server* UNPS_MovementComponent::GetPredictionData_Server(
 bool UNPS_MovementComponent::HasPredictionData_Client() const
 {
 	return ClientPawnPrediction != nullptr && 
-		UpdatedPrimitive != nullptr &&
-		!IsPendingKill();
+		IsComponentDataValid();
 }
 
 bool UNPS_MovementComponent::HasPredictionData_Server() const
 {
 	return ServerPawnPrediction != nullptr &&
-		UpdatedPrimitive != nullptr &&
-		!IsPendingKill();
+		IsComponentDataValid();
 }
 
 void UNPS_MovementComponent::ResetPredictionData_Client()
@@ -362,7 +506,22 @@ void UNPS_MovementComponent::Server_UpdateAutonomousInput(const FAutonomousProxy
 
 void UNPS_MovementComponent::Server_UpdateAutonomousInput_Imlementation(const FAutonomousProxyInput& AutonomousProxyInpit)
 {
+	FNPS_ServerPawnPrediction* ServerPrediction = GetPredictionData_ServerNPSPawn();
+	// Need to update this so, ForceUpdate work properly.
+	ServerPrediction->ServerTimeStamp = GetWorld()->TimeSeconds;
+	
+	uint32 ServerTick = FNPS_StaticHelperFunction::GetCurrentPhysTickIndex(this);
 
+	FBufferInfo BeforeUpdate = ServerPrediction->GetInputServerTickBufferInfo();
+
+	ServerPrediction->UpdateInputBuffer(AutonomousProxyInpit, ServerTick);
+
+	FBufferInfo AfterUpdate = ServerPrediction->GetInputServerTickBufferInfo();
+
+
+	bServerHasAutoProxyPendingCorrection = bServerHasAutoProxyPendingCorrection ||
+			BeforeUpdate.BufferLastTickIndex != AfterUpdate.BufferLastTickIndex ||
+			BeforeUpdate.BufferNum != AfterUpdate.BufferNum;
 }
 
 void UNPS_MovementComponent::Client_CorrectStateWithSyncTick(const FAutoProxySyncCorrect& AutoProxySyncCorrect)
@@ -371,9 +530,86 @@ void UNPS_MovementComponent::Client_CorrectStateWithSyncTick(const FAutoProxySyn
 	NPS_PawnOwner->Client_CorrectStateWithSyncTick(AutoProxySyncCorrect);
 }
 
-void UNPS_MovementComponent::Client_CorrectStateWithSyncTick_Implementation(const FAutoProxySyncCorrect& AutoProxySyncCorrect)
+void UNPS_MovementComponent::Client_CorrectStateWithSyncTick_Implementation
+(
+	const FAutoProxySyncCorrect& AutoProxySyncCorrect
+)
 {
+	// Ignore old correction from out of order package.
+	if (bClientHasRecieveServerTick)
+	{
+		int32 Index = FNPS_StaticHelperFunction::CalculateBufferArrayIndex
+		(
+			ClientReceivedServerTick,
+			AutoProxySyncCorrect.GetSyncServerTick()
+		);
 
+		if (Index < 0)
+		{
+			return;
+		}
+	}
+
+	bClientHasRecieveServerTick = true;
+	bClientHasNewSyncPoint = true;
+
+	FNPS_ClientPawnPrediction* ClientPrediction = GetPredictionData_ClientNPSPawn();
+
+	FBufferInfo BufferInfo = ClientPrediction->GetInputBufferInfo();
+	
+	bool IsCorrectionFromLastProcessedInput = true;
+	uint32 QueryLastProcessedInput;
+
+	if (BufferInfo.BufferNum == 0)
+	{
+		IsCorrectionFromLastProcessedInput = false;
+	}
+	else if(AutoProxySyncCorrect.TryGetLastProcessedClientInputTick(QueryLastProcessedInput))
+	{
+		int32 Index = FNPS_StaticHelperFunction::
+			CalculateBufferArrayIndex
+			(
+				BufferInfo.BufferStartTickIndex, 
+				QueryLastProcessedInput
+			);
+
+		IsCorrectionFromLastProcessedInput = Index < 0;
+	}
+	
+
+	if (!IsCorrectionFromLastProcessedInput)
+	{
+		ClientPrediction->ServerCorrectState
+		(
+			AutoProxySyncCorrect.GetRigidBodyState(),
+			AutoProxySyncCorrect.GetSyncClientTick()
+		);
+		
+		ClientReceiveTickSyncPoint = AutoProxySyncCorrect.CreateTickSyncPoint();
+	}
+	else
+	{
+		ensureMsgf(BufferInfo.BufferNum > 0, TEXT("Buffer shouldn't be empty."));
+		uint32 CorrectClientTick = BufferInfo.BufferStartTickIndex - 1;
+		uint32 SyncServerTick = AutoProxySyncCorrect.GetSyncServerTick();
+
+		ClientReceiveTickSyncPoint = FTickSyncPoint(CorrectClientTick, SyncServerTick);
+
+		ensureMsgf
+		(
+			ClientReceiveTickSyncPoint.GetClientTickSyncPoint() == CorrectClientTick &&
+			ClientReceiveTickSyncPoint.GetServerTickSyncPoint() == SyncServerTick,
+			TEXT("Typo when create FTickSyncPoint.")
+		);
+
+		ClientPrediction->ServerCorrectState
+		(
+			AutoProxySyncCorrect.GetRigidBodyState(),
+			CorrectClientTick
+		);
+	}
+
+	ClientReceivedServerTick = AutoProxySyncCorrect.GetSyncServerTick();
 }
 
 void UNPS_MovementComponent::Client_CorrectState(const FAutoProxyCorrect& Correction)
@@ -384,7 +620,25 @@ void UNPS_MovementComponent::Client_CorrectState(const FAutoProxyCorrect& Correc
 
 void UNPS_MovementComponent::Client_CorrectState_Implementation(const FAutoProxyCorrect& Correction)
 {
+	// Ignore old correction from out of order package.
+	if (bClientHasRecieveServerTick)
+	{
+		int32 Index = FNPS_StaticHelperFunction::CalculateBufferArrayIndex
+		(
+			ClientReceivedServerTick,
+			Correction.GetServerTick()
+		);
 
+		if (Index < 0)
+		{
+			return;
+		}
+	}
+
+	bClientHasRecieveServerTick = true;
+	ClientReceivedServerTick = Correction.GetServerTick();
+	bClientHasAutoCorrectWithoutSyncTick = true;
+	ClientAutoProxyCorrectWithoutSyncTick = Correction;
 }
 // ------------------------ End Re-route RPC Function ----------------------
 
