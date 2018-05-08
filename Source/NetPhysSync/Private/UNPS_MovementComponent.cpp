@@ -26,8 +26,9 @@ UNPS_MovementComponent::UNPS_MovementComponent()
 	MaxAngularVelocityDegree = 90.0f;
 	bServerHasAutoProxyPendingCorrection = false;
 	bClientHasNewSyncPoint = false;
-	bClientHasRecieveServerTick = false;
+	bClientHasRecievedNewServerTick = false;
     bClientHasAutoCorrectWithoutSyncTick = false;
+	bClientHasReceivedServerTick = false;
 }
 
 
@@ -157,6 +158,22 @@ bool UNPS_MovementComponent::CanUseSyncClientTickWithCurrentInputBuffer
 	}
 
 	return bCanUseSyncClientTick;
+}
+
+bool UNPS_MovementComponent::IsReceivedServerTickTooOld(uint32 ServerTick)
+{
+	if (bClientHasReceivedServerTick)
+	{
+		int32 Index = FNPS_StaticHelperFunction::CalculateBufferArrayIndex
+		(
+			ClientReceivedServerTick,
+			ServerTick
+		);
+
+		return (Index < 0);
+	}
+
+	return false;
 }
 
 // ----------------------- Start INetPhysSync ----------------------
@@ -317,7 +334,7 @@ void UNPS_MovementComponent::TickReplayEnd(const FReplayEndParam& param)
 	
 	bClientHasNewSyncPoint = false;
 
-	bClientHasRecieveServerTick = false;
+	bClientHasRecievedNewServerTick = false;
 
 	bClientHasAutoCorrectWithoutSyncTick = false;
 }
@@ -332,7 +349,7 @@ void UNPS_MovementComponent::VisualUpdate(const FVisualUpdateParam& param)
 bool UNPS_MovementComponent::TryGetNewestUnprocessedServerTick(uint32& OutServerTick) const
 {
 	OutServerTick = ClientReceivedServerTick;
-	return bClientHasRecieveServerTick;
+	return bClientHasRecievedNewServerTick;
 }
 
 
@@ -517,6 +534,10 @@ void UNPS_MovementComponent::ResetPredictionData_Client()
 	/**
 	 * Need to investigate what should we do here.
 	 */
+	bClientHasNewSyncPoint = false;
+	bClientHasRecievedNewServerTick = false;
+	bClientHasAutoCorrectWithoutSyncTick = false;
+	bClientHasReceivedServerTick = false;
 }
 
 void UNPS_MovementComponent::ResetPredictionData_Server()
@@ -524,6 +545,7 @@ void UNPS_MovementComponent::ResetPredictionData_Server()
 	/*
 	* Need to investigate what should we do here.
 	*/
+	bServerHasAutoProxyPendingCorrection = false;
 }
 
 // ---------------------- End INetworkdPredictionInterface --------------------
@@ -568,21 +590,13 @@ void UNPS_MovementComponent::Client_CorrectStateWithSyncTick_Implementation
 )
 {
 	// Ignore old correction from out of order package.
-	if (bClientHasRecieveServerTick)
+	if (IsReceivedServerTickTooOld(AutoProxySyncCorrect.GetSyncServerTick()))
 	{
-		int32 Index = FNPS_StaticHelperFunction::CalculateBufferArrayIndex
-		(
-			ClientReceivedServerTick,
-			AutoProxySyncCorrect.GetSyncServerTick()
-		);
-
-		if (Index < 0)
-		{
-			return;
-		}
+		return;
 	}
 
-	bClientHasRecieveServerTick = true;
+	bClientHasReceivedServerTick = true;
+	bClientHasRecievedNewServerTick = true;
 	bClientHasNewSyncPoint = true;
 
 	FNPS_ClientPawnPrediction* ClientPrediction = GetPredictionData_ClientNPSPawn();
@@ -653,24 +667,19 @@ void UNPS_MovementComponent::Client_CorrectState(const FAutoProxyCorrect& Correc
 	NPS_PawnOwner->Client_CorrectState(Correction);
 }
 
-void UNPS_MovementComponent::Client_CorrectState_Implementation(const FAutoProxyCorrect& Correction)
+void UNPS_MovementComponent::Client_CorrectState_Implementation
+(
+	const FAutoProxyCorrect& Correction
+)
 {
 	// Ignore old correction from out of order package.
-	if (bClientHasRecieveServerTick)
+	if (IsReceivedServerTickTooOld(Correction.GetServerTick()))
 	{
-		int32 Index = FNPS_StaticHelperFunction::CalculateBufferArrayIndex
-		(
-			ClientReceivedServerTick,
-			Correction.GetServerTick()
-		);
-
-		if (Index < 0)
-		{
-			return;
-		}
+		return;
 	}
 
-	bClientHasRecieveServerTick = true;
+	bClientHasReceivedServerTick = true;
+	bClientHasRecievedNewServerTick = true;
 	ClientReceivedServerTick = Correction.GetServerTick();
 	bClientHasAutoCorrectWithoutSyncTick = true;
 	ClientAutoProxyCorrectWithoutSyncTick = Correction;

@@ -153,7 +153,9 @@ protected:
 
 	bool bClientHasNewSyncPoint;
 
-	bool bClientHasRecieveServerTick;
+	bool bClientHasRecievedNewServerTick;
+
+	bool bClientHasReceivedServerTick;
 
 	uint32 ClientReceivedServerTick;
 
@@ -185,6 +187,11 @@ protected:
 		const FNPS_ClientPawnPrediction* ClientPrediction,
 		const FAutoProxySyncCorrect& SyncCorrect
 	) const;
+
+	/**
+	 * Handle out of order package from server
+	 */
+	bool IsReceivedServerTickTooOld(uint32 ServerTick);
 
 private:
 	FNPS_ClientPawnPrediction* ClientPawnPrediction;
