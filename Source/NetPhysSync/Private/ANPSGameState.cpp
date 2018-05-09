@@ -8,7 +8,6 @@
 #include "UnrealNetwork.h"
 
 
-
 ANPSGameState::ANPSGameState()
 {
 	bBeginDestroy = false;
@@ -149,8 +148,10 @@ void ANPSGameState::BeginPlay()
 void ANPSGameState::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-	GetOrCreateNetPhysSyncManager()->OnTickPrePhysic();
-
+	if (!bBeginDestroy)
+	{
+		GetOrCreateNetPhysSyncManager()->OnTickPrePhysic();
+	}
 }
 
 void FNPSGameStatePostPhysicsTickFunction::ExecuteTick(float DeltaTime, ELevelTick TickType, ENamedThreads::Type CurrentThread, const FGraphEventRef& MyCompletionGraphEvent)
