@@ -1,6 +1,7 @@
 // This is licensed under the BSD License 2.0 found in the LICENSE file in project's root directory.
 
 #include "UNPS_MovementComponent.h"
+#include "NPSLogCategory.h"
 #include "ANPS_PawnBase.h"
 #include <Engine/World.h>
 #include "ANPSGameState.h"
@@ -52,7 +53,6 @@ bool UNPS_MovementComponent::IsComponentDataValid() const
 void UNPS_MovementComponent::BeginPlay()
 {
 	Super::BeginPlay();
-
 	PawnOwner = Cast<APawn>(GetOwner());
 	NPS_PawnOwner = Cast<ANPS_PawnBase>(PawnOwner);
 
@@ -133,7 +133,7 @@ physx::PxRigidDynamic* UNPS_MovementComponent::GetUpdatedRigidDynamic()
 	return BodyInstance->GetPxRigidDynamic_AssumesLocked();
 }
 
-bool UNPS_MovementComponent::CanUseSyncClientTickWithCurrentInputBuffer
+bool UNPS_MovementComponent::IsLateSyncClientTick
 (
 	const FNPS_ClientPawnPrediction* ClientPrediction, 
 	const FAutoProxySyncCorrect& SyncCorrect
@@ -143,12 +143,12 @@ bool UNPS_MovementComponent::CanUseSyncClientTickWithCurrentInputBuffer
 	// for comment about this implementation here.
 	FBufferInfo BufferInfo = ClientPrediction->GetInputBufferInfo();
 
-	bool bCanUseSyncClientTick = false;
+	bool bIsLateSyncClientTick = true;
 	uint32 QueryLastProcessedInput;
 
 	if (BufferInfo.BufferNum == 0)
 	{
-		bCanUseSyncClientTick = true;
+		bIsLateSyncClientTick = false;
 	}
 	else if (SyncCorrect.TryGetLastProcessedClientInputTick(QueryLastProcessedInput))
 	{
@@ -159,10 +159,10 @@ bool UNPS_MovementComponent::CanUseSyncClientTickWithCurrentInputBuffer
 				QueryLastProcessedInput
 			);
 
-		bCanUseSyncClientTick = Index >= 0;
+		bIsLateSyncClientTick = Index < 0;
 	}
 
-	return bCanUseSyncClientTick;
+	return bIsLateSyncClientTick;
 }
 
 bool UNPS_MovementComponent::IsReceivedServerTickTooOld(uint32 ServerTick)
@@ -406,6 +406,7 @@ void UNPS_MovementComponent::OnReadReplication
 	if (PawnOwner->Role == ENetRole::ROLE_AutonomousProxy &&
 		bClientHasAutoCorrectWithoutSyncTick)
 	{
+		
 		ClientPrecition->ShiftElementsToDifferentTickIndex(ShiftAmount);
 		
 		uint32 ReplayClientTick = ReadReplicationParam
@@ -417,6 +418,14 @@ void UNPS_MovementComponent::OnReadReplication
 		(
 			ClientAutoProxyCorrectWithoutSyncTick.GetRigidBodyState(),
 			ReplayClientTick
+		);
+
+		UE_LOG
+		(
+			LogNPS_Net, Log, 
+			TEXT("Correct state without sync client tick. Need Replay : %s"),
+			ClientPrecition->IsReplayTickIndex(ReplayClientTick)
+			? TEXT("True") : TEXT("False")
 		);
 		
 	}
@@ -624,10 +633,10 @@ void UNPS_MovementComponent::Client_CorrectStateWithSyncTick_Implementation
 
 	FNPS_ClientPawnPrediction* ClientPrediction = GetPredictionData_ClientNPSPawn();
 	
-	bool bCanUseSyncClientTick = CanUseSyncClientTickWithCurrentInputBuffer
-						(ClientPrediction, AutoProxySyncCorrect);
+	bool bIsLateSyncClientTick = IsLateSyncClientTick(ClientPrediction, 
+					AutoProxySyncCorrect);
 	
-	if (bCanUseSyncClientTick)
+	if (!bIsLateSyncClientTick)
 	{
 		ClientPrediction->ServerCorrectState
 		(
@@ -636,6 +645,13 @@ void UNPS_MovementComponent::Client_CorrectStateWithSyncTick_Implementation
 		);
 		
 		ClientReceiveTickSyncPoint = AutoProxySyncCorrect.CreateTickSyncPoint();
+		UE_LOG
+		(
+			LogNPS_Net, Log, 
+			TEXT("Correct with sync point. Need Replay: %s"),
+			ClientPrediction->IsReplayTickIndex(AutoProxySyncCorrect.GetSyncClientTick())
+			? TEXT("True") : TEXT("False")
+		);
 	}
 	else
 	{
@@ -678,6 +694,14 @@ void UNPS_MovementComponent::Client_CorrectStateWithSyncTick_Implementation
 		(
 			AutoProxySyncCorrect.GetRigidBodyState(),
 			CorrectClientTick
+		);
+
+		UE_LOG
+		(
+			LogNPS_Net, Log, 
+			TEXT("Correct with late sync point. Need Replay: %s"),
+			ClientPrediction->IsReplayTickIndex(CorrectClientTick) ? 
+			TEXT("True") : TEXT("False")
 		);
 	}
 

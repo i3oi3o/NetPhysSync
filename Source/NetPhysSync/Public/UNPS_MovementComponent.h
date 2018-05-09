@@ -182,7 +182,7 @@ protected:
 
 	physx::PxRigidDynamic* GetUpdatedRigidDynamic();
 
-	bool CanUseSyncClientTickWithCurrentInputBuffer
+	bool IsLateSyncClientTick
 	(
 		const FNPS_ClientPawnPrediction* ClientPrediction,
 		const FAutoProxySyncCorrect& SyncCorrect
