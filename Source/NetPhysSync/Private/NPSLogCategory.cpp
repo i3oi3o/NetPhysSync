@@ -1,6 +1,5 @@
 // This is licensed under the BSD License 2.0 found in the LICENSE file in project's root directory.
 
-#pragma once
+#include "NPSLogCategory.h"
 
-#include "CoreMinimal.h"
-
+DEFINE_LOG_CATEGORY(LogNPS_Net);

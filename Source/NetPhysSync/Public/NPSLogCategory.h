@@ -4,3 +4,5 @@
 
 #include "CoreMinimal.h"
 
+DECLARE_LOG_CATEGORY_EXTERN(LogNPS_Net, Log, All);
+
