@@ -23,7 +23,8 @@ class NETPHYSSYNC_API ANPS_PlayerController : public APlayerController
 
 	protected:
 		virtual void SetupInputComponent() override;
-	
+		virtual void Tick(float DeltaSecond) override;
+
 	private:
 		void MoveForward(float InputValue);
 		void MoveRight(float InputValue);

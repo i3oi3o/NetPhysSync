@@ -1,9 +1,13 @@
 // This is licensed under the BSD License 2.0 found in the LICENSE file in project's root directory.
 
 #include "ANPS_PlayerController.h"
+#include "GameFramework/GameNetworkManager.h"
 #include "GameFramework/Pawn.h"
+#include "GameFramework/MovementComponent.h"
+#include "GameFramework/PawnMovementComponent.h"
 #include "ConstCollection/InputNameCollection.h"
-
+#include "Interfaces/NetworkPredictionInterface.h"
+#include "Engine/World.h"
 
 
 ANPS_PlayerController::ANPS_PlayerController(const FObjectInitializer& ObjectInitializer)
@@ -19,15 +23,15 @@ void ANPS_PlayerController::SetupInputComponent()
 
 	ENetMode NetMode = GetNetMode();
 
-	if ( 
-			(
-				NetMode == ENetMode::NM_Client && 
-				Role == ENetRole::ROLE_AutonomousProxy
-			) 
-			||
-			NetMode == ENetMode::NM_ListenServer ||
-			NetMode == ENetMode::NM_Standalone
-	   )
+	if (
+		(
+			NetMode == ENetMode::NM_Client &&
+			Role == ENetRole::ROLE_AutonomousProxy
+			)
+		||
+		NetMode == ENetMode::NM_ListenServer ||
+		NetMode == ENetMode::NM_Standalone
+		)
 	{
 		InputComponent->BindAxis(InputNameCollection::MOVE_FORWARD_AXIS_NAME, this,
 			&ANPS_PlayerController::MoveForward);
@@ -41,6 +45,65 @@ void ANPS_PlayerController::SetupInputComponent()
 			&ANPS_PlayerController::TurnRateRight);
 		InputComponent->BindAxis(InputNameCollection::TURN_RATE_UP_AXIS_NAME, this,
 			&ANPS_PlayerController::TurnRateUp);
+	}
+}
+
+void ANPS_PlayerController::Tick(float DeltaSecond)
+{
+	Super::Tick(DeltaSecond);
+
+	// Code is copy paste from PlayerController.cpp
+	if (
+			(GetRemoteRole() == ROLE_AutonomousProxy) && 
+			!IsNetMode(NM_Client) && 
+			!IsLocalPlayerController()
+	   )
+	{
+		
+		if (
+				GetPawn() != nullptr && !GetPawn()->IsPendingKill() &&
+				GetPawn()->GetRemoteRole() == ROLE_AutonomousProxy &&
+				GetPawn()->GetIsReplicated()
+		   )
+		{
+			UMovementComponent* PawnMovement = GetPawn()->GetMovementComponent();
+			INetworkPredictionInterface* INet = Cast<INetworkPredictionInterface>(PawnMovement);
+			FNetworkPredictionData_Server* ServerPrediction = nullptr;
+
+			if (INet != nullptr && INet->HasPredictionData_Server())
+			{
+				ServerPrediction = INet->GetPredictionData_Server();
+			}
+			
+
+			if (ServerPrediction != nullptr)
+			{
+				UWorld* World = GetWorld();
+				if (ServerPrediction->ServerTimeStamp != 0.0f)
+				{
+					const float TimeSinceUpdate = World->GetTimeSeconds() 
+						- ServerPrediction->ServerTimeStamp;
+					const float PawnTimeSinceUpdate = TimeSinceUpdate 
+						* GetPawn()->CustomTimeDilation;
+					float Threshold = AGameNetworkManager::StaticClass()
+						->GetDefaultObject<AGameNetworkManager>()
+						->MAXCLIENTUPDATEINTERVAL 
+						* GetPawn()->GetActorTimeDilation();
+
+					if (PawnTimeSinceUpdate > Threshold)
+					{
+						ServerPrediction->ServerTimeStamp = World->GetTimeSeconds();
+						ServerPrediction = nullptr;
+
+						INet->ForcePositionUpdate(PawnTimeSinceUpdate);
+					}
+				}
+				else
+				{
+					ServerPrediction->ServerTimeStamp = World->GetTimeSeconds();
+				}
+			}
+		}
 	}
 }
 

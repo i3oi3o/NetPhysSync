@@ -86,7 +86,7 @@ public:
 	virtual void SendClientAdjustment();
 
 	/** (Server) Call by PlayerController. Need to update FNetworkPredictionData_Server.ServerTimestamp everytime replication is received.*/
-	virtual void ForcePositionUpdate(float DeltaTime);
+	virtual void ForcePositionUpdate(float DeltaTimeSinceLastCorrection);
 
 	//--------------------------------
 	// Client hooks

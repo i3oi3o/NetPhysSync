@@ -441,7 +441,10 @@ void UNPS_MovementComponent::SendClientAdjustment()
 	 */
 	if (bServerHasAutoProxyPendingCorrection)
 	{
+		UE_LOG(LogNPS_Net, Log, TEXT("Send correction with sync tick."));
 		FNPS_ServerPawnPrediction* ServerPrecition = GetPredictionData_ServerNPSPawn();
+		// Prevent force update in case that our physic delta time is high.
+		ServerPrecition->ServerTimeStamp = GetWorld()->TimeSeconds;
 
 		uint32 ServerTick = FNPS_StaticHelperFunction::GetCurrentPhysTickIndex(this);
 		FBufferInfo BufferInfo = ServerPawnPrediction->GetInputServerTickBufferInfo();
@@ -494,10 +497,15 @@ void UNPS_MovementComponent::SendClientAdjustment()
 			bServerHasAutoProxyPendingCorrection = false;
 		}
 	}
+	else
+	{
+		UE_LOG(LogNPS_Net, Log, TEXT("No correction to send."));
+	}
 }
 
-void UNPS_MovementComponent::ForcePositionUpdate(float DeltaTime)
+void UNPS_MovementComponent::ForcePositionUpdate(float DeltaTimeSinceLastCorrection)
 {
+	UE_LOG(LogNPS_Net, Log, TEXT("Force position update."));
 	/**
 	 * This is call through APlayerController on server, using FNetworkPredictionData_Server::Timestamp , This is the last received update.,
 	 * to determined when we should force update.
@@ -507,6 +515,7 @@ void UNPS_MovementComponent::ForcePositionUpdate(float DeltaTime)
 	if (ServerPrediction->HasSyncClientTickIndex())
 	{
 		// Set flag to true. So, SendClientAdjustment sending data to client.
+		// Refactor this later.
 		bServerHasAutoProxyPendingCorrection = true;
 		SendClientAdjustment();
 	}
