@@ -4,3 +4,5 @@
 #include "Modules/ModuleManager.h"
 
 IMPLEMENT_PRIMARY_GAME_MODULE( FDefaultGameModuleImpl, NetPhysSync, "NetPhysSync" );
+
+DEFINE_LOG_CATEGORY(LogNPS_Net);
