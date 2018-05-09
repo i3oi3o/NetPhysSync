@@ -105,8 +105,6 @@ private:
 
 	FTickSyncPoint CurrentSyncPoint;
 
-	uint32 LastTickGettingSyncPoint;
-
 	bool DoWeNeedReplay() const;
 
 	/**

@@ -10,6 +10,7 @@
 #include "GameFramework/PlayerState.h"
 #include "UNPSNetSetting.h"
 #include "IOnReplayEnd.h"
+#include "NPSLogCategory.h"
 
 using namespace physx;
 
@@ -31,7 +32,6 @@ FNetPhysSyncManager::FNetPhysSyncManager(AActor* OwningActorParam)
 	, PxScratchReplayBuffer(nullptr)
 	, PxScratchReplayBufferSize(0)
 	, OwningActor(OwningActorParam)
-	, LastTickGettingSyncPoint(10-TNumericLimits<int32>::Max())
 {
 	checkf(OwningActor != nullptr, TEXT("Missing owning actor."));
 	int32 SceneScratchBufferSize = UPhysicsSettings::Get()->SimulateScratchMemorySize;
@@ -102,6 +102,7 @@ void FNetPhysSyncManager::UnregisterINetPhysSync(INetPhysSyncPtr iNetPhysSyncPtr
 	}
 }
 
+int LogOnce = 0;
 void FNetPhysSyncManager::OnTickPrePhysic()
 {
 	if (!DoWeNeedReplay())
@@ -411,10 +412,11 @@ bool FNetPhysSyncManager::TryGetNewestUnprocessedServerTick
 	bool bFoundYet = false;
 
 	const IQueryReceivedPackage* QueryInterface = Cast<IQueryReceivedPackage>(OwningActor);
+	uint32 Query;
 	bFoundYet = 
 	(
 		QueryInterface != nullptr &&
-		QueryInterface->TryGetNewestUnprocessedServerTick(OutNewestUnprocessedServerTick)
+		QueryInterface->TryGetNewestUnprocessedServerTick(Query)
 	);
 
 	for (auto It = INetPhysSyncPtrList.CreateIterator(); It; ++It)
@@ -429,24 +431,29 @@ bool FNetPhysSyncManager::TryGetNewestUnprocessedServerTick
 			if (!bFoundYet)
 			{
 				bFoundYet = true;
-				OutNewestUnprocessedServerTick = NewQueryServerTick;
+				Query = NewQueryServerTick;
 			}
 			else
 			{
 				int32 Diff;
 				FNPS_StaticHelperFunction::CalculateBufferArrayIndex
 				(
-					OutNewestUnprocessedServerTick,
+					Query,
 					NewQueryServerTick,
 					Diff
 				);
 
 				if (Diff > 0)
 				{
-					OutNewestUnprocessedServerTick = NewQueryServerTick;
+					Query = NewQueryServerTick;
 				}
 			}
 		}
+	}
+
+	if (bFoundYet)
+	{
+		OutNewestUnprocessedServerTick = Query;
 	}
 
 	return bFoundYet;
@@ -461,9 +468,10 @@ bool FNetPhysSyncManager::TryGetNewSyncPoint(FTickSyncPoint& OutSyncPoint)
 			if (INetPhysSyncPtrList[i] != nullptr && 
 				INetPhysSyncPtrList[i]->IsLocalPlayerControlPawn())
 			{
-				if (INetPhysSyncPtrList[i]->TryGetNewSyncTick(OutSyncPoint))
+				FTickSyncPoint Query;
+				if (INetPhysSyncPtrList[i]->TryGetNewSyncTick(Query))
 				{
-					LastTickGettingSyncPoint = LocalPhysTickIndex;
+					OutSyncPoint = Query;
 					return true;
 				}
 				else
@@ -479,21 +487,31 @@ bool FNetPhysSyncManager::TryGetNewSyncPoint(FTickSyncPoint& OutSyncPoint)
 			return false;
 		}
 
-		int32 OutDiff;
-		FNPS_StaticHelperFunction::CalculateBufferArrayIndex
-		(
-			LastTickGettingSyncPoint,
-			LocalPhysTickIndex,
-			OutDiff
-		);
 
-		// Use value from configure file later.
-		bool IsCurrentSyncPointTooOld = OutDiff < -1000 || OutDiff > 1000;
 
 		uint32 NewestUnprocessedServerTick;
-		if (IsCurrentSyncPointTooOld && 
-			TryGetNewestUnprocessedServerTick(NewestUnprocessedServerTick))
+		if (TryGetNewestUnprocessedServerTick(NewestUnprocessedServerTick))
 		{
+			int32 DiffExistServerTick = TNumericLimits<int32>::Max();
+
+			if (CurrentSyncPoint.IsValid())
+			{
+				DiffExistServerTick = FNPS_StaticHelperFunction::CalculateBufferArrayIndex
+				(
+					CurrentSyncPoint.GetServerTickSyncPoint(),
+					NewestUnprocessedServerTick
+				);
+			}
+
+			// Use threshold value from configure file later.
+			bool IsCurrentSyncPointTooOld = DiffExistServerTick < -NPS_BUFFER_SIZE || 
+				DiffExistServerTick > NPS_BUFFER_SIZE;
+
+			if (!IsCurrentSyncPointTooOld)
+			{
+				return false;
+			}
+
 			const APlayerController* PlayerController = WorldOwningPhysScene->GetFirstPlayerController();
 			
 			if (PlayerController != nullptr && 
@@ -504,7 +522,6 @@ bool FNetPhysSyncManager::TryGetNewSyncPoint(FTickSyncPoint& OutSyncPoint)
 				if (RTT > 0)
 				{
 					RTT *= 0.001f;
-					UE_LOG(LogTemp, Log, TEXT("Current RTT:%f"), RTT);
 					UNPSNetSetting* NetSetting = FNPS_StaticHelperFunction
 						::GetNetSetting();
 					float StepDeltaTime = UPhysicsSettings::Get()->
@@ -518,7 +535,12 @@ bool FNetPhysSyncManager::TryGetNewSyncPoint(FTickSyncPoint& OutSyncPoint)
 						TotalPredictSteps;
 					OutSyncPoint = FTickSyncPoint(NewClientSyncTick, 
 						NewServerSyncTick);
-					LastTickGettingSyncPoint = LocalPhysTickIndex;
+					checkf
+					(
+						OutSyncPoint.GetClientTickSyncPoint() == NewClientSyncTick &&
+						OutSyncPoint.GetServerTickSyncPoint() == NewServerSyncTick,
+						TEXT("Typo creating OutSyncPoint.")
+					);
 					return true;
 				}
 				

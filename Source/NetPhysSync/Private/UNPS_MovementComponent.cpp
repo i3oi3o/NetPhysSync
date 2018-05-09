@@ -384,7 +384,10 @@ bool UNPS_MovementComponent::TryGetReplayIndex(uint32& OutTickIndex) const
 
 bool UNPS_MovementComponent::TryGetNewSyncTick(FTickSyncPoint& OutNewSyncPoint) const
 {
-	OutNewSyncPoint = ClientReceiveTickSyncPoint;
+	if (bClientHasNewSyncPoint)
+	{
+		OutNewSyncPoint = ClientReceiveTickSyncPoint;
+	}
 	return bClientHasNewSyncPoint;
 }
 
@@ -409,6 +412,12 @@ void UNPS_MovementComponent::OnReadReplication
 		
 		ClientPrecition->ShiftElementsToDifferentTickIndex(ShiftAmount);
 		
+		checkf
+		(
+			ClientAutoProxyCorrectWithoutSyncTick.GetServerTick() == ClientReceivedServerTick,
+			TEXT("Receive server tick doesn't match.")
+		);
+
 		uint32 ReplayClientTick = ReadReplicationParam
 			.NewSyncPointInfo
 			.NewSyncPoint
@@ -497,15 +506,10 @@ void UNPS_MovementComponent::SendClientAdjustment()
 			bServerHasAutoProxyPendingCorrection = false;
 		}
 	}
-	else
-	{
-		UE_LOG(LogNPS_Net, Log, TEXT("No correction to send."));
-	}
 }
 
 void UNPS_MovementComponent::ForcePositionUpdate(float DeltaTimeSinceLastCorrection)
 {
-	UE_LOG(LogNPS_Net, Log, TEXT("Force position update."));
 	/**
 	 * This is call through APlayerController on server, using FNetworkPredictionData_Server::Timestamp , This is the last received update.,
 	 * to determined when we should force update.
@@ -747,6 +751,18 @@ void UNPS_MovementComponent::BeginDestroy()
 	Super::BeginDestroy();
 	AutoRegisterTick.StopAutoRegister();
 	FNPS_StaticHelperFunction::UnregisterINetPhySync(this);
+
+	if (ClientPawnPrediction != nullptr)
+	{
+		delete ClientPawnPrediction;
+		ClientPawnPrediction = nullptr;
+	}
+
+	if (ServerPawnPrediction != nullptr)
+	{
+		delete ServerPawnPrediction;
+		ServerPawnPrediction = nullptr;
+	}
 }
 
 // Called every frame

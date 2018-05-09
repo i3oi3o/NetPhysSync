@@ -11,18 +11,20 @@ int32 CalculateClientTickShiftAmountForReplayPrediction
 {
 	int32 ToReturnShiftAmount = 0;
 
-	uint32 UpdatedOldClientTick = NewSyncPointParam.ServerTick2ClientTick
-	(
-		OldSyncPointParam.GetServerTickSyncPoint()
-	);
+	if (OldSyncPointParam.IsValid() && NewSyncPointParam.IsValid())
+	{
+		uint32 UpdatedOldClientTick = NewSyncPointParam.ServerTick2ClientTick
+		(
+			OldSyncPointParam.GetServerTickSyncPoint()
+		);
 
-	FNPS_StaticHelperFunction::CalculateBufferArrayIndex
-	(
-		OldSyncPointParam.GetClientTickSyncPoint(),
-		UpdatedOldClientTick,
-		ToReturnShiftAmount
-	);
-
+		FNPS_StaticHelperFunction::CalculateBufferArrayIndex
+		(
+			OldSyncPointParam.GetClientTickSyncPoint(),
+			UpdatedOldClientTick,
+			ToReturnShiftAmount
+		);
+	}
 	return ToReturnShiftAmount;
 }
 
