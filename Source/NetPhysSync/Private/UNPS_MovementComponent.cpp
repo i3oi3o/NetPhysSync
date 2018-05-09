@@ -11,6 +11,11 @@
 #include "FNPS_StaticHelperFunction.h"
 #include "FNPS_ClientPawnPrediction.h"
 #include "FNPS_ServerPawnPrediction.h"
+#include "DrawDebugHelpers.h"
+
+#if !(UE_BUILD_SHIPPING)
+#include "Components/BoxComponent.h"
+#endif
 
 using namespace physx;
 
@@ -280,11 +285,29 @@ void UNPS_MovementComponent::TickReplayStart(const FReplayStartParam& param)
 	
 	if (PawnOwner->Role == ENetRole::ROLE_AutonomousProxy)
 	{
-		FBodyInstance* BodyInstance = UpdatedPrimitive->GetBodyInstance();
-		PxRigidDynamic* RigidDynamic = BodyInstance->GetPxRigidDynamic_AssumesLocked();
+		PxRigidDynamic* RigidDynamic = GetUpdatedRigidDynamic();
 
 		FNPS_ClientPawnPrediction* ClientPrediction = GetPredictionData_ClientNPSPawn();
 		ClientPrediction->GetRigidBodyState(RigidDynamic, param.StartReplayTickIndex);
+
+		// Use our own compilation symbol later.
+#if !(UE_BUILD_SHIPPING)
+		UBoxComponent* BoxComponent = Cast<UBoxComponent>(UpdatedPrimitive);
+
+		if (BoxComponent != nullptr)
+		{
+			FTransform RigidT = P2UTransform(RigidDynamic->getGlobalPose());
+			DrawDebugBox
+			(
+				this->GetWorld(), 
+				RigidT.GetLocation(),
+				BoxComponent->GetScaledBoxExtent(),
+				RigidT.GetRotation(),
+				FColor::Blue, true /*Persistence Line*/
+			);
+		}
+
+#endif
 	}
 	else if (PawnOwner->Role == ENetRole::ROLE_SimulatedProxy)
 	{
