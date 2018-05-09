@@ -305,7 +305,7 @@ void FNetPhysSyncManager::OnTickPostPhysic(float GameFrameDeltaTime)
 bool FNetPhysSyncManager::DoWeNeedReplay() const
 {
 	return OwningActor != nullptr &&
-		OwningActor->GetNetMode() == ENetMode::NM_Client;
+		OwningActor->IsNetMode(NM_Client);
 }
 
 void FNetPhysSyncManager::TickStartPhys(FPhysScene* PhysScene, uint32 SceneType, float StartDeltaTime)
@@ -473,6 +473,12 @@ bool FNetPhysSyncManager::TryGetNewSyncPoint(FTickSyncPoint& OutSyncPoint)
 			}
 		}
 
+		// Wait for ping calculation a bit.
+		if (WorldOwningPhysScene->GetRealTimeSeconds() < 3)
+		{
+			return false;
+		}
+
 		int32 OutDiff;
 		FNPS_StaticHelperFunction::CalculateBufferArrayIndex
 		(
@@ -489,18 +495,34 @@ bool FNetPhysSyncManager::TryGetNewSyncPoint(FTickSyncPoint& OutSyncPoint)
 			TryGetNewestUnprocessedServerTick(NewestUnprocessedServerTick))
 		{
 			const APlayerController* PlayerController = WorldOwningPhysScene->GetFirstPlayerController();
-			float RTT = PlayerController->PlayerState->ExactPing;
-			UNPSNetSetting* NetSetting = FNPS_StaticHelperFunction::GetNetSetting();
-			float StepDeltaTime = UPhysicsSettings::Get()->MaxSubstepDeltaTime;
-			int32 TotalPredictSteps = FMath::FloorToInt(RTT / StepDeltaTime) + 
-				NetSetting->JitterWaitPhysTick;
+			
+			if (PlayerController != nullptr && 
+				PlayerController->PlayerState != nullptr)
+			{
+				float RTT = PlayerController->PlayerState->ExactPing;
 
-			// Current client tick will sync with predict NewServerSyncTick.
-			uint32 NewClientSyncTick = LocalPhysTickIndex;
-			uint32 NewServerSyncTick = NewestUnprocessedServerTick + TotalPredictSteps;
-			OutSyncPoint = FTickSyncPoint(NewClientSyncTick, NewServerSyncTick);
-			LastTickGettingSyncPoint = LocalPhysTickIndex;
-			return true;
+				if (RTT > 0)
+				{
+					RTT *= 0.001f;
+					UE_LOG(LogTemp, Log, TEXT("Current RTT:%f"), RTT);
+					UNPSNetSetting* NetSetting = FNPS_StaticHelperFunction
+						::GetNetSetting();
+					float StepDeltaTime = UPhysicsSettings::Get()->
+						MaxSubstepDeltaTime;
+					int32 TotalPredictSteps = FMath::FloorToInt(RTT / StepDeltaTime) 
+						+ NetSetting->JitterWaitPhysTick;
+
+					// Current client tick will sync with predict NewServerSyncTick.
+					uint32 NewClientSyncTick = LocalPhysTickIndex;
+					uint32 NewServerSyncTick = NewestUnprocessedServerTick + 
+						TotalPredictSteps;
+					OutSyncPoint = FTickSyncPoint(NewClientSyncTick, 
+						NewServerSyncTick);
+					LastTickGettingSyncPoint = LocalPhysTickIndex;
+					return true;
+				}
+				
+			}
 		}
 	}
 	
@@ -517,7 +539,8 @@ bool FNetPhysSyncManager::TryGetReplayIndex(uint32& OutReplayIndex)
 		for (int32 i = 0; i < INetPhysSyncPtrList.Num(); ++i)
 		{
 			uint32 QueryReplayTickIndex;
-			if (INetPhysSyncPtrList[i]->TryGetReplayIndex(QueryReplayTickIndex))
+			if (INetPhysSyncPtrList[i] != nullptr &&
+				INetPhysSyncPtrList[i]->TryGetReplayIndex(QueryReplayTickIndex))
 			{
 				int32 NewDiff;
 				FNPS_StaticHelperFunction::CalculateBufferArrayIndex
