@@ -181,6 +181,14 @@ bool UNPS_MovementComponent::IsReceivedServerTickTooOld(uint32 ServerTick)
 	return false;
 }
 
+void UNPS_MovementComponent::ResetClientCachReceiveDataFlag()
+{
+	bClientHasNewSyncPoint = false;
+	bClientHasRecievedNewServerTick = false;
+	bClientHasAutoCorrectWithoutSyncTick = false;
+	bClientHasReceivedServerTick = false;
+}
+
 // ----------------------- Start INetPhysSync ----------------------
 
 bool UNPS_MovementComponent::IsTickEnabled(const FIsTickEnableParam& param) const
@@ -427,16 +435,7 @@ void UNPS_MovementComponent::OnReadReplication
 		(
 			ClientAutoProxyCorrectWithoutSyncTick.GetRigidBodyState(),
 			ReplayClientTick
-		);
-
-		UE_LOG
-		(
-			LogNPS_Net, Log, 
-			TEXT("Correct state without sync client tick. Need Replay : %s"),
-			ClientPrecition->IsReplayTickIndex(ReplayClientTick)
-			? TEXT("True") : TEXT("False")
-		);
-		
+		);		
 	}
 }
 // ---------------------- End INetPhysSync --------------------------------------- 
@@ -579,10 +578,7 @@ void UNPS_MovementComponent::ResetPredictionData_Client()
 	/**
 	 * Need to investigate what should we do here.
 	 */
-	bClientHasNewSyncPoint = false;
-	bClientHasRecievedNewServerTick = false;
-	bClientHasAutoCorrectWithoutSyncTick = false;
-	bClientHasReceivedServerTick = false;
+	ResetClientCachReceiveDataFlag();
 }
 
 void UNPS_MovementComponent::ResetPredictionData_Server()

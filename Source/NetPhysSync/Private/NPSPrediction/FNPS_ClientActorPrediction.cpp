@@ -84,15 +84,6 @@ void FNPS_ClientActorPrediction::ServerCorrectState(const FReplicatedRigidBodySt
 			ToVerifyOldIndex
 		);
 
-		UE_LOG
-		(
-			LogTemp, Log, 
-			TEXT("ClientTickIndex:%d, LastCorrectedStateTickIndex:%d, ToVerifyOldIndex:%d"),
-			ClientTickIndex,
-			LastCorrectedStateTickIndex,
-			ToVerifyOldIndex
-		);
-
 		// Ignore old correction.
 		if (ToVerifyOldIndex < 0)
 		{
@@ -143,7 +134,10 @@ bool FNPS_ClientActorPrediction::TryGetReplayTickIndex(uint32& OutTickIndex) con
 	return bNeedReplay;
 }
 
-
+bool FNPS_ClientActorPrediction::IsNeedReplay() const
+{
+	return bNeedReplay;
+}
 
 bool FNPS_ClientActorPrediction::TryGetLastCorrectStateTickIndex(uint32& OutTickIndex) const
 {

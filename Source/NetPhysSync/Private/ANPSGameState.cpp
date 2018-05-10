@@ -6,6 +6,7 @@
 #include <Engine/World.h>
 #include "UNPSNetSetting.h"
 #include "UnrealNetwork.h"
+#include "NPSLogCategory.h"
 
 
 ANPSGameState::ANPSGameState()
@@ -14,7 +15,6 @@ ANPSGameState::ANPSGameState()
 	bNewUnprocessedServerTick = false;
 	PrimaryActorTick.TickGroup = ETickingGroup::TG_PrePhysics;
 	PrimaryActorTick.bCanEverTick = true;
-
 	RepServerTick = 0;
 }
 
@@ -82,10 +82,9 @@ void ANPSGameState::BeginDestroy()
 
 bool ANPSGameState::TryGetNewestUnprocessedServerTick(uint32& OutServerTickIndex) const
 {
-	// Implement this later.
 	if (bNewUnprocessedServerTick)
 	{
-		OutServerTickIndex = RepServerTick;
+		OutServerTickIndex = CachServerTick;
 	}
 
 	return bNewUnprocessedServerTick;
@@ -105,7 +104,9 @@ uint32 ANPSGameState::GetCurrentPhysTickIndex()
 
 void ANPSGameState::OnRep_ServerTick()
 {
-	bNewUnprocessedServerTick = true;
+	// if we don't cache it, Unreal will set RepServerTick to default value.
+	CachServerTick = RepServerTick;
+	bNewUnprocessedServerTick = true;	
 }
 
 class FNetPhysSyncManager* ANPSGameState::GetOrCreateNetPhysSyncManager()

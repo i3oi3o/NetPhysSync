@@ -38,6 +38,7 @@ public:
 	virtual void ShiftElementsToDifferentTickIndex(int32 ShiftAmount);
 	FORCEINLINE bool IsReplayTickIndex(uint32 TickIndex) const;
 	FORCEINLINE bool TryGetReplayTickIndex(uint32& OutTickIndex) const;
+	FORCEINLINE bool IsNeedReplay() const;
 	FORCEINLINE bool TryGetLastCorrectStateTickIndex(uint32& OutTickIndex) const;
 	FORCEINLINE bool HasClientStateBuffer() const;
 	FORCEINLINE FBufferInfo GetStateBufferInfo() const;

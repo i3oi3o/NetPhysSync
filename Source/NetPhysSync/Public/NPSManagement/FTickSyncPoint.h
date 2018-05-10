@@ -37,6 +37,8 @@ public:
 	uint32 ServerTick2ClientTick(uint32 ServerTick) const;
 	uint32 ClientTick2ServerTick(uint32 ClientTick) const;
 
+	FString ToString() const;
+
 private:
 	uint32 ClientTickSyncPoint;
 	uint32 ServerTickSyncPoint;

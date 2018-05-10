@@ -72,5 +72,6 @@ private:
 	FNPSGameStatePostPhysicsTickFunction PostPhysicTickFunction;
 	bool bBeginDestroy;
 	bool bNewUnprocessedServerTick;
+	uint32 CachServerTick;
 	
 };

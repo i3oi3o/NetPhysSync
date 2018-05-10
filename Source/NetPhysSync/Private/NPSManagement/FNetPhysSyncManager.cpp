@@ -109,13 +109,20 @@ void FNetPhysSyncManager::OnTickPrePhysic()
 	{
 		return;
 	}
-	uint32 OutReplayIndex;
+
+
+#if !UE_BUILD_SHIPPING
+	uint32 DebugNewestReceivedServerTick;
+	bool bHasDebugNewstReceivedServerTick;
+	bHasDebugNewstReceivedServerTick = 
+		TryGetNewestUnprocessedServerTick(DebugNewestReceivedServerTick);
+#endif
 
 	FTickSyncPoint OldSyncPoint = CurrentSyncPoint;
-	bool bHasNewSyncPoint = false;
-	if (TryGetNewSyncPoint(CurrentSyncPoint))
+	FTickSyncPoint QuerySyncPoint;
+	if (TryGetNewSyncPoint(QuerySyncPoint))
 	{
-		bHasNewSyncPoint = true;
+		CurrentSyncPoint = QuerySyncPoint;
 	}
 
 	if(!CurrentSyncPoint.IsValid())
@@ -125,7 +132,7 @@ void FNetPhysSyncManager::OnTickPrePhysic()
 
 	FOnNewSyncPointInfo OnNewSyncPointInfo
 	(
-		bHasNewSyncPoint ? OldSyncPoint : CurrentSyncPoint,
+		OldSyncPoint,
 		CurrentSyncPoint
 	);
 
@@ -144,7 +151,7 @@ void FNetPhysSyncManager::OnTickPrePhysic()
 		IsTickEnableParam
 	);
 
-
+	uint32 OutReplayIndex;
 	if (TryGetReplayIndex(OutReplayIndex) && WorldOwningPhysScene != nullptr)
 	{
 		int32 ReplayNumber;
@@ -156,7 +163,31 @@ void FNetPhysSyncManager::OnTickPrePhysic()
 			ReplayNumber
 		);
 
-		checkf(ReplayNumber > 0, TEXT("Why isn't replay number positive?"));
+		if (ReplayNumber < 0)
+		{
+			/*
+				Handle this later. Possible cause :
+					- Client run slowly than server.
+					- This is a bug.
+			*/
+#if !UE_BUILD_SHIPPING
+			if (bHasDebugNewstReceivedServerTick && OldSyncPoint.IsValid())
+			{
+				uint32 OldPredictServerTick = 
+					OldSyncPoint.ClientTick2ServerTick(LocalPhysTickIndex);
+				UE_LOG
+				(
+					LogNPS_Net, Log,
+					TEXT("We get negative replay number. OldPredictServerTick: %u, ReceivedServerTick: %u"),
+					OldPredictServerTick,
+					DebugNewestReceivedServerTick
+				);
+			}
+#endif
+			return;
+		}
+
+
 		LocalPhysTickIndex = OutReplayIndex;
 		FPhysScene* PhysScene = WorldOwningPhysScene->GetPhysicsScene();
 		FReplayStartParam ReplayStartParam
@@ -412,7 +443,7 @@ bool FNetPhysSyncManager::TryGetNewestUnprocessedServerTick
 	bool bFoundYet = false;
 
 	const IQueryReceivedPackage* QueryInterface = Cast<IQueryReceivedPackage>(OwningActor);
-	uint32 Query;
+	uint32 Query = 0;
 	bFoundYet = 
 	(
 		QueryInterface != nullptr &&
@@ -435,6 +466,7 @@ bool FNetPhysSyncManager::TryGetNewestUnprocessedServerTick
 			}
 			else
 			{
+				
 				int32 Diff;
 				FNPS_StaticHelperFunction::CalculateBufferArrayIndex
 				(
@@ -468,10 +500,8 @@ bool FNetPhysSyncManager::TryGetNewSyncPoint(FTickSyncPoint& OutSyncPoint)
 			if (INetPhysSyncPtrList[i] != nullptr && 
 				INetPhysSyncPtrList[i]->IsLocalPlayerControlPawn())
 			{
-				FTickSyncPoint Query;
-				if (INetPhysSyncPtrList[i]->TryGetNewSyncTick(Query))
+				if (INetPhysSyncPtrList[i]->TryGetNewSyncTick(OutSyncPoint))
 				{
-					OutSyncPoint = Query;
 					return true;
 				}
 				else
@@ -535,6 +565,7 @@ bool FNetPhysSyncManager::TryGetNewSyncPoint(FTickSyncPoint& OutSyncPoint)
 						TotalPredictSteps;
 					OutSyncPoint = FTickSyncPoint(NewClientSyncTick, 
 						NewServerSyncTick);
+
 					checkf
 					(
 						OutSyncPoint.GetClientTickSyncPoint() == NewClientSyncTick &&
@@ -554,6 +585,7 @@ bool FNetPhysSyncManager::TryGetNewSyncPoint(FTickSyncPoint& OutSyncPoint)
 
 bool FNetPhysSyncManager::TryGetReplayIndex(uint32& OutReplayIndex)
 {
+	OutReplayIndex = 0;
 	if (WorldOwningPhysScene != nullptr)
 	{
 		int32 OldestDiff = TNumericLimits<int32>::Max();

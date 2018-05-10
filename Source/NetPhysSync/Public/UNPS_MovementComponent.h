@@ -193,6 +193,8 @@ protected:
 	 */
 	bool IsReceivedServerTickTooOld(uint32 ServerTick);
 
+	void ResetClientCachReceiveDataFlag();
+
 private:
 	FNPS_ClientPawnPrediction* ClientPawnPrediction;
 

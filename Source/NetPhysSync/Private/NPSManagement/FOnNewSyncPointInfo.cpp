@@ -2,6 +2,7 @@
 
 #include "FOnNewSyncPointInfo.h"
 #include "FNPS_StaticHelperFunction.h"
+#include "NPSLogCategory.h"
 
 int32 CalculateClientTickShiftAmountForReplayPrediction
 (

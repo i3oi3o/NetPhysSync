@@ -54,3 +54,9 @@ uint32 FTickSyncPoint::ClientTick2ServerTick(uint32 ClientTick) const
 
 	return ServerTickSyncPoint + OutDiff;
 }
+
+FString FTickSyncPoint::ToString() const
+{
+	return FString::Printf(TEXT("{ ClientTick: %u, ServerTick: %u }"), 
+		ClientTickSyncPoint, ServerTickSyncPoint);
+}
