@@ -102,7 +102,6 @@ void FNetPhysSyncManager::UnregisterINetPhysSync(INetPhysSyncPtr iNetPhysSyncPtr
 	}
 }
 
-int LogOnce = 0;
 void FNetPhysSyncManager::OnTickPrePhysic()
 {
 	if (!DoWeNeedReplay())
@@ -110,17 +109,20 @@ void FNetPhysSyncManager::OnTickPrePhysic()
 		return;
 	}
 
+	// Currently only support PST_Sync;
+	EPhysicsSceneType SceneTypeEnum = EPhysicsSceneType::PST_Sync;
+	FIsTickEnableParam IsTickEnableParam(SceneTypeEnum);
 
 #if !UE_BUILD_SHIPPING
 	uint32 DebugNewestReceivedServerTick;
 	bool bHasDebugNewstReceivedServerTick;
 	bHasDebugNewstReceivedServerTick = 
-		TryGetNewestUnprocessedServerTick(DebugNewestReceivedServerTick);
+		TryGetNewestUnprocessedServerTick(IsTickEnableParam, DebugNewestReceivedServerTick);
 #endif
 
 	FTickSyncPoint OldSyncPoint = CurrentSyncPoint;
 	FTickSyncPoint QuerySyncPoint;
-	if (TryGetNewSyncPoint(QuerySyncPoint))
+	if (TryGetNewSyncPoint(IsTickEnableParam, QuerySyncPoint))
 	{
 		CurrentSyncPoint = QuerySyncPoint;
 	}
@@ -130,15 +132,22 @@ void FNetPhysSyncManager::OnTickPrePhysic()
 		return;
 	}
 
+#if !UE_BUILD_SHIPPING
+	static bool LogOnce = true;
+	if (LogOnce)
+	{
+		LogOnce = false;
+		UE_LOG(LogNPS_Net, Log, TEXT("SyncPoint is available. Ready to simulate."));
+	}
+#endif
+
 	FOnNewSyncPointInfo OnNewSyncPointInfo
 	(
 		OldSyncPoint,
 		CurrentSyncPoint
 	);
 
-	// Currently only support PST_Sync;
-	EPhysicsSceneType SceneTypeEnum = EPhysicsSceneType::PST_Sync;
-	FIsTickEnableParam IsTickEnableParam(SceneTypeEnum);
+
 
 	FOnReadReplicationParam OnReadReplicationParam
 	(
@@ -152,7 +161,7 @@ void FNetPhysSyncManager::OnTickPrePhysic()
 	);
 
 	uint32 OutReplayIndex;
-	if (TryGetReplayIndex(OutReplayIndex) && WorldOwningPhysScene != nullptr)
+	if (TryGetReplayIndex(IsTickEnableParam, OutReplayIndex) && WorldOwningPhysScene != nullptr)
 	{
 		int32 ReplayNumber;
 
@@ -171,19 +180,26 @@ void FNetPhysSyncManager::OnTickPrePhysic()
 					- This is a bug.
 			*/
 #if !UE_BUILD_SHIPPING
-			if (bHasDebugNewstReceivedServerTick && OldSyncPoint.IsValid())
+			if (bHasDebugNewstReceivedServerTick)
 			{
-				uint32 OldPredictServerTick = 
-					OldSyncPoint.ClientTick2ServerTick(LocalPhysTickIndex);
 				UE_LOG
 				(
 					LogNPS_Net, Log,
-					TEXT("We get negative replay number. OldPredictServerTick: %u, ReceivedServerTick: %u"),
-					OldPredictServerTick,
-					DebugNewestReceivedServerTick
+					TEXT("We get negative replay number. ReplayTick: %u, CurrentTick: %u, ReceivedServerTick: %u, CurrentSyncPoint: %s"),
+					OutReplayIndex,
+					LocalPhysTickIndex,
+					DebugNewestReceivedServerTick,
+					*CurrentSyncPoint.ToString()
 				);
 			}
 #endif
+			CallINetPhysSyncFunction
+			(
+				&INetPhysSync::OnFinishReadReplication,
+				FOnFinishReadAllReplicationParam(),
+				IsTickEnableParam
+			);
+
 			return;
 		}
 
@@ -307,6 +323,13 @@ void FNetPhysSyncManager::OnTickPrePhysic()
 			ReplayEndInterface->OnReplayEnd();
 		}
 	}
+
+	CallINetPhysSyncFunction
+	(
+		&INetPhysSync::OnFinishReadReplication,
+		FOnFinishReadAllReplicationParam(),
+		IsTickEnableParam
+	);
 }
 
 void FNetPhysSyncManager::OnTickPostPhysic(float GameFrameDeltaTime)
@@ -437,6 +460,7 @@ void FNetPhysSyncManager::FlushDeferedRegisteeAndCleanNull()
 
 bool FNetPhysSyncManager::TryGetNewestUnprocessedServerTick
 (
+	const FIsTickEnableParam& IsTickEnableParam,
 	uint32& OutNewestUnprocessedServerTick
 )
 {
@@ -456,6 +480,7 @@ bool FNetPhysSyncManager::TryGetNewestUnprocessedServerTick
 		uint32 NewQueryServerTick;
 		if (
 				InterfacePtr != nullptr &&
+				InterfacePtr->IsTickEnabled(IsTickEnableParam) &&
 				InterfacePtr->TryGetNewestUnprocessedServerTick(NewQueryServerTick)
 		   )
 		{
@@ -491,13 +516,18 @@ bool FNetPhysSyncManager::TryGetNewestUnprocessedServerTick
 	return bFoundYet;
 }
 
-bool FNetPhysSyncManager::TryGetNewSyncPoint(FTickSyncPoint& OutSyncPoint)
+bool FNetPhysSyncManager::TryGetNewSyncPoint
+(
+	const FIsTickEnableParam& IsTickEnableParam,
+	FTickSyncPoint& OutSyncPoint
+)
 {
 	if (WorldOwningPhysScene != nullptr && DoWeNeedReplay())
 	{
 		for (int32 i = 0; i < INetPhysSyncPtrList.Num(); ++i)
 		{
-			if (INetPhysSyncPtrList[i] != nullptr && 
+			if (INetPhysSyncPtrList[i] != nullptr &&
+				INetPhysSyncPtrList[i]->IsTickEnabled(IsTickEnableParam) &&
 				INetPhysSyncPtrList[i]->IsLocalPlayerControlPawn())
 			{
 				if (INetPhysSyncPtrList[i]->TryGetNewSyncTick(OutSyncPoint))
@@ -520,7 +550,7 @@ bool FNetPhysSyncManager::TryGetNewSyncPoint(FTickSyncPoint& OutSyncPoint)
 
 
 		uint32 NewestUnprocessedServerTick;
-		if (TryGetNewestUnprocessedServerTick(NewestUnprocessedServerTick))
+		if (TryGetNewestUnprocessedServerTick(IsTickEnableParam, NewestUnprocessedServerTick))
 		{
 			int32 DiffExistServerTick = TNumericLimits<int32>::Max();
 
@@ -583,7 +613,11 @@ bool FNetPhysSyncManager::TryGetNewSyncPoint(FTickSyncPoint& OutSyncPoint)
 	
 }
 
-bool FNetPhysSyncManager::TryGetReplayIndex(uint32& OutReplayIndex)
+bool FNetPhysSyncManager::TryGetReplayIndex
+(
+	const FIsTickEnableParam& IsTickEnableParam,
+	uint32& OutReplayIndex
+)
 {
 	OutReplayIndex = 0;
 	if (WorldOwningPhysScene != nullptr)
@@ -594,6 +628,7 @@ bool FNetPhysSyncManager::TryGetReplayIndex(uint32& OutReplayIndex)
 		{
 			uint32 QueryReplayTickIndex;
 			if (INetPhysSyncPtrList[i] != nullptr &&
+				INetPhysSyncPtrList[i]->IsTickEnabled(IsTickEnableParam) &&
 				INetPhysSyncPtrList[i]->TryGetReplayIndex(QueryReplayTickIndex))
 			{
 				int32 NewDiff;

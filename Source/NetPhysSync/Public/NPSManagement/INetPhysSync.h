@@ -16,6 +16,7 @@
 #include "FVisualUpdateParam.h"
 #include "FOnReadReplicationParam.h"
 #include "IQueryReceivedPackage.h"
+#include "FOnFinishReadAllReplicationParam.h"
 #include "INetPhysSync.generated.h"
 
 // This class does not need to be modified.
@@ -98,7 +99,14 @@ public:
 	virtual bool IsLocalPlayerControlPawn() const PURE_VIRTUAL(INetPhysSync::IsLocalPlayerControlPawn, return false; );
 
 	/**
-	 * Call from game thread.
+	 * Call from game thread. Call every game frame before query replay tick and start replay process, TickReplayStart.
 	 */
 	virtual void OnReadReplication(const FOnReadReplicationParam& ReadReplicationParam) PURE_VIRTUAL(INetPhysSync::OnReadReplication, );
+
+	/**
+	 * Call from game thread. Call every frame.
+	 * If there is replay, call after replay process, TickReplayEnd.
+	 * If there is no replay, call after query replay index.
+	 */
+	virtual void OnFinishReadReplication(const FOnFinishReadAllReplicationParam& FinishReadRepParam) PURE_VIRTUAL(INetPhysSync::OnFinishReadReplication, );
 };

@@ -74,6 +74,8 @@ public:
 	virtual bool IsLocalPlayerControlPawn() const override;
 
 	virtual void OnReadReplication(const FOnReadReplicationParam& ReadReplicationParam) override;
+
+	virtual void OnFinishReadReplication(const FOnFinishReadAllReplicationParam& FinishReadRepParam) override;
 // ----------------- End INetPhysSync -----------------
 
 
@@ -85,7 +87,7 @@ public:
 	/** (Server) Call by UNetDriver from server. */
 	virtual void SendClientAdjustment();
 
-	/** (Server) Call by PlayerController. Need to update FNetworkPredictionData_Server.ServerTimestamp everytime replication is received.*/
+	/** (Server) Call by PlayerController. Need to update FNetworkPredictionData_Server.ServerTimestamp every time replication is received.*/
 	virtual void ForcePositionUpdate(float DeltaTimeSinceLastCorrection);
 
 	//--------------------------------
@@ -194,6 +196,8 @@ protected:
 	bool IsReceivedServerTickTooOld(uint32 ServerTick);
 
 	void ResetClientCachReceiveDataFlag();
+
+	void DrawDebugRigidBody(const FReplicatedRigidBodyState& DrawPos, const FColor& Color);
 
 private:
 	FNPS_ClientPawnPrediction* ClientPawnPrediction;

@@ -51,7 +51,7 @@ void FNPS_ServerPawnPrediction::UpdateInputBuffer
 		TestIndex
 	);
 
-	ensureMsgf(TestIndex == 1, TEXT("Should call cosecutively by server tick index."));
+	ensureMsgf(TestIndex <= 1, TEXT("Should call cosecutively by server tick index."));
 #endif
 
 

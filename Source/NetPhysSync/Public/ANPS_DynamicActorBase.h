@@ -57,6 +57,8 @@ public:
 
 	virtual void OnReadReplication(const FOnReadReplicationParam& ReadReplicationParam) override;
 
+	virtual void OnFinishReadReplication(const FOnFinishReadAllReplicationParam& FinishReadRepParam) override;
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;

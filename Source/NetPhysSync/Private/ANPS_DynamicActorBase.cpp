@@ -153,6 +153,11 @@ void ANPS_DynamicActorBase::OnReadReplication(const FOnReadReplicationParam& Rea
 
 }
 
+void ANPS_DynamicActorBase::OnFinishReadReplication(const FOnFinishReadAllReplicationParam& FinishReadRepParam)
+{
+
+}
+
 // Called every frame
 void ANPS_DynamicActorBase::Tick(float DeltaTime)
 {

@@ -119,11 +119,23 @@ private:
 
 	void FlushDeferedRegisteeAndCleanNull();
 
-	bool TryGetNewestUnprocessedServerTick(uint32& OutNewestUnprocessedServerTick);
+	bool TryGetNewestUnprocessedServerTick
+	(
+		const FIsTickEnableParam& IsTickEnableParam,
+		uint32& OutNewestUnprocessedServerTick
+	);
 
-	bool TryGetNewSyncPoint(FTickSyncPoint& OutSyncPoint);
+	bool TryGetNewSyncPoint
+	(
+		const FIsTickEnableParam& IsTickEnableParam,
+		FTickSyncPoint& OutSyncPoint
+	);
 
-	bool TryGetReplayIndex(uint32& OutReplayIndex);
+	bool TryGetReplayIndex
+	(
+		const FIsTickEnableParam& IsTickEnableParam,
+		uint32& OutReplayIndex
+	);
 
 
 };

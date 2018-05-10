@@ -189,6 +189,30 @@ void UNPS_MovementComponent::ResetClientCachReceiveDataFlag()
 	bClientHasReceivedServerTick = false;
 }
 
+void UNPS_MovementComponent::DrawDebugRigidBody
+(
+	const FReplicatedRigidBodyState& DrawPos, 
+	const FColor& Color
+)
+{
+#if !(UE_BUILD_SHIPPING)
+	UBoxComponent* BoxComponent = Cast<UBoxComponent>(UpdatedPrimitive);
+
+	if (BoxComponent != nullptr)
+	{
+		DrawDebugBox
+		(
+			this->GetWorld(),
+			DrawPos.GetWorldPos(),
+			BoxComponent->GetScaledBoxExtent(),
+			DrawPos.GetWorldRotation(),
+			Color, false, 0.25f
+		);
+	}
+
+#endif
+}
+
 // ----------------------- Start INetPhysSync ----------------------
 
 bool UNPS_MovementComponent::IsTickEnabled(const FIsTickEnableParam& param) const
@@ -299,23 +323,6 @@ void UNPS_MovementComponent::TickReplayStart(const FReplayStartParam& param)
 		ClientPrediction->GetRigidBodyState(RigidDynamic, param.StartReplayTickIndex);
 
 		// Use our own compilation symbol later.
-#if !(UE_BUILD_SHIPPING)
-		UBoxComponent* BoxComponent = Cast<UBoxComponent>(UpdatedPrimitive);
-
-		if (BoxComponent != nullptr)
-		{
-			FTransform RigidT = P2UTransform(RigidDynamic->getGlobalPose());
-			DrawDebugBox
-			(
-				this->GetWorld(), 
-				RigidT.GetLocation(),
-				BoxComponent->GetScaledBoxExtent(),
-				RigidT.GetRotation(),
-				FColor::Blue, true /*Persistence Line*/
-			);
-		}
-
-#endif
 	}
 	else if (PawnOwner->Role == ENetRole::ROLE_SimulatedProxy)
 	{
@@ -362,12 +369,6 @@ void UNPS_MovementComponent::TickReplayEnd(const FReplayEndParam& param)
 	FNPS_ClientPawnPrediction* ClientPrecition =
 		static_cast<FNPS_ClientPawnPrediction*>(GetPredictionData_Client());
 	ClientPrecition->ConsumeReplayFlag();
-	
-	bClientHasNewSyncPoint = false;
-
-	bClientHasRecievedNewServerTick = false;
-
-	bClientHasAutoCorrectWithoutSyncTick = false;
 }
 
 // ------------------------ End INetPhySync:: Replay interface -----------------------
@@ -438,6 +439,12 @@ void UNPS_MovementComponent::OnReadReplication
 		);		
 	}
 }
+
+void UNPS_MovementComponent::OnFinishReadReplication(const FOnFinishReadAllReplicationParam& FinishReadRepParam)
+{
+	ResetClientCachReceiveDataFlag();
+}
+
 // ---------------------- End INetPhysSync --------------------------------------- 
 
 // ---------------------- Start INetworkdPredictionInterface --------------------
@@ -449,7 +456,7 @@ void UNPS_MovementComponent::SendClientAdjustment()
 	 */
 	if (bServerHasAutoProxyPendingCorrection)
 	{
-		UE_LOG(LogNPS_Net, Log, TEXT("Send correction with sync tick."));
+
 		FNPS_ServerPawnPrediction* ServerPrecition = GetPredictionData_ServerNPSPawn();
 		// Prevent force update in case that our physic delta time is high.
 		ServerPrecition->ServerTimeStamp = GetWorld()->TimeSeconds;
@@ -478,27 +485,51 @@ void UNPS_MovementComponent::SendClientAdjustment()
 			// LastProcessedClientInputTick can be missing if current tick reach warping point.
 			if (ServerPrecition->HasLastProcessedClientInputTickIndex())
 			{
+				FAutoProxySyncCorrect ToSend = FAutoProxySyncCorrect
+				(
+					FReplicatedRigidBodyState(GetUpdatedRigidDynamic()),
+					ServerPrecition->GetSyncClientTickIndexForStampRigidBody(),
+					ServerTick,
+					ServerPrecition->GetLastProcessedClientInputTickIndex()
+				);
+
+#if !UE_BUILD_SHIPPING
+				uint32 LastProcessedClientInputTick;
+				ensureMsgf
+				(
+					ToSend.GetSyncServerTick() == ServerTick &&
+					ToSend.GetSyncClientTick() == ServerPrecition->GetSyncClientTickIndexForStampRigidBody() &&
+					ToSend.TryGetLastProcessedClientInputTick(LastProcessedClientInputTick) &&
+					LastProcessedClientInputTick == ServerPrecition->GetLastProcessedClientInputTickIndex(),
+					TEXT("Check typo")
+				);
+#endif
 				Client_CorrectStateWithSyncTick
 				(
-					FAutoProxySyncCorrect
-					(
-						FReplicatedRigidBodyState(GetUpdatedRigidDynamic()),
-						ServerTick,
-						ServerPrecition->GetSyncClientTickIndexForStampRigidBody(),
-						ServerPrecition->GetLastProcessedClientInputTickIndex()
-					)
+					ToSend
 				);
 			}
 			else
 			{
+				FAutoProxySyncCorrect ToSend = FAutoProxySyncCorrect
+				(
+					FReplicatedRigidBodyState(GetUpdatedRigidDynamic()),
+					ServerPrecition->GetSyncClientTickIndexForStampRigidBody(),
+					ServerTick
+				);
+
+#if !UE_BUILD_SHIPPING
+				ensureMsgf
+				(
+					ToSend.GetSyncServerTick() == ServerTick &&
+					ToSend.GetSyncClientTick() == ServerPrecition->GetSyncClientTickIndexForStampRigidBody(),
+					TEXT("Check typo")
+				);
+#endif
+
 				Client_CorrectStateWithSyncTick
 				(
-					FAutoProxySyncCorrect
-					(
-						FReplicatedRigidBodyState(GetUpdatedRigidDynamic()),
-						ServerTick,
-						ServerPrecition->GetSyncClientTickIndexForStampRigidBody()
-					)
+					ToSend
 				);
 			}
 
@@ -587,6 +618,7 @@ void UNPS_MovementComponent::ResetPredictionData_Server()
 	* Need to investigate what should we do here.
 	*/
 	bServerHasAutoProxyPendingCorrection = false;
+	UE_LOG(LogNPS_Net, Log, TEXT("ResetPredictionDataServer."));
 }
 
 // ---------------------- End INetworkdPredictionInterface --------------------
@@ -647,6 +679,15 @@ void UNPS_MovementComponent::Client_CorrectStateWithSyncTick_Implementation
 	
 	if (!bIsLateSyncClientTick)
 	{
+		uint32 LocalPhysicTick = FNPS_StaticHelperFunction::GetCurrentPhysTickIndex(this);
+		int32 Diff = FNPS_StaticHelperFunction::CalculateBufferArrayIndex
+		(AutoProxySyncCorrect.GetSyncClientTick(), LocalPhysicTick);
+		
+		if (Diff < 0)
+		{
+			UE_LOG(LogNPS_Net, Log, TEXT("Replay into future?"));
+		}
+
 		ClientPrediction->ServerCorrectState
 		(
 			AutoProxySyncCorrect.GetRigidBodyState(),
@@ -654,13 +695,13 @@ void UNPS_MovementComponent::Client_CorrectStateWithSyncTick_Implementation
 		);
 		
 		ClientReceiveTickSyncPoint = AutoProxySyncCorrect.CreateTickSyncPoint();
-		UE_LOG
+		/*UE_LOG
 		(
 			LogNPS_Net, Log, 
 			TEXT("Correct with sync point. Need Replay: %s"),
 			ClientPrediction->IsReplayTickIndex(AutoProxySyncCorrect.GetSyncClientTick())
 			? TEXT("True") : TEXT("False")
-		);
+		);*/
 	}
 	else
 	{
@@ -705,16 +746,26 @@ void UNPS_MovementComponent::Client_CorrectStateWithSyncTick_Implementation
 			CorrectClientTick
 		);
 
-		UE_LOG
-		(
-			LogNPS_Net, Log, 
-			TEXT("Correct with late sync point. Need Replay: %s"),
-			ClientPrediction->IsReplayTickIndex(CorrectClientTick) ? 
-			TEXT("True") : TEXT("False")
-		);
+		uint32 LocalPhysicTick = FNPS_StaticHelperFunction::GetCurrentPhysTickIndex(this);
+		int32 Diff = FNPS_StaticHelperFunction::CalculateBufferArrayIndex
+		(CorrectClientTick, LocalPhysicTick);
+
+		if (Diff < 0)
+		{
+			UE_LOG(LogNPS_Net, Log, TEXT("Replay into future?."));
+		}
+
+		//UE_LOG
+		//(
+		//	LogNPS_Net, Log, 
+		//	TEXT("Correct with late sync point. Need Replay: %s"),
+		//	ClientPrediction->IsReplayTickIndex(CorrectClientTick) ? 
+		//	TEXT("True") : TEXT("False")
+		//);
 	}
 
 	ClientReceivedServerTick = AutoProxySyncCorrect.GetSyncServerTick();
+	DrawDebugRigidBody(AutoProxySyncCorrect.GetRigidBodyState(), FColor::Blue);
 }
 
 void UNPS_MovementComponent::Client_CorrectState(const FAutoProxyCorrect& Correction)
@@ -739,6 +790,7 @@ void UNPS_MovementComponent::Client_CorrectState_Implementation
 	ClientReceivedServerTick = Correction.GetServerTick();
 	bClientHasAutoCorrectWithoutSyncTick = true;
 	ClientAutoProxyCorrectWithoutSyncTick = Correction;
+	DrawDebugRigidBody(Correction.GetRigidBodyState(), FColor::Blue);
 }
 // ------------------------ End Re-route RPC Function ----------------------
 
