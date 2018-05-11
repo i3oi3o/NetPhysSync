@@ -337,7 +337,7 @@ void UNPS_MovementComponent::TickEndPhysic(const FEndPhysParam& param)
 
 			Server_UpdateAutonomousInput
 			(
-				ProxyInput
+				MoveTemp(ProxyInput)
 			);
 		}
 	}
@@ -664,7 +664,7 @@ void UNPS_MovementComponent::ResetPredictionData_Server()
 
 
 // --------------------- Start Re-route RPC Function ----------------------------
-void UNPS_MovementComponent::Server_UpdateAutonomousInput(const FAutonomousProxyInput& AutonomousProxyInpit)
+void UNPS_MovementComponent::Server_UpdateAutonomousInput(FAutonomousProxyInput&& AutonomousProxyInpit)
 {
 	checkf(NPS_PawnOwner != nullptr, TEXT("Missing NPS_PawnOwner"));
 	NPS_PawnOwner->Server_UpdateAutonomousInput(AutonomousProxyInpit);

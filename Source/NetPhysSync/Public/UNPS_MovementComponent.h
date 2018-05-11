@@ -121,7 +121,7 @@ public:
 	*/
 
 
-	void Server_UpdateAutonomousInput(const FAutonomousProxyInput& AutonomousProxyInpit);
+	void Server_UpdateAutonomousInput(FAutonomousProxyInput&& AutonomousProxyInpit);
 	void Server_UpdateAutonomousInput_Imlementation(const FAutonomousProxyInput& AutonomousProxyInpit);
 
 	void Client_CorrectStateWithSyncTick(const FAutoProxySyncCorrect& AutoProxySyncCorrect);

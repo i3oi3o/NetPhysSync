@@ -7,7 +7,7 @@
 #include "FAutonomousProxyInput.generated.h"
 
 /**
- * 
+ * Implement using rule of five.
  */
 USTRUCT()
 struct NETPHYSSYNC_API FAutonomousProxyInput
@@ -18,7 +18,7 @@ public:
 	FAutonomousProxyInput();
 
 	FAutonomousProxyInput(const class FNPS_ClientPawnPrediction& ClientPawnPrediction);
-	
+
 	template<typename AllocatorType>
 	FAutonomousProxyInput
 	(
@@ -31,6 +31,10 @@ public:
 		
 	}
 	
+	FAutonomousProxyInput(const FAutonomousProxyInput& Other) = default;
+	FAutonomousProxyInput(FAutonomousProxyInput&& Other) = default;
+	FAutonomousProxyInput& operator=(const FAutonomousProxyInput& Other) = default;
+	FAutonomousProxyInput& operator=(FAutonomousProxyInput&& Other) = default;
 	~FAutonomousProxyInput();
 
 	FORCEINLINE uint32 GetArrayStartClientTickIndex() const
@@ -51,9 +55,9 @@ public:
 	uint32 SendTickStamp;
 
 private:
-	UPROPERTY()
+	UPROPERTY(meta = (AllowPrivateAccess = "true"))
 	TArray<FSavedInput> InputArray;
-	UPROPERTY()
+	UPROPERTY(meta = (AllowPrivateAccess = "true"))
 	uint32 ArrayStartClientTickIndex;
 
 };
