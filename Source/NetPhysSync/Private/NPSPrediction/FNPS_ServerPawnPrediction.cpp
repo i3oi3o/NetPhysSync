@@ -73,6 +73,9 @@ void FNPS_ServerPawnPrediction::UpdateInputBuffer
 		);
 		if (Index >= ProxyInputBuffer.Num())
 		{
+			// This can happen when client continue to send unacknowledged input
+			// and Server have processed all input. 
+			// Server just need to send correction till client don't have any unacknowledged.
 			UE_LOG
 			(
 				LogNPS_Net, Log, TEXT("Discard old input. ProxyStartTick:%u, ProxyNum:%d, SendClientTickStamp:%u"),
@@ -241,12 +244,25 @@ const FSavedInput& FNPS_ServerPawnPrediction::ProcessServerTick(uint32 ServerTic
 
 					}
 
-					UE_LOG
-					(
-						LogNPS_Net, Log, TEXT("Processed Input - Client Tick Index:%u, SavedInput:%s"),
-						LastProcessedClientInputTickIndex,
-						*ToReturn->ToString()
-					);
+					if (InputBuffer.Num() == 0)
+					{
+						UE_LOG
+						(
+							LogNPS_Net, Log, TEXT("Processed All Input - Client Tick Index:%u, SavedInput:%s"),
+							LastProcessedClientInputTickIndex,
+							*ToReturn->ToString()
+						);
+					}
+					else
+					{
+						UE_LOG
+						(
+							LogNPS_Net, Log, TEXT("Processed Input - Client Tick Index:%u, SavedInput:%s"),
+							LastProcessedClientInputTickIndex,
+							*ToReturn->ToString()
+						);
+					}
+
 				}
 				// Buffer is not end yet. 
 				// Because of drop package and latency, We don't receive continuing buffer yet.

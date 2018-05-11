@@ -22,7 +22,8 @@ float FSavedInput::CalculatedSumDiffSqrtError(const FSavedInput& Other) const
 
 FString FSavedInput::ToString() const
 {
-	return TargetWorldSpeed.ToString();
+	return FString::Printf(TEXT("{ TargetWorldSpeed:{ %s } } "), 
+		*TargetWorldSpeed.ToString());
 }
 
 bool FSavedInput::IsEmptyInput() const

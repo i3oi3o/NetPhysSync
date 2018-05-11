@@ -286,10 +286,9 @@ void UNPS_MovementComponent::TickPhysStep(const FPhysStepParam& param)
 			{
 				UE_LOG
 				(
-					LogNPS_Net, Log, TEXT("Process ServerTick:%u, ClientTick:%u, IsProcessClientTick:%d"),
+					LogNPS_Net, Log, TEXT("Process ServerTick:%u, ClientTick:%u"),
 					param.LocalPhysTickIndex,
-					ServerPrediction->GetSyncClientTickIndex(param.LocalPhysTickIndex),
-					ServerPrediction->IsProcessingClientInput()
+					ServerPrediction->GetSyncClientTickIndex(param.LocalPhysTickIndex)
 				);
 			}
 			else
@@ -679,16 +678,9 @@ void UNPS_MovementComponent::Server_UpdateAutonomousInput_Imlementation(const FA
 	
 	uint32 ServerTick = FNPS_StaticHelperFunction::GetCurrentPhysTickIndex(this);
 
-	FBufferInfo BeforeUpdate = ServerPrediction->GetInputServerTickBufferInfo();
-
 	ServerPrediction->UpdateInputBuffer(AutonomousProxyInpit, ServerTick);
 
-	FBufferInfo AfterUpdate = ServerPrediction->GetInputServerTickBufferInfo();
-
-
-	bServerHasAutoProxyPendingCorrection = bServerHasAutoProxyPendingCorrection ||
-			BeforeUpdate.BufferLastTickIndex != AfterUpdate.BufferLastTickIndex ||
-			BeforeUpdate.BufferNum != AfterUpdate.BufferNum;
+	bServerHasAutoProxyPendingCorrection = true;
 }
 
 void UNPS_MovementComponent::Client_CorrectStateWithSyncTick(const FAutoProxySyncCorrect& AutoProxySyncCorrect)
@@ -735,13 +727,6 @@ void UNPS_MovementComponent::Client_CorrectStateWithSyncTick_Implementation
 		);
 		
 		ClientReceiveTickSyncPoint = AutoProxySyncCorrect.CreateTickSyncPoint();
-		/*UE_LOG
-		(
-			LogNPS_Net, Log, 
-			TEXT("Correct with sync point. Need Replay: %s"),
-			ClientPrediction->IsReplayTickIndex(AutoProxySyncCorrect.GetSyncClientTick())
-			? TEXT("True") : TEXT("False")
-		);*/
 	}
 	else
 	{
@@ -787,6 +772,7 @@ void UNPS_MovementComponent::Client_CorrectStateWithSyncTick_Implementation
 		);
 
 		uint32 LocalPhysicTick = FNPS_StaticHelperFunction::GetCurrentPhysTickIndex(this);
+		
 		int32 Diff = FNPS_StaticHelperFunction::CalculateBufferArrayIndex
 		(CorrectClientTick, LocalPhysicTick);
 
@@ -795,13 +781,13 @@ void UNPS_MovementComponent::Client_CorrectStateWithSyncTick_Implementation
 			UE_LOG(LogNPS_Net, Log, TEXT("Replay into future?."));
 		}
 
-		//UE_LOG
-		//(
-		//	LogNPS_Net, Log, 
-		//	TEXT("Correct with late sync point. Need Replay: %s"),
-		//	ClientPrediction->IsReplayTickIndex(CorrectClientTick) ? 
-		//	TEXT("True") : TEXT("False")
-		//);
+		UE_LOG
+		(
+			LogNPS_Net, Log, 
+			TEXT("Correct with late sync point. Need Replay: %s"),
+			ClientPrediction->IsReplayTickIndex(CorrectClientTick) ? 
+			TEXT("True") : TEXT("False")
+		);
 	}
 
 	ClientReceivedServerTick = AutoProxySyncCorrect.GetSyncServerTick();
