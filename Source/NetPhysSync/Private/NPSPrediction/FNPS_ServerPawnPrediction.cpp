@@ -4,6 +4,7 @@
 #include "UNPSNetSetting.h"
 #include "FAutonomousProxyInput.h"
 #include "FNPS_StaticHelperFunction.h"
+#include "NPSLogCategory.h"
 
 
 
@@ -18,7 +19,7 @@ FNPS_ServerPawnPrediction::FNPS_ServerPawnPrediction
 	, InputStartClientTickIndex(0)
 	, LastProcessedClientInputTickIndex(0)
 	, bHasLastProcessedInputClientTickIndex(false)
-	, SyncClientTickIndexForStampRigidBody(0)
+	, SyncClientTickIndexWithProcessedServerTick(0)
 	, bHasSyncClientTickIndex(false)
 	, LastProcessedServerTickIndex(0)
 	, bHasLastProcessedServerTickIndex(false)
@@ -41,7 +42,6 @@ void FNPS_ServerPawnPrediction::UpdateInputBuffer
 		bHasLastProcessedServerTickIndex = true;
 		LastProcessedServerTickIndex = ReceiveServerTickIndex - 1;
 	}
-
 #if UE_BUILD_DEBUG || UE_BUILD_DEVELOPMENT
 	int32 TestIndex;
 	FNPS_StaticHelperFunction::CalculateBufferArrayIndex
@@ -54,12 +54,39 @@ void FNPS_ServerPawnPrediction::UpdateInputBuffer
 	ensureMsgf(TestIndex <= 1, TEXT("Should call cosecutively by server tick index."));
 #endif
 
-
 	const TArray<FSavedInput>& ProxyInputBuffer = AutonomousProxyInput
 		.GetArray();
 	uint32 ProxyClientTickStartIndex = AutonomousProxyInput
 		.GetArrayStartClientTickIndex();
+	uint32 BeginCopyClientTickIndex = ProxyClientTickStartIndex;
+	int32 BeginCopyProxyInputIndex = 0;
 
+	// Ignore already processed input.
+	if (bHasLastProcessedInputClientTickIndex)
+	{
+		int32 Index;
+		FNPS_StaticHelperFunction::CalculateBufferArrayIndex
+		(
+			ProxyClientTickStartIndex, 
+			LastProcessedClientInputTickIndex+1,
+			Index
+		);
+		if (Index >= ProxyInputBuffer.Num())
+		{
+			UE_LOG
+			(
+				LogNPS_Net, Log, TEXT("Discard old input. ProxyStartTick:%u, ProxyNum:%d, SendClientTickStamp:%u"),
+				ProxyClientTickStartIndex, ProxyInputBuffer.Num(),
+				AutonomousProxyInput.SendTickStamp
+			);
+			return;
+		}
+		else if(Index >= 0)
+		{
+			BeginCopyProxyInputIndex = Index;
+			BeginCopyClientTickIndex = ProxyClientTickStartIndex + Index;
+		}
+	}
 
 	if (!IsProcessingClientInput())
 	{
@@ -69,19 +96,25 @@ void FNPS_ServerPawnPrediction::UpdateInputBuffer
 
 		if (WaitJitter > ProxyInputBuffer.Num())
 		{
-			SyncClientTickIndexForStampRigidBody = ProxyClientTickStartIndex - WaitJitter;
 			InputStartServerTickIndex = ReceiveServerTickIndex + WaitJitter;
 		}
 		else
 		{
-			SyncClientTickIndexForStampRigidBody = ProxyClientTickStartIndex;
 			InputStartServerTickIndex = ReceiveServerTickIndex;
 		}
 
-		InputStartClientTickIndex = ProxyClientTickStartIndex;
+		SyncClientTickIndexWithProcessedServerTick =
+			BeginCopyClientTickIndex
+			+ FNPS_StaticHelperFunction::CalculateBufferArrayIndex
+			(
+				InputStartServerTickIndex, LastProcessedServerTickIndex
+			);
+		
+
+		InputStartClientTickIndex = BeginCopyClientTickIndex;
 
 		InputBuffer.Empty();
-		for (int32 i = 0; i < ProxyInputBuffer.Num(); ++i)
+		for (int32 i = BeginCopyProxyInputIndex; i < ProxyInputBuffer.Num(); ++i)
 		{
 			if (InputBuffer.IsFull())
 			{
@@ -97,35 +130,31 @@ void FNPS_ServerPawnPrediction::UpdateInputBuffer
 		FNPS_StaticHelperFunction::CalculateBufferArrayIndex
 		(
 			InputStartClientTickIndex,
-			ProxyClientTickStartIndex,
+			BeginCopyClientTickIndex,
 			OutArrayIndex
 		);
 
 		uint32 OldInputClientTickIndex = InputStartClientTickIndex;
 
+		int32 CopyIndex;
 		if (OutArrayIndex >= 0)
 		{
-			for (int32 i = 0; i < ProxyInputBuffer.Num(); ++i)
-			{
-				FNPS_StaticHelperFunction::SetElementToBuffers
-				(
-					InputBuffer, ProxyInputBuffer[i], 
-					InputStartClientTickIndex,
-					ProxyClientTickStartIndex+i
-				);
-			}
+			CopyIndex = BeginCopyProxyInputIndex;
 		}
 		else
 		{
-			for (int32 i = -OutArrayIndex; i < ProxyInputBuffer.Num(); ++i)
-			{
-				FNPS_StaticHelperFunction::SetElementToBuffers
-				(
-					InputBuffer, ProxyInputBuffer[i],
-					InputStartClientTickIndex,
-					OldInputClientTickIndex + i + OutArrayIndex
-				);
-			}
+			// Discard index older than InputStartClientTickIndex.
+			CopyIndex = BeginCopyProxyInputIndex - OutArrayIndex;
+		}
+
+		for (int32 i = CopyIndex; i < ProxyInputBuffer.Num(); ++i)
+		{
+			FNPS_StaticHelperFunction::SetElementToBuffers
+			(
+				InputBuffer, ProxyInputBuffer[i],
+				InputStartClientTickIndex,
+				ProxyClientTickStartIndex + i
+			);
 		}
 
 		int32 ShiftAmount;
@@ -139,7 +168,28 @@ void FNPS_ServerPawnPrediction::UpdateInputBuffer
 		InputStartServerTickIndex += ShiftAmount;
 	}
 
+	if (InputBuffer.Num() > 0)
+	{
+		if (InputBuffer[InputBuffer.Num() - 1].IsEmptyInput())
+		{
+			UE_LOG
+			(
+				LogNPS_Net, Log,
+				TEXT("Server receive end input at the end of buffer. AtServerTick:%u"),
+				InputStartServerTickIndex + InputBuffer.Num() - 1
+			);
+		}
 
+		UE_LOG
+		(
+			LogNPS_Net, Log,
+			TEXT("Buffer ClientStartInput:%u, ServerStartInput:%u, NumInput:%d. ProxyBStartTick:%u, ProxyBNum:%d, ProxyBBeginCopyTick:%u, ProxySendTickStamp:%u"),
+			InputStartClientTickIndex, InputStartServerTickIndex, InputBuffer.Num(),
+			ProxyClientTickStartIndex, ProxyInputBuffer.Num(),
+			BeginCopyProxyInputIndex,
+			AutonomousProxyInput.SendTickStamp
+		);
+	}
 }
 
 const FSavedInput& FNPS_ServerPawnPrediction::ProcessServerTick(uint32 ServerTickIndex)
@@ -176,6 +226,8 @@ const FSavedInput& FNPS_ServerPawnPrediction::ProcessServerTick(uint32 ServerTic
 				if (InputBuffer.IsIndexInRange(ToProcessedIndex))
 				{
 					LastProcessedClientInputTickIndex = InputStartClientTickIndex + ToProcessedIndex;
+
+
 					if ( 
 							InputBuffer.IsLastIndex(ToProcessedIndex) &&
 							InputBuffer[ToProcessedIndex].IsEmptyInput() // No more input.
@@ -186,7 +238,15 @@ const FSavedInput& FNPS_ServerPawnPrediction::ProcessServerTick(uint32 ServerTic
 					else
 					{
 						ToReturn = &(InputBuffer[ToProcessedIndex]);
+
 					}
+
+					UE_LOG
+					(
+						LogNPS_Net, Log, TEXT("Processed Input - Client Tick Index:%u, SavedInput:%s"),
+						LastProcessedClientInputTickIndex,
+						*ToReturn->ToString()
+					);
 				}
 				// Buffer is not end yet. 
 				// Because of drop package and latency, We don't receive continuing buffer yet.
@@ -204,9 +264,17 @@ const FSavedInput& FNPS_ServerPawnPrediction::ProcessServerTick(uint32 ServerTic
 					int32 ShiftAmount = ToProcessedIndex - InputBuffer.Num() + 1;
 					InputStartServerTickIndex += ShiftAmount;
 					ensureMsgf(bHasSyncClientTickIndex, TEXT("Should have sync client tick index."));
+					UE_LOG
+					(
+						LogNPS_Net, Log, 
+						TEXT("Processed Input - Wait for more input. ServerTick:%u, WaitForClientTick:%u"),
+						ServerTickIndex, InputStartClientTickIndex + InputBuffer.Num()
+					);
 					// Cancel SyncClientTickIndex advancement code below because
-					// We cannot processed missing input.
-					SyncClientTickIndexForStampRigidBody -= AdvanceAmount;
+					// We cannot process missing input.
+					SyncClientTickIndexWithProcessedServerTick -= AdvanceAmount;
+					
+					
 				}
 				else
 				{
@@ -218,20 +286,25 @@ const FSavedInput& FNPS_ServerPawnPrediction::ProcessServerTick(uint32 ServerTic
 
 		if (bHasSyncClientTickIndex)
 		{
-			SyncClientTickIndexForStampRigidBody += AdvanceAmount;
+			SyncClientTickIndexWithProcessedServerTick += AdvanceAmount;
 		}
 		
-		bHasLastProcessedInputClientTickIndex = bHasLastProcessedServerTickIndex &&
+		bHasLastProcessedInputClientTickIndex = bHasLastProcessedInputClientTickIndex &&
 			!FNPS_StaticHelperFunction::IsCachTickTooOld
 			(
 				LastProcessedClientInputTickIndex,
-				SyncClientTickIndexForStampRigidBody
+				SyncClientTickIndexWithProcessedServerTick
 			);
 	}
 
 
 	LastProcessedServerTickIndex = ServerTickIndex;
 	bHasLastProcessedServerTickIndex = true;
+
+#if !UE_BUILD_SHIPPING
+	// Invoke method to check sync client tick.
+	GetSyncClientTickIndex(ServerTickIndex);
+#endif
 
 	return *ToReturn;
 }
@@ -256,4 +329,39 @@ bool FNPS_ServerPawnPrediction::HasUnprocessedInputForSimulatedProxy() const
 				-UnprocessedArrayIndex < InputBuffer.Num()
 			)
 		);
+}
+
+uint32 FNPS_ServerPawnPrediction::GetSyncClientTickIndex(uint32 ServerTick) const
+{
+	int32 Diff;
+	FNPS_StaticHelperFunction::CalculateBufferArrayIndex
+	(
+		LastProcessedServerTickIndex, 
+		ServerTick,
+		Diff
+	);
+
+	uint32 ToReturn = SyncClientTickIndexWithProcessedServerTick + Diff;
+#if !UE_BUILD_SHIPPING
+	if (InputBuffer.Num() > 0)
+	{
+		int32 DebugDiff;
+		FNPS_StaticHelperFunction::CalculateBufferArrayIndex
+		(
+			InputStartServerTickIndex,
+			ServerTick,
+			DebugDiff
+		);
+
+
+		ensureMsgf
+		(
+			ToReturn == (InputStartClientTickIndex + DebugDiff), 
+			TEXT("Wrong sync client tick calculation.")
+		);
+	}
+
+#endif
+
+	return ToReturn;
 }

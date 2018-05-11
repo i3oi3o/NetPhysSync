@@ -55,17 +55,11 @@ public:
 
 	FORCEINLINE bool HasSyncClientTickIndex() const
 	{
-		return bHasSyncClientTickIndex;
+		return bHasLastProcessedServerTickIndex && bHasSyncClientTickIndex;
 	}
 
-	/**
-	 * This is sync with FNetPhysSyncManager::LocalPhysTickIndex as long as you call
-	 * FNPS_ServerPawnPrediction::ProcessServerTick(uint32) every tick.
-	 */
-	FORCEINLINE uint32 GetSyncClientTickIndexForStampRigidBody() const
-	{
-		return SyncClientTickIndexForStampRigidBody;
-	}
+
+	uint32 GetSyncClientTickIndex(uint32 ServerTick) const;
 
 	FORCEINLINE uint32 GetLastProcessedClientInputTickIndex() const
 	{
@@ -115,7 +109,7 @@ private :
 	uint32 InputStartClientTickIndex;
 	uint32 LastProcessedClientInputTickIndex;
 	uint32 LastProcessedServerTickIndex;
-	uint32 SyncClientTickIndexForStampRigidBody;
+	uint32 SyncClientTickIndexWithProcessedServerTick;
 	bool bHasLastProcessedInputClientTickIndex;
 	bool bHasLastProcessedServerTickIndex;
 	bool bHasSyncClientTickIndex;

@@ -913,31 +913,71 @@ bool FAutonomousProxyInputConstructorTest::RunTest(const FString& Parameters)
 
 	const int32 GeneratedSize = static_cast<int32>(NPS_BUFFER_SIZE*0.5f);
 
-	checkf(GeneratedSize > 0, TEXT("NPS_BUFFER_SIZE is too small."));
+	checkf(GeneratedSize > 5, TEXT("NPS_BUFFER_SIZE is too small."));
 
 	FSavedInput GeneratedInputArray[GeneratedSize];
 
+	GenerateFakedInputFunction(GeneratedInputArray, GeneratedSize);
 
 	for (int i = 0; i < GeneratedSize; ++i)
 	{
 		ClientPawnPrediction.SaveInput(GeneratedInputArray[i], FakeClientTick+i);
 	}
 
-	FAutonomousProxyInput ToTest(ClientPawnPrediction);
-
-	const TArray<FSavedInput>& ToTestArray = ToTest.GetArray();
-	uint32 ToTestTick = ToTest.GetArrayStartClientTickIndex();
-
-	for (int32 i = 0; i < ToTestArray.Num(); ++i)
 	{
-		TestEqual
-		(
-			TEXT("Test array value from FAutonomousProxyInput."), 
-			ToTestArray[i], 
-			ClientPawnPrediction.GetSavedInput(ToTestTick+i)
-		);
+		FAutonomousProxyInput ToTest(ClientPawnPrediction);
+		const TArray<FSavedInput>& ToTestArray = ToTest.GetArray();
+		uint32 ToTestTick = ToTest.GetArrayStartClientTickIndex();
+
+		for (int32 i = 0; i < ToTestArray.Num(); ++i)
+		{
+			TestEqual
+			(
+				TEXT("Test array value from FAutonomousProxyInput."),
+				ToTestArray[i],
+				ClientPawnPrediction.GetSavedInput(ToTestTick + i)
+			);
+		}
 	}
 
+	FReplicatedRigidBodyState FakeCorrectState
+	(
+		FVector(1.0f, 1.0f, 1.0f),
+		FQuat::Identity,
+		FVector(1.0f, 0.0f, 0.0f),
+		FVector::ZeroVector,
+		false
+	);
+
+	ClientPawnPrediction.ServerCorrectState(FakeCorrectState, FakeClientTick + 3);
+	{
+		FAutonomousProxyInput ToTest(ClientPawnPrediction);
+
+		const TArray<FSavedInput>& ToTestArray = ToTest.GetArray();
+		uint32 ToTestTick = ToTest.GetArrayStartClientTickIndex();
+
+		UE_LOG
+		(
+			LogTemp, Log, TEXT("ExpectStartTick:%d, StartTick:%d"), 
+			FakeClientTick+3, ToTestTick
+		);
+
+		TestEqual
+		(
+			TEXT("Test start tick index after acknowledged input"), 
+			ToTestTick, FakeClientTick + 3
+		);
+
+		for (int32 i = 0; i < ToTestArray.Num(); ++i)
+		{
+			TestEqual
+			(
+				TEXT("Test array value from FAutonomousProxyInput after acknowledged input."),
+				ToTestArray[i],
+				ClientPawnPrediction.GetSavedInput(ToTestTick + i)
+			);
+		}
+	}
 	return true;
 }
 
@@ -1142,11 +1182,11 @@ bool FServerPawnUpdateAndCopyTest::RunTest(const FString& Parameters)
 	);
 
 
+
 	for (int32 i = 0; i < ForReadUnprocessedInput.Num(); ++i)
 	{
 		int32 GeneratedInputIndex = i + ProcessedAmount - NetSetting->JitterWaitPhysTick;
 		checkf(GeneratedInputIndex >= 0 && GeneratedInputIndex < SectionSize*SectionNumber, TEXT("Index out of bound."));
-
 		TestEqual(TEXT("Test unprocessed input after updated."), ForReadUnprocessedInput[i], GeneratedInputArray[GeneratedInputIndex]);
 	}
 
@@ -1268,6 +1308,40 @@ bool FServerPawnArriveLatePackage::RunTest(const FString& Parameters)
 	return true;
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FServerPawnObsoletePackage, "NetPhysSync.PredictBuffer.Server.Pawn.ObsoletePackage", EAutomationTestFlags::EditorContext | EAutomationTestFlags::SmokeFilter)
+bool FServerPawnObsoletePackage::RunTest(const FString& Parameters)
+{
+	UNPSNetSetting* NetSetting = NewObject<UNPSNetSetting>((UObject*)GetTransientPackage(), TEXT("Test Setting"), EObjectFlags::RF_Transient);
+	// This need to be more than 1
+	NetSetting->JitterWaitPhysTick = 0;
+
+	int32 GeneratedInputSize = static_cast<int32>(0.25f*NPS_BUFFER_SIZE)+1;
+
+	TArray<FSavedInput> GeneratedInputArray;
+	GeneratedInputArray.AddUninitialized(GeneratedInputSize);
+	GenerateFakedInputFunction(GeneratedInputArray.GetData(), GeneratedInputSize-1);
+	GeneratedInputArray[GeneratedInputSize - 1] = FSavedInput::EmptyInput;
+
+	uint32 ClientTickIndex = 0;
+	uint32 ServerTickIndex = 15;
+
+	FNPS_ServerPawnPrediction ServerPawnPrediction(NetSetting);
+
+	FAutonomousProxyInput ProxyInput(GeneratedInputArray, ClientTickIndex);
+
+	ServerPawnPrediction.UpdateInputBuffer(ProxyInput, ServerTickIndex);
+
+	for (int32 i = 0; i < GeneratedInputArray.Num(); ++i)
+	{
+		ServerPawnPrediction.ProcessServerTick(ServerTickIndex + i);
+	}
+
+	ServerPawnPrediction.UpdateInputBuffer(ProxyInput, ServerTickIndex + GeneratedInputArray.Num());
+
+	return !ServerPawnPrediction.IsProcessingClientInput() && 
+		!ServerPawnPrediction.HasUnprocessedInputForSimulatedProxy();
+}
+
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FServerPawnSyncClientTickTest, "NetPhysSync.PredictBuffer.Server.Pawn.SyncClientTickTest", EAutomationTestFlags::EditorContext | EAutomationTestFlags::SmokeFilter)
 bool FServerPawnSyncClientTickTest::RunTest(const FString& Parameters)
 {
@@ -1313,7 +1387,10 @@ bool FServerPawnSyncClientTickTest::RunTest(const FString& Parameters)
 		TestEqual
 		(
 			TEXT("Test sync client tick after missing input"),
-			ServerPawnPrediction.GetSyncClientTickIndexForStampRigidBody(),
+			ServerPawnPrediction.GetSyncClientTickIndex
+			(
+				ServerTick+AdvanceServerTickAmount
+			),
 			ClientTick+AdvanceClientTickAmount
 		);
 	}
@@ -1338,7 +1415,12 @@ bool FServerPawnSyncClientTickTest::RunTest(const FString& Parameters)
 		TestEqual
 		(
 			TEXT("Test sync client tick after process all input"),
-			ServerPawnPrediction.GetSyncClientTickIndexForStampRigidBody(),
+			ServerPawnPrediction.GetSyncClientTickIndex
+			(
+				ServerTick
+				+ForCreatedAutonomousProxyInput.Num()
+				+AdvanceServerTickAmount
+			),
 			ClientTick + AdvanceClientTickAmount + ForCreatedAutonomousProxyInput.Num()
 		);
 	}

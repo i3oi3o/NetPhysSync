@@ -206,7 +206,7 @@ void UNPS_MovementComponent::DrawDebugRigidBody
 			DrawPos.GetWorldPos(),
 			BoxComponent->GetScaledBoxExtent(),
 			DrawPos.GetWorldRotation(),
-			Color, false, 0.25f
+			Color, false, 0.125f
 		);
 	}
 
@@ -279,6 +279,28 @@ void UNPS_MovementComponent::TickPhysStep(const FPhysStepParam& param)
 
 		FNPS_ServerPawnPrediction* ServerPrediction = 
 			GetPredictionData_ServerNPSPawn();
+
+		if (!ServerPrediction->IsProcessingClientInput())
+		{
+			if (ServerPrediction->HasSyncClientTickIndex())
+			{
+				UE_LOG
+				(
+					LogNPS_Net, Log, TEXT("Process ServerTick:%u, ClientTick:%u, IsProcessClientTick:%d"),
+					param.LocalPhysTickIndex,
+					ServerPrediction->GetSyncClientTickIndex(param.LocalPhysTickIndex),
+					ServerPrediction->IsProcessingClientInput()
+				);
+			}
+			else
+			{
+				UE_LOG
+				(
+					LogNPS_Net, Log, TEXT("Process ServerTick:%u"), param.LocalPhysTickIndex
+				);
+			}
+		}
+
 		const FSavedInput& ProcessedInput = ServerPrediction->
 			ProcessServerTick(param.LocalPhysTickIndex);
 		SimulatedInput(ProcessedInput);
@@ -303,8 +325,21 @@ void UNPS_MovementComponent::TickEndPhysic(const FEndPhysParam& param)
 
 		if (ClientPrediction->HasUnacknowledgedInput())
 		{
-			FAutonomousProxyInput ProxyInput(*ClientPrediction);
-			Server_UpdateAutonomousInput(ProxyInput);
+			FAutonomousProxyInput ProxyInput = FAutonomousProxyInput(*ClientPrediction);
+			ProxyInput.SendTickStamp = FNPS_StaticHelperFunction::GetCurrentPhysTickIndex(this);
+
+			UE_LOG
+			(
+				LogNPS_Net, Log, TEXT("Sending - ProxyStartTick:%u, ProxyNum:%u, Send Timestamp:%u"),
+				ProxyInput.GetArrayStartClientTickIndex(),
+				ProxyInput.GetArray().Num(),
+				ProxyInput.SendTickStamp
+			);
+
+			Server_UpdateAutonomousInput
+			(
+				ProxyInput
+			);
 		}
 	}
 }
@@ -488,7 +523,7 @@ void UNPS_MovementComponent::SendClientAdjustment()
 				FAutoProxySyncCorrect ToSend = FAutoProxySyncCorrect
 				(
 					FReplicatedRigidBodyState(GetUpdatedRigidDynamic()),
-					ServerPrecition->GetSyncClientTickIndexForStampRigidBody(),
+					ServerPrecition->GetSyncClientTickIndex(ServerTick),
 					ServerTick,
 					ServerPrecition->GetLastProcessedClientInputTickIndex()
 				);
@@ -498,7 +533,7 @@ void UNPS_MovementComponent::SendClientAdjustment()
 				ensureMsgf
 				(
 					ToSend.GetSyncServerTick() == ServerTick &&
-					ToSend.GetSyncClientTick() == ServerPrecition->GetSyncClientTickIndexForStampRigidBody() &&
+					ToSend.GetSyncClientTick() == ServerPrecition->GetSyncClientTickIndex(ServerTick) &&
 					ToSend.TryGetLastProcessedClientInputTick(LastProcessedClientInputTick) &&
 					LastProcessedClientInputTick == ServerPrecition->GetLastProcessedClientInputTickIndex(),
 					TEXT("Check typo")
@@ -514,7 +549,7 @@ void UNPS_MovementComponent::SendClientAdjustment()
 				FAutoProxySyncCorrect ToSend = FAutoProxySyncCorrect
 				(
 					FReplicatedRigidBodyState(GetUpdatedRigidDynamic()),
-					ServerPrecition->GetSyncClientTickIndexForStampRigidBody(),
+					ServerPrecition->GetSyncClientTickIndex(ServerTick),
 					ServerTick
 				);
 
@@ -522,7 +557,7 @@ void UNPS_MovementComponent::SendClientAdjustment()
 				ensureMsgf
 				(
 					ToSend.GetSyncServerTick() == ServerTick &&
-					ToSend.GetSyncClientTick() == ServerPrecition->GetSyncClientTickIndexForStampRigidBody(),
+					ToSend.GetSyncClientTick() == ServerPrecition->GetSyncClientTickIndex(ServerTick),
 					TEXT("Check typo")
 				);
 #endif
@@ -534,6 +569,11 @@ void UNPS_MovementComponent::SendClientAdjustment()
 			}
 
 			bServerHasAutoProxyPendingCorrection = false;
+			UE_LOG
+			(
+				LogNPS_Net, Log, TEXT("Send correction with sync tick. ServerTick:%u, ClientTick:%u"),
+				ServerTick, ServerPrecition->GetSyncClientTickIndex(ServerTick)
+			);
 		}
 	}
 }

@@ -43,6 +43,13 @@ public:
 		return InputArray;
 	}
 
+public:
+	/**
+	 * Currently for debug
+	 */
+	UPROPERTY()
+	uint32 SendTickStamp;
+
 private:
 	UPROPERTY()
 	TArray<FSavedInput> InputArray;

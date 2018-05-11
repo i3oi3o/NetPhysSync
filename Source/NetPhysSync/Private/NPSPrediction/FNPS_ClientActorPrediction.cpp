@@ -94,7 +94,9 @@ void FNPS_ClientActorPrediction::ServerCorrectState(const FReplicatedRigidBodySt
 	int32 OutArrayIndex;
 	FNPS_StaticHelperFunction::CalculateBufferArrayIndex(ClientStateBufferStartTickIndex, ClientTickIndex, OutArrayIndex);
 	float SumSqrError = 0;
-	if (OutArrayIndex >= 0 && OutArrayIndex < ClientStateBuffer.Num())
+	if (ClientStateBuffer.Num() > 0 && 
+		OutArrayIndex >= 0 && 
+		OutArrayIndex < ClientStateBuffer.Num())
 	{
 		FSavedClientRigidBodyState& ExistState = ClientStateBuffer[OutArrayIndex];
 		SumSqrError = ExistState.CalculateSumDiffSqrtError(CorrectState);
@@ -115,6 +117,7 @@ void FNPS_ClientActorPrediction::ServerCorrectState(const FReplicatedRigidBodySt
 	bNeedReplay = SumSqrError > 1.0f;
 	bIsCorrectedStateIndexTooOld = false;
 	LastCorrectedStateTickIndex = ClientTickIndex;
+	UE_LOG(LogTemp, Log, TEXT("CorrectStateAt:%d"), LastCorrectedStateTickIndex);
 }
 
 void FNPS_ClientActorPrediction::ShiftElementsToDifferentTickIndex(int32 ShiftAmount)

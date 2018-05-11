@@ -119,7 +119,20 @@ void FNPS_ClientPawnPrediction::ServerCorrectState(const FReplicatedRigidBodySta
 			OldestUnacknowledgedInputTick = ClientTickIndex;
 		}
 
+		UE_LOG(LogTemp, Log, TEXT("UnacknowledgeInput after Acknowledging:%d"), OldestUnacknowledgedInputTick);
 		bIsOldestUnacknowledgeInputTooOld = false;
+	}
+	else
+	{
+		if (LastCorrectedStateTickIndex != ClientTickIndex)
+		{
+			UE_LOG(LogTemp, Log, TEXT("Correct state is ignored. So, no acknowledge input."));
+		}
+		else if (!HasUnacknowledgedInput())
+		{
+			UE_LOG(LogTemp, Log, TEXT("No input to acknowledge."));
+		}
+		
 	}
 }
 
