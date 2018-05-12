@@ -59,7 +59,7 @@ public class NetPhysSync : ModuleRules
         }
             
         PublicDefinitions.Add("NPS_BUFFER_SIZE="+BufferSize);
-        //PublicDefinitions.Add("NPS_LOG_SYNC_AUTO_PROXY=1");
+        PublicDefinitions.Add("NPS_LOG_SYNC_AUTO_PROXY=0");
 
         PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "OnlineSubSystem", "OnlineSubsystemUtils", "PhysX", "APEX" });
 

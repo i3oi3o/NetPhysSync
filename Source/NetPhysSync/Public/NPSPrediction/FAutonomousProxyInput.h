@@ -47,13 +47,6 @@ public:
 		return InputArray;
 	}
 
-public:
-	/**
-	 * Currently for debug
-	 */
-	UPROPERTY()
-	uint32 SendTickStamp;
-
 private:
 	UPROPERTY(meta = (AllowPrivateAccess = "true"))
 	TArray<FSavedInput> InputArray;

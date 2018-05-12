@@ -76,12 +76,13 @@ void FNPS_ServerPawnPrediction::UpdateInputBuffer
 			// This can happen when client continue to send unacknowledged input
 			// and Server have processed all input. 
 			// Server just need to send correction till client don't have any unacknowledged.
+#if NPS_LOG_SYNC_AUTO_PROXY
 			UE_LOG
 			(
-				LogNPS_Net, Log, TEXT("Discard old input. ProxyStartTick:%u, ProxyNum:%d, SendClientTickStamp:%u"),
-				ProxyClientTickStartIndex, ProxyInputBuffer.Num(),
-				AutonomousProxyInput.SendTickStamp
+				LogNPS_Net, Log, TEXT("Discard old input. ProxyStartTick:%u, ProxyNum:%d"),
+				ProxyClientTickStartIndex, ProxyInputBuffer.Num()
 			);
+#endif
 			return;
 		}
 		else if(Index >= 0)
@@ -171,10 +172,12 @@ void FNPS_ServerPawnPrediction::UpdateInputBuffer
 		InputStartServerTickIndex += ShiftAmount;
 	}
 
+#if NPS_LOG_SYNC_AUTO_PROXY
 	if (InputBuffer.Num() > 0)
 	{
 		if (InputBuffer[InputBuffer.Num() - 1].IsEmptyInput())
 		{
+
 			UE_LOG
 			(
 				LogNPS_Net, Log,
@@ -186,13 +189,13 @@ void FNPS_ServerPawnPrediction::UpdateInputBuffer
 		UE_LOG
 		(
 			LogNPS_Net, Log,
-			TEXT("Buffer ClientStartInput:%u, ServerStartInput:%u, NumInput:%d. ProxyBStartTick:%u, ProxyBNum:%d, ProxyBBeginCopyTick:%u, ProxySendTickStamp:%u"),
+			TEXT("Buffer ClientStartInput:%u, ServerStartInput:%u, NumInput:%d. ProxyBStartTick:%u, ProxyBNum:%d, ProxyBBeginCopyTick:%u"),
 			InputStartClientTickIndex, InputStartServerTickIndex, InputBuffer.Num(),
 			ProxyClientTickStartIndex, ProxyInputBuffer.Num(),
-			BeginCopyProxyInputIndex,
-			AutonomousProxyInput.SendTickStamp
+			BeginCopyProxyInputIndex
 		);
 	}
+#endif
 }
 
 const FSavedInput& FNPS_ServerPawnPrediction::ProcessServerTick(uint32 ServerTickIndex)
@@ -244,6 +247,7 @@ const FSavedInput& FNPS_ServerPawnPrediction::ProcessServerTick(uint32 ServerTic
 
 					}
 
+#if NPS_LOG_SYNC_AUTO_PROXY
 					if (InputBuffer.Num() == 0)
 					{
 						UE_LOG
@@ -262,6 +266,7 @@ const FSavedInput& FNPS_ServerPawnPrediction::ProcessServerTick(uint32 ServerTic
 							*ToReturn->ToString()
 						);
 					}
+#endif
 
 				}
 				// Buffer is not end yet. 
@@ -280,12 +285,15 @@ const FSavedInput& FNPS_ServerPawnPrediction::ProcessServerTick(uint32 ServerTic
 					int32 ShiftAmount = ToProcessedIndex - InputBuffer.Num() + 1;
 					InputStartServerTickIndex += ShiftAmount;
 					ensureMsgf(bHasSyncClientTickIndex, TEXT("Should have sync client tick index."));
+					
+#if NPS_LOG_SYNC_AUTO_PROXY
 					UE_LOG
 					(
 						LogNPS_Net, Log, 
 						TEXT("Processed Input - Wait for more input. ServerTick:%u, WaitForClientTick:%u"),
 						ServerTickIndex, InputStartClientTickIndex + InputBuffer.Num()
 					);
+#endif
 					// Cancel SyncClientTickIndex advancement code below because
 					// We cannot process missing input.
 					SyncClientTickIndexWithProcessedServerTick -= AdvanceAmount;

@@ -280,6 +280,7 @@ void UNPS_MovementComponent::TickPhysStep(const FPhysStepParam& param)
 		FNPS_ServerPawnPrediction* ServerPrediction = 
 			GetPredictionData_ServerNPSPawn();
 
+#if NPS_LOG_SYNC_AUTO_PROXY
 		if (!ServerPrediction->IsProcessingClientInput())
 		{
 			if (ServerPrediction->HasSyncClientTickIndex())
@@ -299,7 +300,7 @@ void UNPS_MovementComponent::TickPhysStep(const FPhysStepParam& param)
 				);
 			}
 		}
-
+#endif
 		const FSavedInput& ProcessedInput = ServerPrediction->
 			ProcessServerTick(param.LocalPhysTickIndex);
 		SimulatedInput(ProcessedInput);
@@ -325,16 +326,15 @@ void UNPS_MovementComponent::TickEndPhysic(const FEndPhysParam& param)
 		if (ClientPrediction->HasUnacknowledgedInput())
 		{
 			FAutonomousProxyInput ProxyInput = FAutonomousProxyInput(*ClientPrediction);
-			ProxyInput.SendTickStamp = FNPS_StaticHelperFunction::GetCurrentPhysTickIndex(this);
-
+			
+#if NPS_LOG_SYNC_AUTO_PROXY
 			UE_LOG
 			(
-				LogNPS_Net, Log, TEXT("Sending - ProxyStartTick:%u, ProxyNum:%u, Send Timestamp:%u"),
+				LogNPS_Net, Log, TEXT("Sending - ProxyStartTick:%u, ProxyNum:%u"),
 				ProxyInput.GetArrayStartClientTickIndex(),
-				ProxyInput.GetArray().Num(),
-				ProxyInput.SendTickStamp
+				ProxyInput.GetArray().Num()
 			);
-
+#endif
 			Server_UpdateAutonomousInput
 			(
 				MoveTemp(ProxyInput)
@@ -568,11 +568,14 @@ void UNPS_MovementComponent::SendClientAdjustment()
 			}
 
 			bServerHasAutoProxyPendingCorrection = false;
+
+#if NPS_LOG_SYNC_AUTO_PROXY
 			UE_LOG
 			(
 				LogNPS_Net, Log, TEXT("Send correction with sync tick. ServerTick:%u, ClientTick:%u"),
 				ServerTick, ServerPrecition->GetSyncClientTickIndex(ServerTick)
 			);
+#endif
 		}
 	}
 }
@@ -657,7 +660,9 @@ void UNPS_MovementComponent::ResetPredictionData_Server()
 	* Need to investigate what should we do here.
 	*/
 	bServerHasAutoProxyPendingCorrection = false;
+#if NPS_LOG_SYNC_AUTO_PROXY
 	UE_LOG(LogNPS_Net, Log, TEXT("ResetPredictionDataServer."));
+#endif
 }
 
 // ---------------------- End INetworkdPredictionInterface --------------------
@@ -711,15 +716,14 @@ void UNPS_MovementComponent::Client_CorrectStateWithSyncTick_Implementation
 	
 	if (!bIsLateSyncClientTick)
 	{
+#if !UE_BUILD_SHIPPING
 		uint32 LocalPhysicTick = FNPS_StaticHelperFunction::GetCurrentPhysTickIndex(this);
+		
 		int32 Diff = FNPS_StaticHelperFunction::CalculateBufferArrayIndex
 		(AutoProxySyncCorrect.GetSyncClientTick(), LocalPhysicTick);
 		
-		if (Diff < 0)
-		{
-			UE_LOG(LogNPS_Net, Log, TEXT("Replay into future?"));
-		}
-
+		ensureMsgf(Diff >= 0, TEXT("Replay into future"));
+#endif
 		ClientPrediction->ServerCorrectState
 		(
 			AutoProxySyncCorrect.GetRigidBodyState(),
@@ -771,16 +775,15 @@ void UNPS_MovementComponent::Client_CorrectStateWithSyncTick_Implementation
 			CorrectClientTick
 		);
 
-		uint32 LocalPhysicTick = FNPS_StaticHelperFunction::GetCurrentPhysTickIndex(this);
-		
+#if !UE_BUILD_SHIPPING
+		uint32 LocalPhysicTick = FNPS_StaticHelperFunction::GetCurrentPhysTickIndex(this);	
 		int32 Diff = FNPS_StaticHelperFunction::CalculateBufferArrayIndex
 		(CorrectClientTick, LocalPhysicTick);
 
-		if (Diff < 0)
-		{
-			UE_LOG(LogNPS_Net, Log, TEXT("Replay into future?."));
-		}
+		ensureMsgf(Diff >= 0, TEXT("Replay into future?."));
+#endif
 
+#if NPS_LOG_SYNC_AUTO_PROXY
 		UE_LOG
 		(
 			LogNPS_Net, Log, 
@@ -788,6 +791,7 @@ void UNPS_MovementComponent::Client_CorrectStateWithSyncTick_Implementation
 			ClientPrediction->IsReplayTickIndex(CorrectClientTick) ? 
 			TEXT("True") : TEXT("False")
 		);
+#endif
 	}
 
 	ClientReceivedServerTick = AutoProxySyncCorrect.GetSyncServerTick();

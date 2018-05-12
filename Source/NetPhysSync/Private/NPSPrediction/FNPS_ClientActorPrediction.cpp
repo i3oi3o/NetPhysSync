@@ -117,7 +117,6 @@ void FNPS_ClientActorPrediction::ServerCorrectState(const FReplicatedRigidBodySt
 	bNeedReplay = SumSqrError > 1.0f;
 	bIsCorrectedStateIndexTooOld = false;
 	LastCorrectedStateTickIndex = ClientTickIndex;
-	UE_LOG(LogTemp, Log, TEXT("CorrectStateAt:%d"), LastCorrectedStateTickIndex);
 }
 
 void FNPS_ClientActorPrediction::ShiftElementsToDifferentTickIndex(int32 ShiftAmount)

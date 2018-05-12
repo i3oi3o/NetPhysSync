@@ -1,6 +1,7 @@
 // This is licensed under the BSD License 2.0 found in the LICENSE file in project's root directory.
 
 #include "FNPS_ClientPawnPrediction.h"
+#include "NPSLogCategory.h"
 
 FNPS_ClientPawnPrediction::FNPS_ClientPawnPrediction()
 	: Super()
@@ -119,21 +120,25 @@ void FNPS_ClientPawnPrediction::ServerCorrectState(const FReplicatedRigidBodySta
 			OldestUnacknowledgedInputTick = ClientTickIndex;
 		}
 
-		UE_LOG(LogTemp, Log, TEXT("UnacknowledgeInput after Acknowledging:%d"), OldestUnacknowledgedInputTick);
+#if NPS_LOG_SYNC_AUTO_PROXY
+		UE_LOG(LogNPS_Net, Log, TEXT("UnacknowledgeInput after Acknowledging:%d"), OldestUnacknowledgedInputTick);
+#endif
+		
 		bIsOldestUnacknowledgeInputTooOld = false;
 	}
+#if NPS_LOG_SYNC_AUTO_PROXY
 	else
 	{
 		if (LastCorrectedStateTickIndex != ClientTickIndex)
 		{
-			UE_LOG(LogTemp, Log, TEXT("Correct state is ignored. So, no acknowledge input."));
+			UE_LOG(LogNPS_Net, Log, TEXT("Correct state is ignored. So, no acknowledge input."));
 		}
 		else if (!HasUnacknowledgedInput())
 		{
-			UE_LOG(LogTemp, Log, TEXT("No input to acknowledge."));
+			UE_LOG(LogNPS_Net, Log, TEXT("No input to acknowledge."));
 		}
-		
 	}
+#endif
 }
 
 FBufferInfo FNPS_ClientPawnPrediction::GetInputBufferInfo() const
