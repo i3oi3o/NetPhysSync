@@ -6,7 +6,10 @@
 #include "ANPSGameState.h"
 #include "Engine/World.h"
 #include "UNPSNetSetting.h"
+#include "FAutoRegisterINetPhysSyncTick.h"
 
+TArray<FAutoRegisterINetPhysSyncTick*> FNPS_StaticHelperFunction::AutoRegister_Running;
+TArray<FAutoRegisterINetPhysSyncTick*> FNPS_StaticHelperFunction::AutoRegister_Pool;
 
 void FNPS_StaticHelperFunction::CalculateBufferArrayIndex(uint32 BufferStartTickIndex, uint32 BufferTargetIndex, int32& OutResultArrayIndex)
 {
@@ -51,11 +54,54 @@ int32 FNPS_StaticHelperFunction::GetPositiveInclusiveThresholdForOldTick()
 	return TNumericLimits<int32>::Max() - NPS_BUFFER_SIZE;
 }
 
+void FNPS_StaticHelperFunction::RegisterINetPhySync(TScriptInterface<INetPhysSync> ToRegister)
+{
+	UObject* Obj = ToRegister.GetObject();
+	if (Obj != nullptr && !Obj->IsPendingKill())
+	{
+		for (int32 i = 0; i < AutoRegister_Running.Num(); ++i)
+		{
+			if (AutoRegister_Running[i]->GetRegistee() == ToRegister)
+			{
+				return;
+			}
+		}
+
+		UWorld* World = Obj->GetWorld();
+
+		if (World != nullptr)
+		{
+			AGameStateBase* GameStateBase = World->GetGameState();
+			ANPSGameState* NPSGameState = Cast<ANPSGameState>(GameStateBase);
+			if (NPSGameState != nullptr)
+			{
+				NPSGameState->RegisterINetPhysSync(ToRegister);
+			}
+			else if (GameStateBase == nullptr)
+			{
+				// Waiting for GameState replication.
+				// Do we need this?
+				FAutoRegisterINetPhysSyncTick* AutoRegister = GetOrCreateAutoRegisterFromPool();
+				AutoRegister->StartAutoRegister(ToRegister);
+			}
+		}
+	}
+}
+
 void FNPS_StaticHelperFunction::UnregisterINetPhySync(TScriptInterface<INetPhysSync> ToUnregister)
 {
 	UObject* Obj = ToUnregister.GetObject();
 	if (Obj != nullptr)
 	{
+		for (int32 i = 0; i < AutoRegister_Running.Num(); ++i)
+		{
+			if (AutoRegister_Running[i]->GetRegistee() == ToUnregister)
+			{
+				AutoRegister_Running[i]->StopAutoRegister();
+				break;
+			}
+		}
+
 		UWorld* World = Obj->GetWorld();
 
 		if (World != nullptr)
@@ -94,4 +140,28 @@ UNPSNetSetting* FNPS_StaticHelperFunction::GetNetSetting()
 	return UNPSNetSetting::Get();
 }
 
+void FNPS_StaticHelperFunction::ReturnAutoRegisterToPool(FAutoRegisterINetPhysSyncTick* ToReturn)
+{
+	for (int32 i = 0; i < AutoRegister_Running.Num(); ++i)
+	{
+		if (AutoRegister_Running[i] == ToReturn)
+		{
+			AutoRegister_Pool.Add(ToReturn);
+			AutoRegister_Running.RemoveAt(i, 1, false);
+			break;
+		}
+	}
+}
 
+FAutoRegisterINetPhysSyncTick* FNPS_StaticHelperFunction::GetOrCreateAutoRegisterFromPool()
+{
+	if (AutoRegister_Pool.Num() == 0)
+	{
+		AutoRegister_Pool.Add(new FAutoRegisterINetPhysSyncTick());
+	}
+
+	FAutoRegisterINetPhysSyncTick* ToReturn = AutoRegister_Pool[0];
+	AutoRegister_Pool.RemoveAtSwap(0, 1, false);
+	AutoRegister_Running.Add(ToReturn);
+	return ToReturn;
+}

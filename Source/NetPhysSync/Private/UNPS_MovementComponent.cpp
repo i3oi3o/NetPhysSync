@@ -59,8 +59,7 @@ void UNPS_MovementComponent::BeginPlay()
 	// ...
 	if (NPS_PawnOwner != nullptr)
 	{
-		// Is there better way than this?
-		AutoRegisterTick.StartAutoRegister(this);
+		FNPS_StaticHelperFunction::RegisterINetPhySync(this);
 		UpdatedComponent = NPS_PawnOwner->GetPhysRootComp();
 		UpdatedPrimitive = Cast<UPrimitiveComponent>(UpdatedComponent);
 		ForSmoothVisualComponent = NPS_PawnOwner->GetForSmoothingVisualComp();
@@ -827,7 +826,6 @@ void UNPS_MovementComponent::Client_CorrectState_Implementation
 void UNPS_MovementComponent::BeginDestroy()
 {
 	Super::BeginDestroy();
-	AutoRegisterTick.StopAutoRegister();
 	FNPS_StaticHelperFunction::UnregisterINetPhySync(this);
 
 	if (ClientPawnPrediction != nullptr)

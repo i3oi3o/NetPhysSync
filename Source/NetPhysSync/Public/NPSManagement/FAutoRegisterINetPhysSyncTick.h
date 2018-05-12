@@ -6,6 +6,8 @@
 #include <Engine/EngineBaseTypes.h>
 #include "FAutoRegisterINetPhysSyncTick.generated.h"
 
+class INetPhysSync;
+
 /**
  * Investigate if we need this. A pawn probably not exist until Map is loaded.
  * When BeginPlay is called on client, GameState and PlayerController probably exist already.
@@ -23,8 +25,13 @@ public:
 	virtual void StartAutoRegister(TScriptInterface<class INetPhysSync> ToRegister);
 	virtual void StopAutoRegister();
 
+	FORCEINLINE TScriptInterface<INetPhysSync> GetRegistee() const
+	{
+		return ToRegister;
+	}
+
 private:
-	TScriptInterface<class INetPhysSync> ToRegister;
+	TScriptInterface<INetPhysSync> ToRegister;
 };
 
 

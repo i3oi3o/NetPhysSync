@@ -80,10 +80,6 @@ private:
 	UPrimitiveComponent* UpdatedPrimitive;
 
 	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Category = "Test", meta = (AllowPrivateAccess = "true"))
-	USceneComponent* ForSmoothingVisual;
-
-	FAutoRegisterINetPhysSyncTick AutoRegisterINetPhysSync;
-
-	
+	USceneComponent* ForSmoothingVisual;	
 
 };

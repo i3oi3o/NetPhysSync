@@ -204,8 +204,6 @@ private:
 
 	FNPS_ServerPawnPrediction* ServerPawnPrediction;
 
-	FAutoRegisterINetPhysSyncTick AutoRegisterTick;
-
 	UPROPERTY(VisibleAnywhere, Category=Movement)
 	FVector MoveSpeedVec;
 

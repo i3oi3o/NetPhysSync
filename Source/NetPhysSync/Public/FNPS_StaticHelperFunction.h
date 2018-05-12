@@ -9,6 +9,7 @@ template <class InterfaceType> class TScriptInterface;
 class INetPhysSync;
 class UNPSNetSetting;
 class UWorld;
+struct FAutoRegisterINetPhysSyncTick;
 
 /**
  * 
@@ -34,6 +35,8 @@ public:
 	 * to prevent warping over overflow uint32.
 	 */
 	static int32 GetPositiveInclusiveThresholdForOldTick();
+
+	static void RegisterINetPhySync(TScriptInterface<INetPhysSync> ToRegister);
 
 	static void UnregisterINetPhySync(TScriptInterface<INetPhysSync> ToUnregister);
 
@@ -108,4 +111,13 @@ public:
 			Buffers.Add(ToSet);
 		}
 	}
+
+	static void ReturnAutoRegisterToPool(FAutoRegisterINetPhysSyncTick* ToReturn);
+
+private:
+
+	static FAutoRegisterINetPhysSyncTick* GetOrCreateAutoRegisterFromPool();
+
+	static TArray<FAutoRegisterINetPhysSyncTick*> AutoRegister_Running;
+	static TArray<FAutoRegisterINetPhysSyncTick*> AutoRegister_Pool;
 };

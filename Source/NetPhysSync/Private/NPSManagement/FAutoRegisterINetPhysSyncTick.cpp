@@ -6,11 +6,10 @@
 #include <Engine/World.h>
 #include <Components/ActorComponent.h>
 #include "ANPSGameState.h"
-
+#include "FNPS_StaticHelperFunction.h"
 
 FAutoRegisterINetPhysSyncTick::FAutoRegisterINetPhysSyncTick()
-	: Super(),
-	ToRegister()
+	: ToRegister()
 {
 	this->TickGroup = ETickingGroup::TG_PrePhysics;
 	this->bCanEverTick = true;
@@ -33,11 +32,16 @@ void FAutoRegisterINetPhysSyncTick::ExecuteTick(float DeltaTime, ELevelTick Tick
 
 		if (World != nullptr)
 		{
-			ANPSGameState* GameState = World->GetGameState<ANPSGameState>();
+			AGameStateBase* GameStateBase = World->GetGameState();
+			ANPSGameState* NPSGameState = Cast<ANPSGameState>(GameStateBase);
 
-			if (GameState != nullptr)
+			if (NPSGameState != nullptr)
 			{
-				GameState->RegisterINetPhysSync(ToRegister);
+				NPSGameState->RegisterINetPhysSync(ToRegister);
+				StopAutoRegister();
+			}
+			else if (GameStateBase != nullptr)
+			{
 				StopAutoRegister();
 			}
 		}
@@ -69,7 +73,7 @@ void FAutoRegisterINetPhysSyncTick::StartAutoRegister(TScriptInterface<INetPhysS
 {
 	if (IsTickFunctionRegistered())
 	{
-		checkf(false, TEXT("This function is already registered."));
+		ensureMsgf(false, TEXT("This function is already registered."));
 		return;
 	}
 
@@ -117,5 +121,6 @@ void FAutoRegisterINetPhysSyncTick::StopAutoRegister()
 	{
 		UnRegisterTickFunction();
 		ToRegister = nullptr;
+		FNPS_StaticHelperFunction::ReturnAutoRegisterToPool(this);
 	}
 }

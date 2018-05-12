@@ -47,7 +47,7 @@ void ANPS_DynamicActorBase::BeginPlay()
 		UpdatedPrimitive->GetBodyInstance()->IsDynamic())
 	{
 		// Is there better way than this?
-		AutoRegisterINetPhysSync.StartAutoRegister(this);
+		FNPS_StaticHelperFunction::RegisterINetPhySync(this);
 		
 		//UE_LOG(LogTemp, Log, TEXT("Listen collision."));
 	}
@@ -67,7 +67,6 @@ void ANPS_DynamicActorBase::OnUpdatedPrimitiveGetHit(UPrimitiveComponent* HitCom
 void ANPS_DynamicActorBase::BeginDestroy()
 {
 	Super::BeginDestroy();
-	AutoRegisterINetPhysSync.StopAutoRegister();
 	FNPS_StaticHelperFunction::UnregisterINetPhySync(this);
 }
 
