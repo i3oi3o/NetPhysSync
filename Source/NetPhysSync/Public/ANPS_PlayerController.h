@@ -32,4 +32,6 @@ class NETPHYSSYNC_API ANPS_PlayerController : public APlayerController
 		void TurnRight(float InputValue);
 		void TurnRateUp(float InputValue);
 		void TurnRateRight(float InputValue);
+		bool CanAddMoveInput();
+		bool CanAddTurnInput();
 };

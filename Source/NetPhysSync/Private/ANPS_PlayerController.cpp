@@ -8,6 +8,8 @@
 #include "ConstCollection/InputNameCollection.h"
 #include "Interfaces/NetworkPredictionInterface.h"
 #include "Engine/World.h"
+#include "ANPS_PawnBase.h"
+#include "UNPS_MovementComponent.h"
 
 
 ANPS_PlayerController::ANPS_PlayerController(const FObjectInitializer& ObjectInitializer)
@@ -109,21 +111,19 @@ void ANPS_PlayerController::Tick(float DeltaSecond)
 
 void ANPS_PlayerController::MoveForward(float InputValue)
 {
-	APawn* Pawn = GetPawn();
-	if (Pawn != nullptr)
+	if (CanAddMoveInput())
 	{
 		const FRotator Rotation = GetControlRotation();
 		const FRotator YawRotation(0.0f, Rotation.Yaw, 0.0f);
 
 		const FVector Direction = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
-		Pawn->AddMovementInput(Direction, InputValue);
+		GetPawn()->AddMovementInput(Direction, InputValue);
 	}
 }
 
 void ANPS_PlayerController::MoveRight(float InputValue)
 {
-	APawn* Pawn = GetPawn();
-	if (Pawn != nullptr)
+	if (CanAddMoveInput())
 	{
 		const FRotator Rotation = GetControlRotation();
 		const FRotator YawRotation(0, Rotation.Yaw, 0);
@@ -131,14 +131,13 @@ void ANPS_PlayerController::MoveRight(float InputValue)
 		// get right vector 
 		const FVector Direction = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
 		// add movement in that direction
-		Pawn->AddMovementInput(Direction, InputValue);
+		GetPawn()->AddMovementInput(Direction, InputValue);
 	}
 }
 
 void ANPS_PlayerController::TurnUp(float InputValue)
 {
-	APawn* Pawn = GetPawn();
-	if (Pawn != nullptr)
+	if (CanAddTurnInput())
 	{
 		AddPitchInput(InputValue);
 	}
@@ -146,8 +145,7 @@ void ANPS_PlayerController::TurnUp(float InputValue)
 
 void ANPS_PlayerController::TurnRight(float InputValue)
 {
-	APawn* Pawn = GetPawn();
-	if (Pawn != nullptr)
+	if (CanAddTurnInput())
 	{
 		AddYawInput(InputValue);
 	}
@@ -155,18 +153,35 @@ void ANPS_PlayerController::TurnRight(float InputValue)
 
 void ANPS_PlayerController::TurnRateUp(float InputValue)
 {
-	APawn* Pawn = GetPawn();
-	if (Pawn != nullptr)
+	if (CanAddTurnInput())
 	{
-		 AddPitchInput(InputValue * TurnRate * Pawn->GetWorld()->GetDeltaSeconds());
+		 AddPitchInput(InputValue * TurnRate * GetPawn()->GetWorld()->GetDeltaSeconds());
 	}
 }
 
 void ANPS_PlayerController::TurnRateRight(float InputValue)
 {
-	APawn* Pawn = GetPawn();
-	if (Pawn != nullptr)
+	if (CanAddTurnInput())
 	{
-		AddYawInput(InputValue * TurnRate * Pawn->GetWorld()->GetDeltaSeconds());
+		AddYawInput(InputValue * TurnRate * GetPawn()->GetWorld()->GetDeltaSeconds());
 	}
+}
+
+bool ANPS_PlayerController::CanAddMoveInput()
+{
+	APawn* Pawn = GetPawn();
+	ANPS_PawnBase* NPSPawn = Cast<ANPS_PawnBase>(Pawn);
+	if (NPSPawn != nullptr && Pawn->GetWorld() != nullptr)
+	{
+		UNPS_MovementComponent* MovementComponent = Cast<UNPS_MovementComponent>(NPSPawn->GetMovementComponent());
+		return MovementComponent != nullptr && 
+			MovementComponent->IsStartPhysicYet();
+	}
+
+	return false;
+}
+
+bool ANPS_PlayerController::CanAddTurnInput()
+{
+	return GetPawn() != nullptr && GetPawn()->GetWorld() != nullptr;
 }

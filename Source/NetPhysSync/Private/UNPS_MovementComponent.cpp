@@ -32,9 +32,10 @@ UNPS_MovementComponent::UNPS_MovementComponent()
 	MaxAngularVelocityDegree = 90.0f;
 	bServerHasAutoProxyPendingCorrection = false;
 	bClientHasNewSyncPoint = false;
-	bClientHasRecievedNewServerTick = false;
+	bClientHasNewServerTick = false;
     bClientHasAutoCorrectWithoutSyncTick = false;
-	bClientHasReceivedServerTick = false;
+	bClientHasServerTick = false;
+	bClientHasSyncPoint = false;
 }
 
 
@@ -166,7 +167,7 @@ bool UNPS_MovementComponent::IsLateSyncClientTick
 
 bool UNPS_MovementComponent::IsReceivedServerTickTooOld(uint32 ServerTick)
 {
-	if (bClientHasReceivedServerTick)
+	if (bClientHasServerTick)
 	{
 		int32 Index = FNPS_StaticHelperFunction::CalculateBufferArrayIndex
 		(
@@ -180,12 +181,11 @@ bool UNPS_MovementComponent::IsReceivedServerTickTooOld(uint32 ServerTick)
 	return false;
 }
 
-void UNPS_MovementComponent::ResetClientCachReceiveDataFlag()
+void UNPS_MovementComponent::ResetClientCachNewDataFlag()
 {
 	bClientHasNewSyncPoint = false;
-	bClientHasRecievedNewServerTick = false;
+	bClientHasNewServerTick = false;
 	bClientHasAutoCorrectWithoutSyncTick = false;
-	bClientHasReceivedServerTick = false;
 }
 
 void UNPS_MovementComponent::DrawDebugRigidBody
@@ -225,6 +225,7 @@ bool UNPS_MovementComponent::IsTickEnabled(const FIsTickEnableParam& param) cons
 // ------------------------- Start INetPhysSync:: Tick interface -------------
 void UNPS_MovementComponent::TickStartPhysic(const FStartPhysParam& param)
 {
+	bStartPhysicYet = true;
 	if (IsLocalPlayerControlPawn())
 	{
 		FVector InputVector = this->ConsumeInputVector();
@@ -418,7 +419,7 @@ void UNPS_MovementComponent::VisualUpdate(const FVisualUpdateParam& param)
 bool UNPS_MovementComponent::TryGetNewestUnprocessedServerTick(uint32& OutServerTick) const
 {
 	OutServerTick = ClientReceivedServerTick;
-	return bClientHasRecievedNewServerTick;
+	return bClientHasNewServerTick;
 }
 
 
@@ -452,34 +453,38 @@ void UNPS_MovementComponent::OnReadReplication
 		.ShiftClientTickAmountForReplayPrediction;
 
 
-	if (PawnOwner->Role == ENetRole::ROLE_AutonomousProxy &&
-		bClientHasAutoCorrectWithoutSyncTick)
+	if (PawnOwner->Role == ENetRole::ROLE_AutonomousProxy)
 	{
-		
-		ClientPrecition->ShiftElementsToDifferentTickIndex(ShiftAmount);
-		
-		checkf
-		(
-			ClientAutoProxyCorrectWithoutSyncTick.GetServerTick() == ClientReceivedServerTick,
-			TEXT("Receive server tick doesn't match.")
-		);
+		if (!bClientHasSyncPoint)
+		{
+			ClientPrecition->ShiftElementsToDifferentTickIndex(ShiftAmount);
+		}
 
-		uint32 ReplayClientTick = ReadReplicationParam
-			.NewSyncPointInfo
-			.NewSyncPoint
-			.ServerTick2ClientTick(ClientReceivedServerTick);
-		
-		ClientPrecition->ServerCorrectState
-		(
-			ClientAutoProxyCorrectWithoutSyncTick.GetRigidBodyState(),
-			ReplayClientTick
-		);		
+		if (bClientHasAutoCorrectWithoutSyncTick)
+		{
+			checkf
+			(
+				ClientAutoProxyCorrectWithoutSyncTick.GetServerTick() == ClientReceivedServerTick,
+				TEXT("Receive server tick doesn't match.")
+			);
+
+			uint32 ReplayClientTick = ReadReplicationParam
+				.NewSyncPointInfo
+				.NewSyncPoint
+				.ServerTick2ClientTick(ClientReceivedServerTick);
+
+			ClientPrecition->ServerCorrectState
+			(
+				ClientAutoProxyCorrectWithoutSyncTick.GetRigidBodyState(),
+				ReplayClientTick
+			);
+		}
 	}
 }
 
 void UNPS_MovementComponent::OnFinishReadReplication(const FOnFinishReadAllReplicationParam& FinishReadRepParam)
 {
-	ResetClientCachReceiveDataFlag();
+	ResetClientCachNewDataFlag();
 }
 
 // ---------------------- End INetPhysSync --------------------------------------- 
@@ -654,7 +659,9 @@ void UNPS_MovementComponent::ResetPredictionData_Client()
 	/**
 	 * Need to investigate what should we do here.
 	 */
-	ResetClientCachReceiveDataFlag();
+	ResetClientCachNewDataFlag();
+	bClientHasServerTick = false;
+	bClientHasSyncPoint = false;
 }
 
 void UNPS_MovementComponent::ResetPredictionData_Server()
@@ -708,8 +715,9 @@ void UNPS_MovementComponent::Client_CorrectStateWithSyncTick_Implementation
 		return;
 	}
 
-	bClientHasReceivedServerTick = true;
-	bClientHasRecievedNewServerTick = true;
+	bClientHasSyncPoint = true;
+	bClientHasServerTick = true;
+	bClientHasNewServerTick = true;
 	bClientHasNewSyncPoint = true;
 
 	FNPS_ClientPawnPrediction* ClientPrediction = GetPredictionData_ClientNPSPawn();
@@ -818,8 +826,8 @@ void UNPS_MovementComponent::Client_CorrectState_Implementation
 		return;
 	}
 
-	bClientHasReceivedServerTick = true;
-	bClientHasRecievedNewServerTick = true;
+	bClientHasServerTick = true;
+	bClientHasNewServerTick = true;
 	ClientReceivedServerTick = Correction.GetServerTick();
 	bClientHasAutoCorrectWithoutSyncTick = true;
 	ClientAutoProxyCorrectWithoutSyncTick = Correction;

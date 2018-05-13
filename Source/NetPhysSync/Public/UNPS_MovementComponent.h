@@ -133,6 +133,10 @@ public:
 	
 
 // ------------- End RPC Function ------------------
+	FORCEINLINE bool IsStartPhysicYet() const
+	{
+		return bStartPhysicYet;
+	}
 
 protected:
 
@@ -155,9 +159,13 @@ protected:
 
 	bool bClientHasNewSyncPoint;
 
-	bool bClientHasRecievedNewServerTick;
+	bool bClientHasSyncPoint;
 
-	bool bClientHasReceivedServerTick;
+	bool bClientHasNewServerTick;
+
+	bool bClientHasServerTick;
+
+	bool bStartPhysicYet;
 
 	uint32 ClientReceivedServerTick;
 
@@ -195,7 +203,7 @@ protected:
 	 */
 	bool IsReceivedServerTickTooOld(uint32 ServerTick);
 
-	void ResetClientCachReceiveDataFlag();
+	void ResetClientCachNewDataFlag();
 
 	void DrawDebugRigidBody(const FReplicatedRigidBodyState& DrawPos, const FColor& Color);
 
