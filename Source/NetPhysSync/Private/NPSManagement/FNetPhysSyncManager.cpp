@@ -104,7 +104,7 @@ void FNetPhysSyncManager::UnregisterINetPhysSync(INetPhysSyncPtr iNetPhysSyncPtr
 
 void FNetPhysSyncManager::OnTickPrePhysic()
 {
-	if (!DoWeNeedReplay())
+	if (!DoWeNeedReplay() || WorldOwningPhysScene == nullptr)
 	{
 		return;
 	}
@@ -161,7 +161,7 @@ void FNetPhysSyncManager::OnTickPrePhysic()
 	);
 
 	uint32 OutReplayIndex;
-	if (TryGetReplayIndex(IsTickEnableParam, OutReplayIndex) && WorldOwningPhysScene != nullptr)
+	if (TryGetReplayIndex(IsTickEnableParam, OnNewSyncPointInfo, OutReplayIndex))
 	{
 		int32 ReplayNumber;
 
@@ -616,6 +616,7 @@ bool FNetPhysSyncManager::TryGetNewSyncPoint
 bool FNetPhysSyncManager::TryGetReplayIndex
 (
 	const FIsTickEnableParam& IsTickEnableParam,
+	const FOnNewSyncPointInfo& OnNewSyncPointInfo ,
 	uint32& OutReplayIndex
 )
 {
@@ -623,6 +624,25 @@ bool FNetPhysSyncManager::TryGetReplayIndex
 	if (WorldOwningPhysScene != nullptr)
 	{
 		int32 OldestDiff = TNumericLimits<int32>::Max();
+
+		// Need replay to fill missing history buffer.
+		if (OnNewSyncPointInfo.ShiftClientTickAmountForReplayPrediction < 0)
+		{
+			OldestDiff = OnNewSyncPointInfo.ShiftClientTickAmountForReplayPrediction;
+			OutReplayIndex = LocalPhysTickIndex + OldestDiff;
+
+#if !UE_BUILD_SHIPPING
+			int32 OutDebugDiff;
+			FNPS_StaticHelperFunction::CalculateBufferArrayIndex
+			(
+				LocalPhysTickIndex,
+				OutReplayIndex,
+				OutDebugDiff
+			);
+
+			ensureMsgf(OldestDiff == OutDebugDiff, TEXT("Wrong diff calculation for replaying to fill missing history buffer."));
+#endif
+		}
 
 		for (int32 i = 0; i < INetPhysSyncPtrList.Num(); ++i)
 		{

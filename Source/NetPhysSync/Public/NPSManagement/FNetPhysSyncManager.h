@@ -10,6 +10,7 @@ typedef TScriptInterface<class INetPhysSync> INetPhysSyncPtr;
 class FPhysScene;
 class FDelegateHandle;
 enum EPhysicsSceneType;
+struct FOnNewSyncPointInfo;
 
 /**
  * 
@@ -134,8 +135,7 @@ private:
 	bool TryGetReplayIndex
 	(
 		const FIsTickEnableParam& IsTickEnableParam,
+		const FOnNewSyncPointInfo& OnNewSyncPointInfo,
 		uint32& OutReplayIndex
 	);
-
-
 };
