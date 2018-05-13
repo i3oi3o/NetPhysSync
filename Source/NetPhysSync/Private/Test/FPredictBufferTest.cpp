@@ -264,34 +264,118 @@ bool FClientActorPredictionSaveAndGetTest::RunTest(const FString& Parameters)
 		/*Test Query Out of bound element*/
 		int32 ShiftAmountToOutOfBound = 2 * (NPS_BUFFER_SIZE + OverflowSize);
 
-		float ErrorDiff = ClientActorPrediction
-			.GetRigidBodyState(FakeClientTick + ShiftAmountToOutOfBound)
-			.CalculateSumDiffSqrtError(GenerateClientRigidBodyStates[OverflowSize-1]);
+		{
+			float ErrorDiff = ClientActorPrediction
+				.GetRigidBodyState
+				(
+					FakeClientTick + ShiftAmountToOutOfBound,
+					EIdxOutOfRangeHandle::UseNearestIndex
+				)
+				.CalculateSumDiffSqrtError(GenerateClientRigidBodyStates[OverflowSize - 1]);
 
-		TestEqual(TEXT("Comapre out of bound state from future using nearest."), ErrorDiff, 0.0f);
+			TestEqual
+			(
+				TEXT("Comapre out of range state from future-UseNearest."),
+				ErrorDiff, 0.0f
+			);
+		}
 
-		ErrorDiff = ClientActorPrediction
-			.GetRigidBodyState(FakeClientTick - ShiftAmountToOutOfBound)
-			.CalculateSumDiffSqrtError(DummyReplicatedState);
+		{
+			float ErrorDiff = ClientActorPrediction
+				.GetRigidBodyState
+				(
+					FakeClientTick + ShiftAmountToOutOfBound,
+					EIdxOutOfRangeHandle::UseNearestIndexIfOutRangeFromEnd
+				)
+				.CalculateSumDiffSqrtError(GenerateClientRigidBodyStates[OverflowSize - 1]);
 
-		TestEqual(TEXT("Compare out of bound state from past using nearest."), ErrorDiff, 0.0f);
+			TestEqual
+			(
+				TEXT("Comapre out of range state from future-UseNearestIfOutRangeFromEnd."),
+				ErrorDiff, 0.0f
+			);
+		}
 
+		{
+			float ErrorDiff = ClientActorPrediction
+				.GetRigidBodyState
+				(
+					FakeClientTick - ShiftAmountToOutOfBound,
+					EIdxOutOfRangeHandle::UseNearestIndex
+				)
+				.CalculateSumDiffSqrtError(DummyReplicatedState);
 
-		bool bIsValid = ClientActorPrediction
-			.GetRigidBodyState(FakeClientTick + ShiftAmountToOutOfBound, false)
-			.IsReplicatedStateValid();
+			TestEqual(TEXT("Compare out of bound state from past-UseNearest."), 
+				ErrorDiff, 0.0f);
+		}
 
-		TestEqual(TEXT("Test out of bound state from future without using nearest."), bIsValid, false);
+		{
+			float ErrorDiff = ClientActorPrediction
+				.GetRigidBodyState
+				(
+					FakeClientTick - ShiftAmountToOutOfBound,
+					EIdxOutOfRangeHandle::UseNearestIndexIfOutRangeFromBegin
+				)
+				.CalculateSumDiffSqrtError(DummyReplicatedState);
 
-		bIsValid = ClientActorPrediction
-			.GetRigidBodyState(FakeClientTick - ShiftAmountToOutOfBound, false)
-			.IsReplicatedStateValid();
+			TestEqual(TEXT("Compare out of bound state from past-UseNearestIfOutRangeFromBegin."), 
+				ErrorDiff, 0.0f);
+		}
 
-		TestEqual(TEXT("Test out of bound state from past without using nearest."), bIsValid, false);
+		{
+			bool bIsValid = ClientActorPrediction
+				.GetRigidBodyState
+				(
+					FakeClientTick + ShiftAmountToOutOfBound,
+					EIdxOutOfRangeHandle::PreventExceptionByDoNothingOrReturnEmptyInvalid
+				)
+				.IsReplicatedStateValid();
+
+			TestEqual(TEXT("Test out of bound state from future-PreventException."), 
+				bIsValid, false);
+		}
+
+		{
+			bool bIsValid = ClientActorPrediction
+				.GetRigidBodyState
+				(
+					FakeClientTick + ShiftAmountToOutOfBound,
+					EIdxOutOfRangeHandle::UseNearestIndexIfOutRangeFromBegin
+				)
+				.IsReplicatedStateValid();
+
+			TestEqual(TEXT("Test out of bound state from future-UseNearestIndexIfOutRangeFromBegin."),
+				bIsValid, false);
+		}
+
+		{
+			bool bIsValid = ClientActorPrediction
+				.GetRigidBodyState
+				(
+					FakeClientTick - ShiftAmountToOutOfBound,
+					EIdxOutOfRangeHandle::PreventExceptionByDoNothingOrReturnEmptyInvalid
+				)
+				.IsReplicatedStateValid();
+
+			TestEqual(TEXT("Test out of bound state from past-PreventException."), 
+				bIsValid, false);
+		}
+
+		{
+			bool bIsValid = ClientActorPrediction
+				.GetRigidBodyState
+				(
+					FakeClientTick - ShiftAmountToOutOfBound,
+					EIdxOutOfRangeHandle::UseNearestIndexIfOutRangeFromEnd
+				)
+				.IsReplicatedStateValid();
+
+			TestEqual(TEXT("Test out of bound state from past-UseNearestIfOutRangeFromEnd."),
+				bIsValid, false);
+		}
 	}
 
 	return true;
-
 }
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FClientActorPredictionShiftBufferTest, "NetPhysSync.PredictBuffer.Client.Actor.ShiftBufferGetAndSave", EAutomationTestFlags::EditorContext | EAutomationTestFlags::SmokeFilter)
@@ -507,7 +591,11 @@ bool FClientActorPredictionReplayTickTest::RunTest(const FString& Parameters)
 		);
 
 		DiffSqrtError = ClientActorPrediction
-			.GetRigidBodyState(ForQueryReplayTick, false)
+			.GetRigidBodyState
+			(
+				ForQueryReplayTick, 
+				EIdxOutOfRangeHandle::PreventExceptionByDoNothingOrReturnEmptyInvalid
+			)
 			.CalculateSumDiffSqrtError(GeneratedState[TestSize - 1]);
 
 		TestEqual(TEXT("Check correct state at FakeClientTick + TestSize + 2U"), DiffSqrtError, 0.0f);
@@ -555,43 +643,144 @@ bool FClientPawnPredictionSaveAndGetTest::RunTest(const FString& Parameters)
 
 	for (int32 i = 0; i < NPS_BUFFER_SIZE+1; ++i)
 	{
-		bool bIsEqual = PawnPrediction.GetSavedInput(FakeClientTick + i) == GeneratedInput[i];
-		TestEqual(TEXT("Test Save and Get Value"), bIsEqual, true);
+		{
+			const FSavedInput& SavedInput = PawnPrediction.GetSavedInput
+			(
+				FakeClientTick + i,
+				EIdxOutOfRangeHandle::UseNearestIndex
+			);
+
+			TestEqual(TEXT("Test Save and Get Value-UseNearestIndex"),
+				SavedInput, GeneratedInput[i]);
+		}
+
+		{
+			const FSavedInput& SavedInput = PawnPrediction.GetSavedInput
+			(
+				FakeClientTick + i,
+				EIdxOutOfRangeHandle::UseNearestIndexIfOutRangeFromEnd
+			);
+
+			TestEqual(TEXT("Test Save and Get Value-UseNearestIndexIfOutRangeFromEnd"),
+				SavedInput, GeneratedInput[i]);
+		}
 	}
 
 	for (int32 i = -10; i < 0; ++i)
 	{
-		bool bIsEqual = PawnPrediction.GetSavedInput(FakeClientTick + i) == GeneratedInput[0];
+		{
+			const FSavedInput& SavedInput = PawnPrediction
+				.GetSavedInput
+				(
+					FakeClientTick + i,
+					EIdxOutOfRangeHandle::UseNearestIndex
+				);
 
-		TestEqual(TEXT("Test Nearest from past"), bIsEqual, true);
+			TestEqual(TEXT("Test Out of Range from past-UseNearestIndex"), 
+				SavedInput, GeneratedInput[0]);
+		}
 
-		const FSavedInput& EmptyInput = PawnPrediction
-			.GetSavedInput(FakeClientTick + i, false);
+		{
+			const FSavedInput& SavedInput = PawnPrediction
+				.GetSavedInput
+				(
+					FakeClientTick + i,
+					EIdxOutOfRangeHandle::UseNearestIndexIfOutRangeFromBegin
+				);
 
-		TestEqual
-		(
-			TEXT("Test out of bound from past. Should get empty input."),
-			EmptyInput.IsEmptyInput(),
-			true
-		);
+			TestEqual(TEXT("Test Out of Range from past-UseNearestIndexIfOutRangeFromBegin"),
+				SavedInput, GeneratedInput[0]);
+		}
+
+		{
+			const FSavedInput& EmptyInput = PawnPrediction
+				.GetSavedInput
+				(
+					FakeClientTick + i,
+					EIdxOutOfRangeHandle::PreventExceptionByDoNothingOrReturnEmptyInvalid
+				);
+
+			TestEqual
+			(
+				TEXT("Test out of bound from past-PreventException. Should get empty input. "),
+				EmptyInput.IsEmptyInput(),
+				true
+			);
+		}
+
+		{
+			const FSavedInput& EmptyInput = PawnPrediction
+				.GetSavedInput
+				(
+					FakeClientTick + i,
+					EIdxOutOfRangeHandle::UseNearestIndexIfOutRangeFromEnd
+				);
+
+			TestEqual
+			(
+				TEXT("Test out of bound from past-UseNearestIndexIfOutRangeFromEnd. Should get empty input."),
+				EmptyInput.IsEmptyInput(),
+				true
+			);
+		}
 	}
 
 
 	for (int32 i = TestSize; i < TestSize+10; ++i)
 	{
-		bool bIsEqual = PawnPrediction.GetSavedInput(FakeClientTick + i) == GeneratedInput[TestSize-1];
+		{
+			const FSavedInput& SavedInput = PawnPrediction.GetSavedInput
+			(
+				FakeClientTick + i,
+				EIdxOutOfRangeHandle::UseNearestIndex
+			);
 
-		TestEqual(TEXT("Test Nearest from future"), bIsEqual, true);
+			TestEqual(TEXT("Test our of range from future-UseNearestIndex"), 
+				SavedInput, GeneratedInput[TestSize - 1]);
+		}
 
-		const FSavedInput& EmptyInput = PawnPrediction
-			.GetSavedInput(FakeClientTick + i, false);
+		{
+			const FSavedInput& SavedInput = PawnPrediction.GetSavedInput
+			(
+				FakeClientTick + i,
+				EIdxOutOfRangeHandle::UseNearestIndexIfOutRangeFromEnd
+			);
 
-		TestEqual
-		(
-			TEXT("Test out of bound from future. Should get empty input."),
-			EmptyInput.IsEmptyInput(),
-			true
-		);
+			TestEqual(TEXT("Test our of range from future-UseNearestIndexIfOutRangeFromEnd"),
+				SavedInput, GeneratedInput[TestSize - 1]);
+		}
+
+		{
+			const FSavedInput& EmptyInput = PawnPrediction
+				.GetSavedInput
+				(
+					FakeClientTick + i, 
+					EIdxOutOfRangeHandle::PreventExceptionByDoNothingOrReturnEmptyInvalid
+				);
+
+			TestEqual
+			(
+				TEXT("Test out of bound from future-PreventException. Should get empty input."),
+				EmptyInput.IsEmptyInput(),
+				true
+			);
+		}
+
+		{
+			const FSavedInput& EmptyInput = PawnPrediction
+				.GetSavedInput
+				(
+					FakeClientTick + i,
+					EIdxOutOfRangeHandle::UseNearestIndexIfOutRangeFromBegin
+				);
+
+			TestEqual
+			(
+				TEXT("Test out of bound from future-UseNearestIndexIfOutRangeFromBegin. Should get empty input."),
+				EmptyInput.IsEmptyInput(),
+				true
+			);
+		}
 	}
 
 	return true;

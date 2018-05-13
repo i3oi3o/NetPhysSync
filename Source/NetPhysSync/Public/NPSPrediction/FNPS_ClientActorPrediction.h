@@ -7,6 +7,7 @@
 #include "FSavedClientRigidBodyState.h"
 #include "TNPSCircularBuffer.h"
 #include "FBufferInfo.h"
+#include "EIdxOutOfRangeHandle.h"
 
 namespace physx
 {
@@ -29,11 +30,20 @@ public:
 	* Currently for testing.
 	*/
 	void SaveRigidBodyState(const FSavedClientRigidBodyState& SaveRigidBodyState, uint32 ClientTickIndex);
-	void GetRigidBodyState(physx::PxRigidDynamic* PxRigidDynamic, uint32 ClientTickIndex, bool bUseNearestIfOutOfBound=true) const;
+	void GetRigidBodyState
+	(
+		physx::PxRigidDynamic* PxRigidDynamic, 
+		uint32 ClientTickIndex, 
+		EIdxOutOfRangeHandle eHandleOutOfBoundIndex=EIdxOutOfRangeHandle::UseNearestIndex
+	) const;
 	/**
 	 * Currently for testing.
 	 */
-	const FSavedClientRigidBodyState& GetRigidBodyState(uint32 ClientTickIndex, bool bUseNearestIfOutOfBound = true) const;
+	const FSavedClientRigidBodyState& GetRigidBodyState
+	(
+		uint32 ClientTickIndex, 
+		EIdxOutOfRangeHandle eHandleOutOfBoundIndex = EIdxOutOfRangeHandle::UseNearestIndex
+	) const;
 	virtual void ServerCorrectState(const FReplicatedRigidBodyState& CorrectState, uint32 ClientTickIndex);
 	virtual void ShiftElementsToDifferentTickIndex(int32 ShiftAmount);
 	FORCEINLINE bool IsReplayTickIndex(uint32 TickIndex) const;
@@ -61,8 +71,47 @@ protected:
 	 * 
 	 */
 	bool bIsCorrectedStateIndexTooOld;
-
 	
+
+	template<typename ElementType, typename AllocatorType>
+	void HandleOutOfBoundIndex
+	(
+		const TNPSCircularBuffer<ElementType, AllocatorType>& Buffer,
+		EIdxOutOfRangeHandle eHandleMethod,
+		int32& RefHandledIndex
+	) const
+	{
+		bool bClamp = 
+			eHandleMethod == EIdxOutOfRangeHandle::UseNearestIndex ||
+			(
+				RefHandledIndex >= Buffer.Num() &&
+				eHandleMethod == EIdxOutOfRangeHandle::UseNearestIndexIfOutRangeFromEnd
+			)
+			||
+			(
+				RefHandledIndex < 0 &&
+				eHandleMethod == EIdxOutOfRangeHandle::UseNearestIndexIfOutRangeFromBegin
+			);
+		
+		if (bClamp)
+		{
+			Buffer.ClampIndexParamWithinRange(RefHandledIndex);
+		}
+#if !UE_BUILD_SHIPPING
+		else 
+		{
+			ensureMsgf
+			(
+				eHandleMethod == EIdxOutOfRangeHandle::PreventExceptionByDoNothingOrReturnEmptyInvalid ||
+				eHandleMethod == EIdxOutOfRangeHandle::UseNearestIndex ||
+				eHandleMethod == EIdxOutOfRangeHandle::UseNearestIndexIfOutRangeFromBegin||
+				eHandleMethod == EIdxOutOfRangeHandle::UseNearestIndexIfOutRangeFromEnd,
+				TEXT("Doesn't implement EIdxOutOfRangeHandle::%u"),
+				eHandleMethod
+			);
+		}
+#endif
+	}
 };
 
 

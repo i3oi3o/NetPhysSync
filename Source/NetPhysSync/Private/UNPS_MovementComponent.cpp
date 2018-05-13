@@ -353,7 +353,11 @@ void UNPS_MovementComponent::TickReplayStart(const FReplayStartParam& param)
 		PxRigidDynamic* RigidDynamic = GetUpdatedRigidDynamic();
 
 		FNPS_ClientPawnPrediction* ClientPrediction = GetPredictionData_ClientNPSPawn();
-		ClientPrediction->GetRigidBodyState(RigidDynamic, param.StartReplayTickIndex);
+		ClientPrediction->GetRigidBodyState
+		(
+			RigidDynamic, param.StartReplayTickIndex,
+			EIdxOutOfRangeHandle::UseNearestIndexIfOutRangeFromBegin
+		);
 
 		// Use our own compilation symbol later.
 	}

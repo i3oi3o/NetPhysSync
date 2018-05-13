@@ -37,10 +37,10 @@ void FNPS_ClientActorPrediction::GetRigidBodyState
 (
 	physx::PxRigidDynamic* PxRigidDynamic, 
 	uint32 ClientTickIndex, 
-	bool bUseNearestIfOutOfBound /*=true*/
+	EIdxOutOfRangeHandle eHandleOutOfBoundIndex /*=UseNearestIndex*/
 ) const
 {
-	const FSavedClientRigidBodyState& RetrivedState = GetRigidBodyState(ClientTickIndex, bUseNearestIfOutOfBound);
+	const FSavedClientRigidBodyState& RetrivedState = GetRigidBodyState(ClientTickIndex, eHandleOutOfBoundIndex);
 	// Don't worry.
 	// If state is invalid, FSavedClientRigidBodyState::RetriveBodyState() 
 	// doesn't copy state to PxRigidDynamic.
@@ -50,17 +50,22 @@ void FNPS_ClientActorPrediction::GetRigidBodyState
 const FSavedClientRigidBodyState& FNPS_ClientActorPrediction::GetRigidBodyState
 (
 	uint32 ClientTickIndex, 
-	bool bUseNearestIfTickOutOfRange /*= true*/
+	EIdxOutOfRangeHandle eHandleOutOfBoundIndex /*=UseNearestIndex*/
 ) const
 {
 	int32 OutArrayIndex;
-	FNPS_StaticHelperFunction::CalculateBufferArrayIndex(ClientStateBufferStartTickIndex, ClientTickIndex,
-		OutArrayIndex);
+	FNPS_StaticHelperFunction::CalculateBufferArrayIndex
+	(
+		ClientStateBufferStartTickIndex, ClientTickIndex,
+		OutArrayIndex
+	);
 
-	if (bUseNearestIfTickOutOfRange)
-	{
-		ClientStateBuffer.ClampIndexParamWithinRange(OutArrayIndex);
-	}
+	HandleOutOfBoundIndex
+	(
+		ClientStateBuffer, 
+		eHandleOutOfBoundIndex, 
+		OutArrayIndex
+	);
 
 	if (ClientStateBuffer.IsIndexInRange(OutArrayIndex))
 	{
