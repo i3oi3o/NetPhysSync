@@ -46,7 +46,8 @@ float FReplicatedRigidBodyState::CalculateSumDiffSqrError
 {
 	float SumSqrtError = 0;
 	SumSqrtError += (WorldPos - Other.WorldPos).SizeSquared();
-	SumSqrtError += (WorldRotation - Other.WorldRotation).SizeSquared();
+	// Scale Quaternion error by 10000 because quaternion is always normalized.
+	SumSqrtError += 10000*(WorldRotation - Other.WorldRotation).SizeSquared();
 	SumSqrtError += (LinearVelocity - Other.LinearVelocity).SizeSquared();
 	SumSqrtError += (LinearAngularVelocity - Other.LinearAngularVelocity).SizeSquared();
 	return SumSqrtError;
