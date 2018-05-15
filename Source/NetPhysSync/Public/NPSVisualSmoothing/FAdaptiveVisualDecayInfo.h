@@ -39,6 +39,52 @@ public:
 	 */
 	void CachDominator();
 
+	FORCEINLINE float GetDecayRateSmallDiff() const
+	{
+		return DecayRateSmallDiff;
+	}
+
+	FORCEINLINE float GetDecayRateBigDiff() const
+	{
+		return DecayRateBigDiff;
+	}
+
+	FORCEINLINE float GetSnapPosSqrtThreshold() const
+	{
+		return SnapPosSqrtThreshold;
+	}
+
+	FORCEINLINE float GetSmallPosSqrtThreshold() const
+	{
+		return SmallPosSqrtThreshold;
+	}
+
+	FORCEINLINE float GetBigPosSqrtThreshold() const
+	{
+		return BigPosSqrtThreshold;
+	}
+
+	FORCEINLINE float GetSnapRadianThreshold() const
+	{
+		return SnapRadianThreshold;
+	}
+
+	float GetSnapDegreeThreshold() const;
+
+	FORCEINLINE float GetSmallRadianThreshold() const
+	{
+		return SmallRadianThreshold;
+	}
+
+	float GetSmallDegreeThreshold() const;
+
+	FORCEINLINE float GetBigRadianThreshold() const
+	{
+		return BigRadianThreshold;
+	}
+
+	float GetBigDegreeThreshold() const;
+
 private:
 	UPROPERTY()
 	float DecayRateSmallDiff;

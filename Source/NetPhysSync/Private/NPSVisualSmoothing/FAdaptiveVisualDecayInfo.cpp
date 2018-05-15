@@ -93,3 +93,18 @@ void FAdaptiveVisualDecayInfo::CachDominator()
 		bCachDenomiatorYet = true;
 	}
 }
+
+float FAdaptiveVisualDecayInfo::GetSnapDegreeThreshold() const
+{
+	return FMath::RadiansToDegrees(SnapRadianThreshold);
+}
+
+float FAdaptiveVisualDecayInfo::GetSmallDegreeThreshold() const
+{
+	return FMath::RadiansToDegrees(SmallRadianThreshold);
+}
+
+float FAdaptiveVisualDecayInfo::GetBigDegreeThreshold() const
+{
+	return FMath::RadiansToDegrees(BigRadianThreshold);
+}

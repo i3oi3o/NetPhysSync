@@ -41,6 +41,7 @@ class FNetPhysSyncModuleImpl : public FDefaultGameModuleImpl
 		TestFrameWork.UnregisterAutomationTest(TEXT("FServerPawnArriveLatePackage"));
 		TestFrameWork.UnregisterAutomationTest(TEXT("FServerPawnObsoletePackage"));
 		TestFrameWork.UnregisterAutomationTest(TEXT("FServerPawnSyncClientTickTest"));
+		TestFrameWork.UnregisterAutomationTest(TEXT("FAdaptiveVisualDecayInfoTest"));
 #endif
 	}
 };
