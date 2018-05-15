@@ -13,6 +13,7 @@
 #include "FNPS_ClientPawnPrediction.h"
 #include "FNPS_ServerPawnPrediction.h"
 #include "DrawDebugHelpers.h"
+#include "INetPhysSyncParam.h"
 
 #if !(UE_BUILD_SHIPPING)
 #include "Components/BoxComponent.h"

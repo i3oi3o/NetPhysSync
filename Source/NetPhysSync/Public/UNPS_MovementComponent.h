@@ -9,6 +9,7 @@
 #include <GameFramework/PawnMovementComponent.h>
 #include "Interfaces/NetworkPredictionInterface.h"
 #include "FAutoProxyCorrect.h"
+#include "FTickSyncPoint.h"
 #include "UNPS_MovementComponent.generated.h"
 
 

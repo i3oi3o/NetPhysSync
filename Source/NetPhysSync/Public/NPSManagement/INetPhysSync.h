@@ -18,6 +18,7 @@ struct FReplayEndParam;
 struct FVisualUpdateParam;
 struct FOnReadReplicationParam;
 struct FOnFinishReadAllReplicationParam;
+struct FTickSyncPoint;
 
 // This class does not need to be modified.
 UINTERFACE(MinimalAPI)

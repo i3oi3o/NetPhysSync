@@ -3,7 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-
+#include "FTickSyncPoint.h"
 
 typedef TScriptInterface<class INetPhysSync> INetPhysSyncPtr;
 

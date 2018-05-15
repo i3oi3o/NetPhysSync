@@ -10,6 +10,7 @@
 #include "ANPSGameState.h"
 #include "FNPS_StaticHelperFunction.h"
 #include "INetPhysSyncParam.h"
+#include "FTickSyncPoint.h"
 
 using namespace physx;
 
@@ -79,7 +80,7 @@ bool ANPS_DynamicActorBase::IsTickEnabled(const FIsTickEnableParam& param) const
 		!UpdatedPrimitive->IsPendingKill();
 }
 
-#pragma region PhysicTick
+
 void ANPS_DynamicActorBase::TickStartPhysic(const FStartPhysParam& param) 
 {
 	
@@ -99,9 +100,7 @@ void ANPS_DynamicActorBase::TickEndPhysic(const FEndPhysParam& param)
 {
 	
 }
-#pragma endregion PhysicTick
 
-#pragma region ReplayPhys
 void ANPS_DynamicActorBase::TickReplayStart(const FReplayStartParam& param)
 {
 
@@ -121,7 +120,6 @@ void ANPS_DynamicActorBase::TickReplayEnd(const FReplayEndParam& param)
 {
 
 }
-#pragma endregion ReplayPhys
 
 void ANPS_DynamicActorBase::VisualUpdate(const FVisualUpdateParam& param)
 {
