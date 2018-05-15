@@ -6,7 +6,7 @@
 #include "Components/PrimitiveComponent.h"
 #include "Camera/CameraComponent.h"
 #include "UNPS_MovementComponent.h"
-
+#include "INetPhysSyncParam.h"
 
 // Sets default values
 ANPS_PawnBase::ANPS_PawnBase(const FObjectInitializer& OI)

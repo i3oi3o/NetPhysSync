@@ -3,6 +3,7 @@
 #include "FNetPhysSyncManager.h"
 #include <PhysicsPublic.h>
 #include "INetPhysSync.h"
+#include "INetPhysSyncParam.h"
 #include "FNPS_StaticHelperFunction.h"
 #include "PhysicsEngine/PhysicsSettings.h"
 #include "PhysXPublic.h"

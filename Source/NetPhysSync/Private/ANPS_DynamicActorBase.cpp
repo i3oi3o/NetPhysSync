@@ -9,6 +9,7 @@
 #include "Engine/World.h"
 #include "ANPSGameState.h"
 #include "FNPS_StaticHelperFunction.h"
+#include "INetPhysSyncParam.h"
 
 using namespace physx;
 

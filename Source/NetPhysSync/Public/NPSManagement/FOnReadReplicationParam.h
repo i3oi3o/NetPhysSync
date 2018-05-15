@@ -8,7 +8,7 @@
 /**
  * 
  */
-class NETPHYSSYNC_API FOnReadReplicationParam
+struct NETPHYSSYNC_API FOnReadReplicationParam
 {
 public:
 	FOnReadReplicationParam(const FOnNewSyncPointInfo NewSyncPointInfoParam);

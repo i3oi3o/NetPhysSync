@@ -9,7 +9,7 @@ enum EPhysicsSceneType;
 /**
  * 
  */
-class NETPHYSSYNC_API FIsTickEnableParam
+struct NETPHYSSYNC_API FIsTickEnableParam
 {
 public:
 	FIsTickEnableParam(const EPhysicsSceneType SceneTypeParam);

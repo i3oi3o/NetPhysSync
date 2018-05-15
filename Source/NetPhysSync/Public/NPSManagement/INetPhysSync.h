@@ -3,21 +3,21 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "UObject/Interface.h"
-#include "FStartPhysParam.h"
-#include "FPhysStepParam.h"
-#include "FPostPhysStepParam.h"
-#include "FEndPhysParam.h"
-#include "FIsTickEnableParam.h"
-#include "FReplayStartParam.h"
-#include "FReplaySubstepParam.h"
-#include "FReplayEndParam.h"
-#include "FReplayPostStepParam.h"
-#include "FVisualUpdateParam.h"
-#include "FOnReadReplicationParam.h"
 #include "IQueryReceivedPackage.h"
-#include "FOnFinishReadAllReplicationParam.h"
 #include "INetPhysSync.generated.h"
+
+struct FIsTickEnableParam;
+struct FStartPhysParam;
+struct FPhysStepParam;
+struct FPostPhysStepParam;
+struct FEndPhysParam;
+struct FReplayStartParam;
+struct FReplaySubstepParam;
+struct FReplayPostStepParam;
+struct FReplayEndParam;
+struct FVisualUpdateParam;
+struct FOnReadReplicationParam;
+struct FOnFinishReadAllReplicationParam;
 
 // This class does not need to be modified.
 UINTERFACE(MinimalAPI)
