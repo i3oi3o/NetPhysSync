@@ -3,6 +3,8 @@
 #include "FVisualSmoothImplBase.h"
 #include "INetPhysSyncParam.h"
 
+using namespace physx;
+
 FVisualSmoothImplBase::FVisualSmoothImplBase()
 {
 }
@@ -31,12 +33,17 @@ bool FVisualSmoothImplBase::IsFinishYet() const
 	return true;
 }
 
-void FVisualSmoothImplBase::OnReplayStart(const FReplayStartParam& ReplayStartParam, const physx::PxRigidDynamic* RigidDynamic)
+void FVisualSmoothImplBase::OnReplayStart(const FReplayStartParam& ReplayStartParam, const PxRigidDynamic* RigidDynamic)
 {
 
 }
 
-void FVisualSmoothImplBase::OnReplayEnd(const FReplayEndParam& ReplayEndParam, const physx::PxRigidDynamic* RigidDynamic)
+void FVisualSmoothImplBase::OnReplayEnd(const FReplayEndParam& ReplayEndParam, const PxRigidDynamic* RigidDynamic)
+{
+
+}
+
+void FVisualSmoothImplBase::VisualSmoothUpdate(const FVisualUpdateParam& Param)
 {
 
 }

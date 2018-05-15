@@ -38,6 +38,11 @@ public:
 		const physx::PxRigidDynamic* RigidDynamic
 	);
 
+	virtual void VisualSmoothUpdate
+	(
+		const FVisualUpdateParam& Param
+	);
+
 protected:
 	FORCEINLINE TWeakObjectPtr<USceneComponent> GetSmoothTarget() const
 	{
