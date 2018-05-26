@@ -335,27 +335,35 @@ void FNetPhysSyncManager::OnTickPrePhysic()
 
 void FNetPhysSyncManager::OnTickPostPhysic(float GameFrameDeltaTime)
 {
-	if (!bStartPhysicYet)
+	if (bStartPhysicYet)
 	{
-		return;
+		bStartPhysicYet = false;
+		FIsTickEnableParam IsTickEnableParam(CachSceneType);
+		FPostPhysStepParam PostStepParam(PhysScene, CachSceneType, CachStepDeltaTime, LocalPhysTickIndex);
+		CallINetPhysSyncFunction
+		(
+			&INetPhysSync::TickPostPhysStep,
+			PostStepParam, IsTickEnableParam
+		);
+		++LocalPhysTickIndex;
+
+		FEndPhysParam EndParam(CachSceneType, CachStartDeltaTime, LocalPhysTickIndex);
+		CallINetPhysSyncFunction
+		(
+			&INetPhysSync::TickEndPhysic,
+			EndParam, IsTickEnableParam
+		);
 	}
 
-	bStartPhysicYet = false;
-	FIsTickEnableParam IsTickEnableParam(CachSceneType);
-	FPostPhysStepParam PostStepParam(PhysScene, CachSceneType, CachStepDeltaTime, LocalPhysTickIndex);
-	CallINetPhysSyncFunction
-	(
-		&INetPhysSync::TickPostPhysStep,
-		PostStepParam, IsTickEnableParam
-	);
-	++LocalPhysTickIndex;
-
-	FEndPhysParam EndParam(CachSceneType, CachStartDeltaTime, LocalPhysTickIndex);
-	CallINetPhysSyncFunction
-	(
-		&INetPhysSync::TickEndPhysic,
-		EndParam, IsTickEnableParam
-	);
+	if (DoWeNeedReplay() && CurrentSyncPoint.IsValid())
+	{
+		FVisualUpdateParam VisualUpdateParam(GameFrameDeltaTime);
+		CallINetPhysSyncFunction
+		(
+			&INetPhysSync::VisualUpdate,
+			VisualUpdateParam, FIsTickEnableParam(EPhysicsSceneType::PST_Sync)
+		);
+	}
 }
 
 bool FNetPhysSyncManager::DoWeNeedReplay() const
