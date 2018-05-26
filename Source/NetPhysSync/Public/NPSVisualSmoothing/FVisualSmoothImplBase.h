@@ -49,6 +49,10 @@ protected:
 		return SmoothTarget;
 	}
 
+	/*
+	* Will sync if root is rigid body.
+	*/
+	void SyncVisualWithRootRigidBody();
 private:
 	TWeakObjectPtr<USceneComponent> SmoothTarget;
 };

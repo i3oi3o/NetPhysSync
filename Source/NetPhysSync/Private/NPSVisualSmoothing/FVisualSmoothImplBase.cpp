@@ -1,6 +1,8 @@
 // This is licensed under the BSD License 2.0 found in the LICENSE file in project's root directory.
 
 #include "FVisualSmoothImplBase.h"
+#include "Components/PrimitiveComponent.h"
+#include "Components/SceneComponent.h"
 #include "INetPhysSyncParam.h"
 
 using namespace physx;
@@ -46,4 +48,19 @@ void FVisualSmoothImplBase::OnReplayEnd(const FReplayEndParam& ReplayEndParam, c
 void FVisualSmoothImplBase::VisualSmoothUpdate(const FVisualUpdateParam& Param)
 {
 
+}
+
+void FVisualSmoothImplBase::SyncVisualWithRootRigidBody()
+{
+	if (SmoothTarget != nullptr)
+	{
+		UPrimitiveComponent* PrimitiveComp = 
+			Cast<UPrimitiveComponent>(SmoothTarget->GetAttachmentRoot());
+
+		if (PrimitiveComp != nullptr)
+		{
+			PrimitiveComp->SyncComponentToRBPhysics();
+		}
+
+	}
 }
