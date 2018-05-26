@@ -42,7 +42,7 @@ void FAdaptiveVisualDecaySmoothImpl::OnReplayStart
 	const PxRigidDynamic* RigidDynamic
 )
 {
-	if (GetSmoothTarget() != nullptr)
+	if (IsValid())
 	{
 		const FTransform& FT = GetSmoothTarget()->GetComponentTransform();
 		CachReplayVisualPos = FT.GetLocation();
@@ -56,7 +56,7 @@ void FAdaptiveVisualDecaySmoothImpl::OnReplayEnd
 	const PxRigidDynamic* RigidDynamic
 )
 {
-	if (GetSmoothTarget() != nullptr)
+	if (IsValid())
 	{
 		SyncVisualWithRootRigidBody();
 		GetSmoothTarget()->SetWorldLocationAndRotation
@@ -74,8 +74,9 @@ void FAdaptiveVisualDecaySmoothImpl::VisualSmoothUpdate
 	const FVisualUpdateParam& Param
 )
 {
-	if (GetSmoothTarget() != nullptr)
+	if (IsValid())
 	{
+		UE_LOG(LogTemp, Log, TEXT("VisualSmoothUpdate"));
 		FVector RelativeLocation = GetSmoothTarget()->RelativeLocation;
 		FQuat RelativeRotation = FQuat(GetSmoothTarget()->RelativeRotation);
 		if (AdaptiveVisualDecayInfo.CanSnapPos(RelativeLocation, FVector::ZeroVector))
@@ -100,6 +101,7 @@ void FAdaptiveVisualDecaySmoothImpl::VisualSmoothUpdate
 			(RelativeRotation, FQuat::Identity);
 			RelativeRotation = FQuat::Slerp(RelativeRotation,
 				FQuat::Identity, DecayRate*Param.GameFrameDeltaTime);
+			
 		}
 
 		GetSmoothTarget()->SetRelativeLocationAndRotation

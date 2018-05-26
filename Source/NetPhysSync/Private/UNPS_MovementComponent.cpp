@@ -37,6 +37,17 @@ UNPS_MovementComponent::UNPS_MovementComponent()
     bClientHasAutoCorrectWithoutSyncTick = false;
 	bClientHasServerTick = false;
 	bClientHasSyncPoint = false;
+	AdaptiveVisualDecayInfo = FAdaptiveVisualDecayInfo
+	(
+		3.0f /*SmallDiffDecay*/,
+		9.0f /*BigDiffDecay*/,
+		0.01f /*SnapDiffSqrtPos* = 0.1 cm*/,
+		1.0f /*SmallDiffSqrtPos= 1 cm*/,
+		10000.0f /*BigDiffSqertPos = 100 cm */,
+		0.0174533f /*SanpRadian= 1 Degrees*/,
+		0.0523599f /*SmallRadian= 3 Degrees*/,
+		0.174533f /*BigRadian= 10 Degrees*/ 
+	);
 }
 
 
@@ -58,6 +69,8 @@ void UNPS_MovementComponent::BeginPlay()
 	PawnOwner = Cast<APawn>(GetOwner());
 	NPS_PawnOwner = Cast<ANPS_PawnBase>(PawnOwner);
 
+
+
 	// ...
 	if (NPS_PawnOwner != nullptr)
 	{
@@ -66,6 +79,8 @@ void UNPS_MovementComponent::BeginPlay()
 		UpdatedPrimitive = Cast<UPrimitiveComponent>(UpdatedComponent);
 		ForSmoothVisualComponent = NPS_PawnOwner->GetForSmoothingVisualComp();
 		UpdatedPrimitive->SetPhysicsMaxAngularVelocityInDegrees(MaxAngularVelocityDegree);
+		AdaptiveVisualDecaySmoothImpl = FAdaptiveVisualDecaySmoothImpl(ForSmoothVisualComponent, 
+			AdaptiveVisualDecayInfo);
 	}
 }
 
@@ -349,7 +364,12 @@ void UNPS_MovementComponent::TickEndPhysic(const FEndPhysParam& param)
 
 void UNPS_MovementComponent::TickReplayStart(const FReplayStartParam& param) 
 {
-	
+	if (AdaptiveVisualDecaySmoothImpl.IsValid())
+	{
+		AdaptiveVisualDecaySmoothImpl.OnReplayStart(param, GetUpdatedRigidDynamic());
+	}
+
+	// Initialize smooth visual logic here later.
 	if (PawnOwner->Role == ENetRole::ROLE_AutonomousProxy)
 	{
 		PxRigidDynamic* RigidDynamic = GetUpdatedRigidDynamic();
@@ -369,7 +389,7 @@ void UNPS_MovementComponent::TickReplayStart(const FReplayStartParam& param)
 	}
 	
 	
-	// Initialize smooth visual logic here later.
+
 }
 
 void UNPS_MovementComponent::TickReplaySubstep(const FReplaySubstepParam& param) 
@@ -408,13 +428,22 @@ void UNPS_MovementComponent::TickReplayEnd(const FReplayEndParam& param)
 	FNPS_ClientPawnPrediction* ClientPrecition =
 		static_cast<FNPS_ClientPawnPrediction*>(GetPredictionData_Client());
 	ClientPrecition->ConsumeReplayFlag();
+
+	if (AdaptiveVisualDecaySmoothImpl.IsValid())
+	{
+		AdaptiveVisualDecaySmoothImpl.OnReplayEnd(param, GetUpdatedRigidDynamic());
+	}
 }
 
 // ------------------------ End INetPhySync:: Replay interface -----------------------
 
 void UNPS_MovementComponent::VisualUpdate(const FVisualUpdateParam& param)
 {
-	
+	if (AdaptiveVisualDecaySmoothImpl.IsValid() && 
+		!AdaptiveVisualDecaySmoothImpl.IsFinishYet())
+	{
+		AdaptiveVisualDecaySmoothImpl.VisualSmoothUpdate(param);
+	}
 }
 
 bool UNPS_MovementComponent::TryGetNewestUnprocessedServerTick(uint32& OutServerTick) const
@@ -734,7 +763,10 @@ void UNPS_MovementComponent::Client_CorrectStateWithSyncTick_Implementation
 		int32 Diff = FNPS_StaticHelperFunction::CalculateBufferArrayIndex
 		(AutoProxySyncCorrect.GetSyncClientTick(), LocalPhysicTick);
 		
-		ensureMsgf(Diff >= 0, TEXT("Replay into future"));
+		if (Diff >= 0)
+		{
+			UE_LOG(LogNPS_Net, Error, TEXT("Replay into future. On Not LateSyncClientTick Line."));
+		}
 #endif
 		ClientPrediction->ServerCorrectState
 		(
@@ -792,7 +824,10 @@ void UNPS_MovementComponent::Client_CorrectStateWithSyncTick_Implementation
 		int32 Diff = FNPS_StaticHelperFunction::CalculateBufferArrayIndex
 		(CorrectClientTick, LocalPhysicTick);
 
-		ensureMsgf(Diff >= 0, TEXT("Replay into future?."));
+		if (Diff >= 0)
+		{
+			UE_LOG(LogNPS_Net, Error, TEXT("Replay into future. On Late SyncClientTick Line."));
+		}
 #endif
 
 #if NPS_LOG_SYNC_AUTO_PROXY

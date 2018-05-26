@@ -10,6 +10,8 @@
 #include "Interfaces/NetworkPredictionInterface.h"
 #include "FAutoProxyCorrect.h"
 #include "FTickSyncPoint.h"
+#include "FAdaptiveVisualDecayInfo.h"
+#include "FAdaptiveVisualDecaySmoothImpl.h"
 #include "UNPS_MovementComponent.generated.h"
 
 
@@ -156,6 +158,9 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = Movement)
 	float MaxAngularVelocityDegree;
 
+	UPROPERTY(EditDefaultsOnly, Category = SmoothVisual)
+	FAdaptiveVisualDecayInfo AdaptiveVisualDecayInfo;
+
 	bool bServerHasAutoProxyPendingCorrection;
 
 	bool bClientHasNewSyncPoint;
@@ -212,6 +217,8 @@ private:
 	FNPS_ClientPawnPrediction* ClientPawnPrediction;
 
 	FNPS_ServerPawnPrediction* ServerPawnPrediction;
+
+	FAdaptiveVisualDecaySmoothImpl AdaptiveVisualDecaySmoothImpl;
 
 	UPROPERTY(VisibleAnywhere, Category=Movement)
 	FVector MoveSpeedVec;
