@@ -763,9 +763,10 @@ void UNPS_MovementComponent::Client_CorrectStateWithSyncTick_Implementation
 		int32 Diff = FNPS_StaticHelperFunction::CalculateBufferArrayIndex
 		(AutoProxySyncCorrect.GetSyncClientTick(), LocalPhysicTick);
 		
-		if (Diff >= 0)
+		if (Diff < 0)
 		{
-			UE_LOG(LogNPS_Net, Error, TEXT("Replay into future. On Not LateSyncClientTick Line."));
+			UE_LOG(LogNPS_Net, Error, TEXT("Replay into future by %d Ticks. ReplayTick: %u. CurrentTick:%u. On Not LateSyncClientTick Line."),
+				-Diff, AutoProxySyncCorrect.GetSyncClientTick(), LocalPhysicTick);
 		}
 #endif
 		ClientPrediction->ServerCorrectState
@@ -824,10 +825,12 @@ void UNPS_MovementComponent::Client_CorrectStateWithSyncTick_Implementation
 		int32 Diff = FNPS_StaticHelperFunction::CalculateBufferArrayIndex
 		(CorrectClientTick, LocalPhysicTick);
 
-		if (Diff >= 0)
+		if (Diff < 0)
 		{
-			UE_LOG(LogNPS_Net, Error, TEXT("Replay into future. On Late SyncClientTick Line."));
+			UE_LOG(LogNPS_Net, Error, TEXT("Replay into future by %d Ticks. ReplayTick:%u. CurrentTick:%u On Late SyncClientTick Line."),
+				-Diff, CorrectClientTick, LocalPhysicTick);
 		}
+
 #endif
 
 #if NPS_LOG_SYNC_AUTO_PROXY

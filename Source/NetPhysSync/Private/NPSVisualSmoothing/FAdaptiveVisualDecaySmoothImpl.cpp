@@ -76,7 +76,6 @@ void FAdaptiveVisualDecaySmoothImpl::VisualSmoothUpdate
 {
 	if (IsValid())
 	{
-		UE_LOG(LogTemp, Log, TEXT("VisualSmoothUpdate"));
 		FVector RelativeLocation = GetSmoothTarget()->RelativeLocation;
 		FQuat RelativeRotation = FQuat(GetSmoothTarget()->RelativeRotation);
 		if (AdaptiveVisualDecayInfo.CanSnapPos(RelativeLocation, FVector::ZeroVector))
