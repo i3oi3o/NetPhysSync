@@ -162,7 +162,8 @@ void FNetPhysSyncManager::OnTickPrePhysic()
 	);
 
 	uint32 OutReplayIndex;
-	if (TryGetReplayIndex(IsTickEnableParam, OnNewSyncPointInfo, OutReplayIndex))
+	if (TryGetReplayIndex(IsTickEnableParam, OnNewSyncPointInfo, 
+		OutReplayIndex, EGetReplayIdxMethod::SEARCH_OLDEST))
 	{
 		int32 ReplayNumber;
 
@@ -172,48 +173,34 @@ void FNetPhysSyncManager::OnTickPrePhysic()
 			LocalPhysTickIndex,
 			ReplayNumber
 		);
-
-		if (ReplayNumber < 0)
+		
+		/*
+		* Ignore negative replay number.
+		* Negative replay number indicate that client run slower than server
+		* and we need to replay into future.
+		* If client run slower, skip replay and snap rigid body immediately.
+		*/
+		uint32 NewestReplayIdx;
+		if (ReplayNumber < 0 && 
+			TryGetReplayIndex(IsTickEnableParam, OnNewSyncPointInfo,
+			NewestReplayIdx, EGetReplayIdxMethod::SEARCH_NEWEST))
 		{
-			/*
-				Handle this later. Possible cause :
-					- Client run slowly than server.
-					- This is a bug.
-			*/
-#if !UE_BUILD_SHIPPING
-			if (bHasDebugNewstReceivedServerTick)
-			{
-				UE_LOG
-				(
-					LogNPS_Net, Log,
-					TEXT("We get negative replay number. ReplayTick: %u, CurrentTick: %u, ReceivedServerTick: %u, CurrentSyncPoint: %s"),
-					OutReplayIndex,
-					LocalPhysTickIndex,
-					DebugNewestReceivedServerTick,
-					*CurrentSyncPoint.ToString()
-				);
-			}
-#endif
-			CallINetPhysSyncFunction
-			(
-				&INetPhysSync::OnFinishUsingReplication,
-				FOnFinishUsingReplicationParam(),
-				IsTickEnableParam
-			);
-
-			return;
+			OutReplayIndex = NewestReplayIdx;
 		}
+		ReplayNumber = FMath::Max(ReplayNumber, 0);
 
+		
 
-		LocalPhysTickIndex = OutReplayIndex;
 		FPhysScene* PhysScene = WorldOwningPhysScene->GetPhysicsScene();
 		FReplayStartParam ReplayStartParam
 		(
 			PhysScene,
 			SceneTypeEnum,
 			OnNewSyncPointInfo,
+			OutReplayIndex,
 			LocalPhysTickIndex
 		);
+		LocalPhysTickIndex = OutReplayIndex;
 		
 		CallINetPhysSyncFunction
 		(
@@ -626,19 +613,21 @@ bool FNetPhysSyncManager::TryGetReplayIndex
 (
 	const FIsTickEnableParam& IsTickEnableParam,
 	const FOnNewSyncPointInfo& OnNewSyncPointInfo ,
-	uint32& OutReplayIndex
+	uint32& OutReplayIndex,
+	EGetReplayIdxMethod Method
 )
 {
 	OutReplayIndex = 0;
 	if (WorldOwningPhysScene != nullptr)
 	{
-		int32 OldestDiff = TNumericLimits<int32>::Max();
+		int32 CurrentDiff = Method == EGetReplayIdxMethod::SEARCH_OLDEST ? 
+			TNumericLimits<int32>::Max() : TNumericLimits<int32>::Min();
 
 		// Need replay to fill missing history buffer.
 		if (OnNewSyncPointInfo.ShiftClientTickAmountForReplayPrediction < 0)
 		{
-			OldestDiff = OnNewSyncPointInfo.ShiftClientTickAmountForReplayPrediction;
-			OutReplayIndex = LocalPhysTickIndex + OldestDiff;
+			CurrentDiff = OnNewSyncPointInfo.ShiftClientTickAmountForReplayPrediction;
+			OutReplayIndex = LocalPhysTickIndex + CurrentDiff;
 
 #if !UE_BUILD_SHIPPING
 			int32 OutDebugDiff;
@@ -649,7 +638,7 @@ bool FNetPhysSyncManager::TryGetReplayIndex
 				OutDebugDiff
 			);
 
-			ensureMsgf(OldestDiff == OutDebugDiff, TEXT("Wrong diff calculation for replaying to fill missing history buffer."));
+			ensureMsgf(CurrentDiff == OutDebugDiff, TEXT("Wrong diff calculation for replaying to fill missing history buffer."));
 #endif
 		}
 
@@ -669,15 +658,22 @@ bool FNetPhysSyncManager::TryGetReplayIndex
 				);
 
 				// Find the oldest.
-				if (NewDiff < OldestDiff)
+				if (Method == EGetReplayIdxMethod::SEARCH_OLDEST && 
+					NewDiff < CurrentDiff)
 				{
-					OldestDiff = NewDiff;
+					CurrentDiff = NewDiff;
+					OutReplayIndex = QueryReplayTickIndex;
+				}
+				else if (Method == EGetReplayIdxMethod::SEARCH_NEWEST &&
+					     NewDiff > CurrentDiff)
+				{
+					CurrentDiff = NewDiff;
 					OutReplayIndex = QueryReplayTickIndex;
 				}
 			}
 		}
 
-		return OldestDiff != TNumericLimits<int32>::Max();
+		return CurrentDiff != TNumericLimits<int32>::Max();
 	}
 
 	return false;

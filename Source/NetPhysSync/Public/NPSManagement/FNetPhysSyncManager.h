@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "FTickSyncPoint.h"
+#include "EGetReplayIdxMethod.h"
 
 typedef TScriptInterface<class INetPhysSync> INetPhysSyncPtr;
 
@@ -136,6 +137,7 @@ private:
 	(
 		const FIsTickEnableParam& IsTickEnableParam,
 		const FOnNewSyncPointInfo& OnNewSyncPointInfo,
-		uint32& OutReplayIndex
+		uint32& OutReplayIndex,
+		EGetReplayIdxMethod Method
 	);
 };
