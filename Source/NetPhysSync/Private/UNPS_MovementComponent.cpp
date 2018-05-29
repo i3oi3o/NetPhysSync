@@ -39,13 +39,13 @@ UNPS_MovementComponent::UNPS_MovementComponent()
 	bClientHasSyncPoint = false;
 	AdaptiveVisualDecayInfo = FAdaptiveVisualDecayInfo
 	(
-		3.0f /*SmallDiffDecay*/,
-		9.0f /*BigDiffDecay*/,
-		0.01f /*SnapDiffSqrtPos* = 0.1 cm*/,
+		4.5f /*SmallDiffDecay*/,
+		12.0f /*BigDiffDecay*/,
+		0.005f /*SnapDiffSqrtPos* = 0.005 cm*/,
 		1.0f /*SmallDiffSqrtPos= 1 cm*/,
 		10000.0f /*BigDiffSqertPos = 100 cm */,
-		0.0174533f /*SanpRadian= 1 Degrees*/,
-		0.0523599f /*SmallRadian= 3 Degrees*/,
+		0.00174533f /*SanpRadian= 0.1 Degrees*/,
+		0.0174533f /*SmallRadian= 1 Degrees*/,
 		0.174533f /*BigRadian= 10 Degrees*/ 
 	);
 }
