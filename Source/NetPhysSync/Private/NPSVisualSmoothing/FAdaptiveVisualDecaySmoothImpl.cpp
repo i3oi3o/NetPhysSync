@@ -58,7 +58,7 @@ void FAdaptiveVisualDecaySmoothImpl::OnReplayEnd
 {
 	if (IsValid())
 	{
-		SyncVisualWithRootRigidBody();
+		//SyncVisualWithRootRigidBody();
 		GetSmoothTarget()->SetWorldLocationAndRotation
 		(
 			CachReplayVisualPos,

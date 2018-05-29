@@ -50,17 +50,4 @@ void FVisualSmoothImplBase::VisualSmoothUpdate(const FVisualUpdateParam& Param)
 
 }
 
-void FVisualSmoothImplBase::SyncVisualWithRootRigidBody()
-{
-	if (SmoothTarget != nullptr)
-	{
-		UPrimitiveComponent* PrimitiveComp = 
-			Cast<UPrimitiveComponent>(SmoothTarget->GetAttachmentRoot());
 
-		if (PrimitiveComp != nullptr)
-		{
-			PrimitiveComp->SyncComponentToRBPhysics();
-		}
-
-	}
-}
