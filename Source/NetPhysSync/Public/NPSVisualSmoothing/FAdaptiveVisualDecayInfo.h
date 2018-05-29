@@ -8,7 +8,7 @@
 /**
  * 
  */
-USTRUCT()
+USTRUCT(BlueprintType)
 struct NETPHYSSYNC_API FAdaptiveVisualDecayInfo
 {
 	GENERATED_BODY()
@@ -86,21 +86,21 @@ public:
 	float GetBigDegreeThreshold() const;
 
 private:
-	UPROPERTY()
+	UPROPERTY(EditAnywhere, Category = DecayRate)
 	float DecayRateSmallDiff;
-	UPROPERTY()
+	UPROPERTY(EditAnywhere, Category = DecayRate)
 	float DecayRateBigDiff;
-	UPROPERTY()
+	UPROPERTY(EditAnywhere, Category = PositionCM)
 	float SnapPosSqrtThreshold;
-	UPROPERTY()
+	UPROPERTY(EditAnywhere, Category = PositionCM)
 	float SmallPosSqrtThreshold;
-	UPROPERTY()
+	UPROPERTY(EditAnywhere, Category = PositionCM)
 	float BigPosSqrtThreshold;
-	UPROPERTY()
+	UPROPERTY(EditAnywhere, Category = RotationRadian)
 	float SnapRadianThreshold;
-	UPROPERTY()
+	UPROPERTY(EditAnywhere, Category = RotationRadian)
 	float SmallRadianThreshold;
-	UPROPERTY()
+	UPROPERTY(EditAnywhere, Category = RotationRadian)
 	float BigRadianThreshold;
 
 	bool bCachDenomiatorYet;
