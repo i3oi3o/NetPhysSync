@@ -78,7 +78,7 @@ public:
 
 	virtual void OnReadReplication(const FOnReadReplicationParam& ReadReplicationParam) override;
 
-	virtual void OnFinishReadReplication(const FOnFinishReadAllReplicationParam& FinishReadRepParam) override;
+	virtual void OnFinishUsingReplication(const FOnFinishUsingReplicationParam& FinishReadRepParam) override;
 // ----------------- End INetPhysSync -----------------
 
 

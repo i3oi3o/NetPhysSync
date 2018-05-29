@@ -512,7 +512,7 @@ void UNPS_MovementComponent::OnReadReplication
 	}
 }
 
-void UNPS_MovementComponent::OnFinishReadReplication(const FOnFinishReadAllReplicationParam& FinishReadRepParam)
+void UNPS_MovementComponent::OnFinishUsingReplication(const FOnFinishUsingReplicationParam& FinishReadRepParam)
 {
 	ResetClientCachNewDataFlag();
 }

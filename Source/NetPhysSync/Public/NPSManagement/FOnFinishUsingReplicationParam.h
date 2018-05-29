@@ -5,9 +5,9 @@
 /**
  * 
  */
-struct NETPHYSSYNC_API FOnFinishReadAllReplicationParam
+struct NETPHYSSYNC_API FOnFinishUsingReplicationParam
 {
 public:
-	FOnFinishReadAllReplicationParam();
-	~FOnFinishReadAllReplicationParam();
+	FOnFinishUsingReplicationParam();
+	~FOnFinishUsingReplicationParam();
 };

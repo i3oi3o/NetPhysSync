@@ -151,7 +151,7 @@ void ANPS_DynamicActorBase::OnReadReplication(const FOnReadReplicationParam& Rea
 
 }
 
-void ANPS_DynamicActorBase::OnFinishReadReplication(const FOnFinishReadAllReplicationParam& FinishReadRepParam)
+void ANPS_DynamicActorBase::OnFinishUsingReplication(const FOnFinishUsingReplicationParam& FinishReadRepParam)
 {
 
 }

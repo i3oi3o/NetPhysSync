@@ -17,7 +17,7 @@ struct FReplayPostStepParam;
 struct FReplayEndParam;
 struct FVisualUpdateParam;
 struct FOnReadReplicationParam;
-struct FOnFinishReadAllReplicationParam;
+struct FOnFinishUsingReplicationParam;
 struct FTickSyncPoint;
 
 // This class does not need to be modified.
@@ -109,5 +109,5 @@ public:
 	 * If there is replay, call after replay process, TickReplayEnd.
 	 * If there is no replay, call after query replay index.
 	 */
-	virtual void OnFinishReadReplication(const FOnFinishReadAllReplicationParam& FinishReadRepParam) PURE_VIRTUAL(INetPhysSync::OnFinishReadReplication, );
+	virtual void OnFinishUsingReplication(const FOnFinishUsingReplicationParam& FinishReadRepParam) PURE_VIRTUAL(INetPhysSync::OnFinishUsingReplication, );
 };

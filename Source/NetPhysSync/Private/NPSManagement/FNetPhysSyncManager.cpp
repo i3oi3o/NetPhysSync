@@ -196,8 +196,8 @@ void FNetPhysSyncManager::OnTickPrePhysic()
 #endif
 			CallINetPhysSyncFunction
 			(
-				&INetPhysSync::OnFinishReadReplication,
-				FOnFinishReadAllReplicationParam(),
+				&INetPhysSync::OnFinishUsingReplication,
+				FOnFinishUsingReplicationParam(),
 				IsTickEnableParam
 			);
 
@@ -327,8 +327,8 @@ void FNetPhysSyncManager::OnTickPrePhysic()
 
 	CallINetPhysSyncFunction
 	(
-		&INetPhysSync::OnFinishReadReplication,
-		FOnFinishReadAllReplicationParam(),
+		&INetPhysSync::OnFinishUsingReplication,
+		FOnFinishUsingReplicationParam(),
 		IsTickEnableParam
 	);
 }
