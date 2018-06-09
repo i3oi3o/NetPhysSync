@@ -44,7 +44,7 @@ UNPS_MovementComponent::UNPS_MovementComponent()
 		0.005f /*SnapDiffSqrtPos* = 0.005 cm*/,
 		1.0f /*SmallDiffSqrtPos= 1 cm*/,
 		10000.0f /*BigDiffSqertPos = 100 cm */,
-		0.00174533f /*SanpRadian= 0.1 Degrees*/,
+		5.0f*0.00174533f /*SanpRadian= 0.5 Degrees*/,
 		0.0174533f /*SmallRadian= 1 Degrees*/,
 		0.174533f /*BigRadian= 10 Degrees*/ 
 	);

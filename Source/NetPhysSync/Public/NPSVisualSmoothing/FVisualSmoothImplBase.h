@@ -49,6 +49,8 @@ protected:
 		return SmoothTarget;
 	}
 
+	void FVisualSmoothImplBase::SyncRootWithRigidBody();
+
 private:
 	TWeakObjectPtr<USceneComponent> SmoothTarget;
 };

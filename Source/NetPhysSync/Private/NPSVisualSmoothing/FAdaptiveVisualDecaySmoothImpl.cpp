@@ -29,10 +29,10 @@ FAdaptiveVisualDecaySmoothImpl::~FAdaptiveVisualDecaySmoothImpl()
 
 bool FAdaptiveVisualDecaySmoothImpl::IsFinishYet() const
 {
-	return !IsValid() || 
+	return !IsValid() ||
 		(
-			GetSmoothTarget()->RelativeLocation == FVector::ZeroVector &&
-			GetSmoothTarget()->RelativeRotation == FRotator::ZeroRotator
+			RelativePos == FVector::ZeroVector &&
+			RelativeQuat == FQuat::Identity
 		);
 }
 
@@ -44,9 +44,16 @@ void FAdaptiveVisualDecaySmoothImpl::OnReplayStart
 {
 	if (IsValid())
 	{
-		const FTransform& FT = GetSmoothTarget()->GetComponentTransform();
-		CachReplayVisualPos = FT.GetLocation();
-		CachReplayVisualQuat = FT.GetRotation();
+		// Detach from root.
+		if (!GetSmoothTarget()->bAbsoluteLocation || 
+			!GetSmoothTarget()->bAbsoluteRotation)
+		{
+			const FTransform WorldT = GetSmoothTarget()->GetComponentTransform();
+			GetSmoothTarget()->SetAbsolute(true, true);
+			// Somehow, The implementation in USceneComponent::SetAbsolute 
+			// doesn't update FTransfrom properly.
+			GetSmoothTarget()->SetWorldTransform(WorldT);
+		}
 	}
 }
 
@@ -58,14 +65,12 @@ void FAdaptiveVisualDecaySmoothImpl::OnReplayEnd
 {
 	if (IsValid())
 	{
-		//SyncVisualWithRootRigidBody();
-		GetSmoothTarget()->SetWorldLocationAndRotation
-		(
-			CachReplayVisualPos,
-			CachReplayVisualQuat,
-			false, nullptr /*FHitResult* */,
-			ETeleportType::TeleportPhysics
-		);
+		SyncRootWithRigidBody();
+		const USceneComponent* Root = GetSmoothTarget()->GetAttachmentRoot();
+		const FTransform& VT = GetSmoothTarget()->GetComponentTransform();
+		const FTransform& RT = Root->GetComponentTransform();
+		RelativePos = VT.GetLocation()- RT.GetLocation();
+		RelativeQuat = RT.GetRotation().Inverse()*VT.GetRotation();
 	}
 }
 
@@ -76,40 +81,55 @@ void FAdaptiveVisualDecaySmoothImpl::VisualSmoothUpdate
 {
 	if (IsValid())
 	{
-		FVector RelativeLocation = GetSmoothTarget()->RelativeLocation;
-		FQuat RelativeRotation = FQuat(GetSmoothTarget()->RelativeRotation);
-		if (AdaptiveVisualDecayInfo.CanSnapPos(RelativeLocation, FVector::ZeroVector))
+		if (AdaptiveVisualDecayInfo.CanSnapPos(RelativePos, FVector::ZeroVector))
 		{
-			RelativeLocation = FVector::ZeroVector;
+			RelativePos = FVector::ZeroVector;
 		}
 		else
 		{
-			float DecayRate = AdaptiveVisualDecayInfo.GetDecayRate
-			(RelativeLocation, FVector::ZeroVector);
-			RelativeLocation = FMath::Lerp(RelativeLocation,
+			float DecayRate = AdaptiveVisualDecayInfo
+				.GetDecayRate(RelativePos, FVector::ZeroVector);
+			RelativePos = FMath::Lerp(RelativePos,
 				FVector::ZeroVector, DecayRate*Param.GameFrameDeltaTime);
 		}
 
-		if (AdaptiveVisualDecayInfo.CanSnapRot(RelativeRotation, FQuat::Identity))
+		if (AdaptiveVisualDecayInfo.CanSnapRot(RelativeQuat, FQuat::Identity))
 		{
-			RelativeRotation = FQuat::Identity;
+			RelativeQuat = FQuat::Identity;
 		}
 		else
 		{
-			float DecayRate = AdaptiveVisualDecayInfo.GetDecayRate
-			(RelativeRotation, FQuat::Identity);
-			RelativeRotation = FQuat::Slerp(RelativeRotation,
+			float DecayRate = AdaptiveVisualDecayInfo
+				.GetDecayRate(RelativeQuat, FQuat::Identity);
+			RelativeQuat = FQuat::Slerp(RelativeQuat,
 				FQuat::Identity, DecayRate*Param.GameFrameDeltaTime);
-			
 		}
 
-		GetSmoothTarget()->SetRelativeLocationAndRotation
-		(
-			RelativeLocation,
-			RelativeRotation,
-			false /*Sweep*/,
-			nullptr /*FHitResult*/,
-			ETeleportType::TeleportPhysics
-		);
+		if (IsFinishYet())
+		{
+			GetSmoothTarget()->SetAbsolute(false, false);
+			GetSmoothTarget()->SetRelativeLocationAndRotation
+			(
+				FVector::ZeroVector,
+				FQuat::Identity,
+				false, nullptr, ETeleportType::TeleportPhysics
+			);
+		}
+		else
+		{
+			const USceneComponent* Root = GetSmoothTarget()->GetAttachmentRoot();
+			const FTransform& RT = Root->GetComponentToWorld();
+			FVector SetWorldPos = RT.GetLocation() + RelativePos;
+			FQuat SetWorldQuat = RT.GetRotation()*RelativeQuat;
+
+			GetSmoothTarget()->SetWorldLocationAndRotation
+			(
+				SetWorldPos,
+				SetWorldQuat,
+				false,
+				nullptr,
+				ETeleportType::TeleportPhysics
+			);
+		}
 	}
 }

@@ -46,7 +46,7 @@ bool FAdaptiveVisualDecayInfo::CanSnapPos(const FVector& A, const FVector& B) co
 bool FAdaptiveVisualDecayInfo::CanSnapRot(const FQuat& A, const FQuat& B) const
 {
 	float DiffRadian = A.AngularDistance(B);
-	return DiffRadian <= SnapRadianThreshold;
+	return FMath::Abs(DiffRadian) <= SnapRadianThreshold;
 }
 
 float FAdaptiveVisualDecayInfo::GetDecayRate(const FVector& A, const FVector& B) const

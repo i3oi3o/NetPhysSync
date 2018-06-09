@@ -44,6 +44,6 @@ public:
 
 private:
 	FAdaptiveVisualDecayInfo AdaptiveVisualDecayInfo;
-	FVector CachReplayVisualPos;
-	FQuat CachReplayVisualQuat;
+	FVector RelativePos;
+	FQuat RelativeQuat;
 };
