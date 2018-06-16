@@ -378,7 +378,6 @@ void UNPS_MovementComponent::TickReplayStart(const FReplayStartParam& param)
 
 		if (param.IsReplayIntoFuture())
 		{
-			
 			if (ClientPrediction->IsReplayTickIndexForThisPrediction(
 				param.StartReplayTickIndex))
 			{
@@ -807,18 +806,6 @@ void UNPS_MovementComponent::Client_CorrectStateWithSyncTick_Implementation
 	
 	if (!bIsLateSyncClientTick)
 	{
-#if !UE_BUILD_SHIPPING
-		uint32 LocalPhysicTick = FNPS_StaticHelperFunction::GetCurrentPhysTickIndex(this);
-		
-		int32 Diff = FNPS_StaticHelperFunction::CalculateBufferArrayIndex
-		(AutoProxySyncCorrect.GetSyncClientTick(), LocalPhysicTick);
-		
-		if (Diff < 0)
-		{
-			UE_LOG(LogNPS_Net, Error, TEXT("Replay into future by %d Ticks. ReplayTick: %u. CurrentTick:%u. On Not LateSyncClientTick Line."),
-				-Diff, AutoProxySyncCorrect.GetSyncClientTick(), LocalPhysicTick);
-		}
-#endif
 		ClientPrediction->ServerCorrectState
 		(
 			AutoProxySyncCorrect.GetRigidBodyState(),
@@ -869,19 +856,6 @@ void UNPS_MovementComponent::Client_CorrectStateWithSyncTick_Implementation
 			AutoProxySyncCorrect.GetRigidBodyState(),
 			CorrectClientTick
 		);
-
-#if !UE_BUILD_SHIPPING
-		uint32 LocalPhysicTick = FNPS_StaticHelperFunction::GetCurrentPhysTickIndex(this);	
-		int32 Diff = FNPS_StaticHelperFunction::CalculateBufferArrayIndex
-		(CorrectClientTick, LocalPhysicTick);
-
-		if (Diff < 0)
-		{
-			UE_LOG(LogNPS_Net, Error, TEXT("Replay into future by %d Ticks. ReplayTick:%u. CurrentTick:%u On Late SyncClientTick Line."),
-				-Diff, CorrectClientTick, LocalPhysicTick);
-		}
-
-#endif
 
 #if NPS_LOG_SYNC_AUTO_PROXY
 		UE_LOG
