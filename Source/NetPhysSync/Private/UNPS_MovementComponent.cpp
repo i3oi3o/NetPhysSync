@@ -375,11 +375,61 @@ void UNPS_MovementComponent::TickReplayStart(const FReplayStartParam& param)
 		PxRigidDynamic* RigidDynamic = GetUpdatedRigidDynamic();
 
 		FNPS_ClientPawnPrediction* ClientPrediction = GetPredictionData_ClientNPSPawn();
-		ClientPrediction->GetRigidBodyState
-		(
-			RigidDynamic, param.StartReplayTickIndex,
-			EIdxOutOfRangeHandle::UseNearestIndexIfOutRangeFromBegin
-		);
+
+		if (param.IsReplayIntoFuture())
+		{
+			
+			if (ClientPrediction->IsReplayTickIndexForThisPrediction(
+				param.StartReplayTickIndex))
+			{
+				// Snap to replay tick state and fill empty slot with replay state.
+				const FSavedClientRigidBodyState& ReplayState = 
+					ClientPrediction->GetRigidBodyState(param.StartReplayTickIndex);
+
+				int32 DiffTick = FNPS_StaticHelperFunction
+					::CalculateBufferArrayIndex(param.CurrentTickIndex, 
+												param.StartReplayTickIndex);
+
+				for (int32 i = 0; i < DiffTick /*Exclude Replay Tick*/; ++i)
+				{
+					ClientPrediction->SaveRigidBodyState(ReplayState, 
+						param.CurrentTickIndex+i);
+				}
+
+				ClientPrediction->GetRigidBodyState
+				(
+					RigidDynamic, param.StartReplayTickIndex,
+					EIdxOutOfRangeHandle::UseNearestIndexIfOutRangeFromBegin
+				);
+			}
+			else
+			{
+				// Just fill empty slot with current state.
+				const FBufferInfo BufferInfo = ClientPrediction->GetStateBufferInfo();
+				const FSavedClientRigidBodyState FillState(RigidDynamic);
+
+				int32 DiffTick = FNPS_StaticHelperFunction
+					::CalculateBufferArrayIndex(BufferInfo.BufferLastTickIndex+1,
+												param.StartReplayTickIndex);
+
+				for (int32 i = 0; i <= DiffTick /*Include Replay Tick*/; ++i)
+				{
+					ClientPrediction->SaveRigidBodyState
+					(
+						FillState, 
+						BufferInfo.BufferLastTickIndex + 1 + i
+					);
+				}
+			}
+		}
+		else
+		{
+			ClientPrediction->GetRigidBodyState
+			(
+				RigidDynamic, param.StartReplayTickIndex,
+				EIdxOutOfRangeHandle::UseNearestIndexIfOutRangeFromBegin
+			);
+		}
 
 		// Use our own compilation symbol later.
 	}
@@ -401,7 +451,7 @@ void UNPS_MovementComponent::TickReplaySubstep(const FReplaySubstepParam& param)
 
 	if (PawnOwner->Role == ENetRole::ROLE_AutonomousProxy)
 	{
-		if (ClientPrediction->IsReplayTickIndex(param.ReplayTickIndex))
+		if (ClientPrediction->IsReplayTickIndexForThisPrediction(param.ReplayTickIndex))
 		{
 			ClientPrediction->GetRigidBodyState(RigidDynamic, param.ReplayTickIndex);
 		}
@@ -788,11 +838,11 @@ void UNPS_MovementComponent::Client_CorrectStateWithSyncTick_Implementation
 		 * Because of latency, the correct state may not processed input in buffer yet.
 		 * 
 		 * Consider following scenario.
-		 *		- Server have processed client input from tick 10-20
-		 *		- Server send correction which is state from processed last input tick 20.
-		 *		- AutonomousProxy start receive input from player controller at tick 50.
-		 *		- AutonomousProxy received correct input state from processing last input tick 20 
-		 *		  but not form the starting new steam input tick 50.
+		 *		- Server have processed client input from 10th-20th ticks
+		 *		- Server send correction which is state from processed last input 20th tick.
+		 *		- AutonomousProxy start receive input from player controller at 50th tick.
+		 *		- AutonomousProxy received correct input state from processing last input tick 20th 
+		 *		  but not form the starting new steam input 50th tick.
 		 *		- This scenario create minor discrepancy.
 		 *
 		 * If this correct state is not for current input buffer, 
@@ -838,7 +888,7 @@ void UNPS_MovementComponent::Client_CorrectStateWithSyncTick_Implementation
 		(
 			LogNPS_Net, Log, 
 			TEXT("Correct with late sync point. Need Replay: %s"),
-			ClientPrediction->IsReplayTickIndex(CorrectClientTick) ? 
+			ClientPrediction->IsReplayTickIndexForThisPrediction(CorrectClientTick) ? 
 			TEXT("True") : TEXT("False")
 		);
 #endif

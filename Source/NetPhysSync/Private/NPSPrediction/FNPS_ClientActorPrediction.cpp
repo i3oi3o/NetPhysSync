@@ -130,7 +130,7 @@ void FNPS_ClientActorPrediction::ShiftElementsToDifferentTickIndex(int32 ShiftAm
 	LastCorrectedStateTickIndex += ShiftAmount;
 }
 
-bool FNPS_ClientActorPrediction::IsReplayTickIndex(uint32 TickIndex) const
+bool FNPS_ClientActorPrediction::IsReplayTickIndexForThisPrediction(uint32 TickIndex) const
 {
 	return bNeedReplay && LastCorrectedStateTickIndex == TickIndex;
 }
