@@ -76,12 +76,6 @@ const FSavedInput& FNPS_ClientPawnPrediction::GetSavedInput
 	}
 }
 
-
-bool FNPS_ClientPawnPrediction::HasUnacknowledgedInput() const
-{
-	return ClientInputBuffer.Num() > 0;
-}
-
 bool FNPS_ClientPawnPrediction::TryGetOldestUnacknowledgeInputTickIndex(uint32& OutTickIndex) const
 {
 	OutTickIndex = OldestUnacknowledgedInputTick;
@@ -146,11 +140,6 @@ void FNPS_ClientPawnPrediction::ServerCorrectState(const FReplicatedRigidBodySta
 		}
 	}
 #endif
-}
-
-FBufferInfo FNPS_ClientPawnPrediction::GetInputBufferInfo() const
-{
-	return FBufferInfo(ClientInputBufferStartTickIndex, ClientInputBuffer.Num());
 }
 
 void FNPS_ClientPawnPrediction::Update(uint32 CurrentTickIndex)

@@ -47,12 +47,39 @@ public:
 	virtual void ServerCorrectState(const FReplicatedRigidBodyState& CorrectState, uint32 ClientTickIndex);
 	virtual void ShiftElementsToDifferentTickIndex(int32 ShiftAmount);
 	/*Is replay tick index for this client prediction.*/
-	FORCEINLINE bool IsReplayTickIndexForThisPrediction(uint32 TickIndex) const;
-	FORCEINLINE bool TryGetReplayTickIndex(uint32& OutTickIndex) const;
-	FORCEINLINE bool IsNeedReplay() const;
-	FORCEINLINE bool TryGetLastCorrectStateTickIndex(uint32& OutTickIndex) const;
-	FORCEINLINE bool HasClientStateBuffer() const;
-	FORCEINLINE FBufferInfo GetStateBufferInfo() const;
+
+	FORCEINLINE bool IsReplayTickIndexForThisPrediction(uint32 TickIndex) const
+	{
+		return bNeedReplay && LastCorrectedStateTickIndex == TickIndex;
+	}
+
+	FORCEINLINE bool TryGetReplayTickIndex(uint32& OutTickIndex) const
+	{
+		OutTickIndex = LastCorrectedStateTickIndex;
+		return bNeedReplay;
+	}
+
+	FORCEINLINE bool IsNeedReplay() const
+	{
+		return bNeedReplay;
+	}
+
+	FORCEINLINE bool TryGetLastCorrectStateTickIndex(uint32& OutTickIndex) const
+	{
+		OutTickIndex = LastCorrectedStateTickIndex;
+		return !bIsCorrectedStateIndexTooOld;
+	}
+
+	FORCEINLINE bool HasClientStateBuffer() const
+	{
+		return ClientStateBuffer.Num() > 0;
+	}
+
+	FORCEINLINE FBufferInfo GetStateBufferInfo() const
+	{
+		return FBufferInfo(ClientStateBufferStartTickIndex, ClientStateBuffer.Num());
+	}
+
 	void ConsumeReplayFlag();
 
 

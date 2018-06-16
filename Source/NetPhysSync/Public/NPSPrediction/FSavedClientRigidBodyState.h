@@ -23,7 +23,10 @@ public:
 	void SaveReplicatedRigidBodyState(const physx::PxRigidDynamic* const RigidDynamic);
 	void SaveReplicatedRigidBodyState(const FReplicatedRigidBodyState& ReplicatedState);
 	void GetReplicatedRigidBodyState(physx::PxRigidDynamic* const RigidDynamic) const;
-	FORCEINLINE const FReplicatedRigidBodyState& GetReplicatedRigidBodyState() const;
+	FORCEINLINE const FReplicatedRigidBodyState& GetReplicatedRigidBodyState() const
+	{
+		return ReplicatedRigidBodyStateState;
+	}
 
 	float CalculateSumDiffSqrtError(const FReplicatedRigidBodyState& OtherReplicatedState) const;
 	float CalculateSumDiffSqrtError(const FSavedClientRigidBodyState& Other) const;

@@ -50,6 +50,6 @@ FAutoProxySyncCorrect::~FAutoProxySyncCorrect()
 bool FAutoProxySyncCorrect::TryGetLastProcessedClientInputTick(uint32& OutTick) const
 {
 	OutTick = SyncClientTick + OffsetClientTickToGetLastProcessedInputTick;
-	return OffsetClientTickToGetLastProcessedInputTick <= 
+	return OffsetClientTickToGetLastProcessedInputTick <=
 		FNPS_StaticHelperFunction::GetPositiveInclusiveThresholdForOldTick();
 }

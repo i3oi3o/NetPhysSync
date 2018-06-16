@@ -27,7 +27,12 @@ public:
 		uint32 ClientTick, 
 		EIdxOutOfRangeHandle eHandleOutOfBoundIndex = EIdxOutOfRangeHandle::UseNearestIndex
 	) const;
-	FORCEINLINE bool HasUnacknowledgedInput() const;
+
+	FORCEINLINE bool HasUnacknowledgedInput() const
+	{
+		return ClientInputBuffer.Num() > 0;
+	}
+
 	/**
 	 * If current don't have any unacknowledged input, 
 	 * this return TickIndex for comparing with server replication's last acknowledged input.
@@ -35,8 +40,12 @@ public:
 	bool TryGetOldestUnacknowledgeInputTickIndex(uint32& OutTickIndex) const;
 	virtual void ShiftElementsToDifferentTickIndex(int32 ShiftAmount) override;
 	virtual void ServerCorrectState(const FReplicatedRigidBodyState& CorrectState, uint32 ClientTickIndex);
-	FORCEINLINE FBufferInfo GetInputBufferInfo() const;
-	
+
+	FORCEINLINE FBufferInfo GetInputBufferInfo() const
+	{
+		return FBufferInfo(ClientInputBufferStartTickIndex, ClientInputBuffer.Num());
+	}
+
 	/**
 	 * Should be called every tick.
 	 */

@@ -31,13 +31,3 @@ bool FSavedInput::IsEmptyInput() const
 	return TargetWorldSpeed == FVector::ZeroVector;
 }
 
-FORCEINLINE bool FSavedInput::operator!=(const FSavedInput& Other) const
-{
-	return !(*this == Other);
-}
-
-FORCEINLINE bool FSavedInput::operator==(const FSavedInput& Other) const
-{
-	return TargetWorldSpeed == Other.TargetWorldSpeed;
-}
-

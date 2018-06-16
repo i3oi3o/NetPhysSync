@@ -35,9 +35,15 @@ public:
 	 */
 	bool IsEmptyInput() const;
 
-	bool operator==(const FSavedInput& Other) const;
+	FORCEINLINE bool operator==(const FSavedInput& Other) const
+	{
+		return TargetWorldSpeed == Other.TargetWorldSpeed;
+	}
 
-	bool operator!=(const FSavedInput& Other) const;
+	FORCEINLINE bool operator!=(const FSavedInput& Other) const
+	{
+		return !(*this == Other);
+	}
 
 private:
 	UPROPERTY()

@@ -47,11 +47,6 @@ void FSavedClientRigidBodyState::GetReplicatedRigidBodyState(physx::PxRigidDynam
 	}
 }
 
-FORCEINLINE const FReplicatedRigidBodyState& FSavedClientRigidBodyState::GetReplicatedRigidBodyState() const
-{
-	return ReplicatedRigidBodyStateState;
-}
-
 float FSavedClientRigidBodyState::CalculateSumDiffSqrtError(const FReplicatedRigidBodyState& OtherReplicatedState) const
 {
 	return ReplicatedRigidBodyStateState.CalculateSumDiffSqrError(OtherReplicatedState);

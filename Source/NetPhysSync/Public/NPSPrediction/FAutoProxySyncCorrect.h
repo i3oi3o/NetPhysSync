@@ -56,7 +56,7 @@ public:
 		return FTickSyncPoint(SyncClientTick, SyncServerTick);
 	}
 
-	FORCEINLINE bool TryGetLastProcessedClientInputTick(uint32& OutTick) const;
+	bool TryGetLastProcessedClientInputTick(uint32& OutTick) const;
 
 private:
 	UPROPERTY(meta = (AllowPrivateAccess = "true"))
