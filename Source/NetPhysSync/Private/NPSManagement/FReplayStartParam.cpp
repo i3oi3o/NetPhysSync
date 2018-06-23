@@ -28,9 +28,9 @@ bool FReplayStartParam::IsReplayIntoFuture() const
 {
 	int32 ReplayCount = 0;
 	FNPS_StaticHelperFunction::CalculateBufferArrayIndex
-	(
-		CurrentTickIndex, 
+	( 
 		StartReplayTickIndex,
+		CurrentTickIndex,
 		ReplayCount
 	);
 
@@ -42,8 +42,8 @@ int32 FReplayStartParam::GetReplayNum() const
 	int32 ReplayCount = 0;
 	FNPS_StaticHelperFunction::CalculateBufferArrayIndex
 	(
-		CurrentTickIndex,
 		StartReplayTickIndex,
+		CurrentTickIndex,
 		ReplayCount
 	);
 

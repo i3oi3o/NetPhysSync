@@ -1,6 +1,8 @@
 #include "AutomationTest.h"
 #include "FTickSyncPoint.h"
 #include "FOnNewSyncPointInfo.h"
+#include "FReplayStartParam.h"
+#include "Engine/EngineTypes.h"
 // This is licensed under the BSD License 2.0 found in the LICENSE file in project's root directory.
 
 
@@ -53,6 +55,50 @@ bool FShiftReplayPredictionTest::RunTest(const FString& Parameters)
 		OnNoNewSyncPointInfo.ShiftClientTickAmountForReplayPrediction,
 		0
 	);
+
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FReplayStartParamTest, "NetPhysSync.NetSyncManagement.ReplayStartParam", EAutomationTestFlags::EditorContext | EAutomationTestFlags::SmokeFilter)
+bool FReplayStartParamTest::RunTest(const FString& Parameters)
+{
+	FReplayStartParam TestStartParam
+	(
+		nullptr,
+		EPhysicsSceneType::PST_Sync,
+		FOnNewSyncPointInfo(FTickSyncPoint(),FTickSyncPoint()),
+		0 - 5U,
+		0U
+	);
+
+	if (TestStartParam.GetReplayNum() != 5)
+	{
+		AddError(TEXT("Calculate replay number count wrong."));
+	}
+
+	if (TestStartParam.IsReplayIntoFuture())
+	{
+		AddError(TEXT("Normal replay return replay into future."));
+	}
+
+	FReplayStartParam TestStartParam1
+	(
+		nullptr,
+		EPhysicsSceneType::PST_Sync,
+		FOnNewSyncPointInfo(FTickSyncPoint(), FTickSyncPoint()),
+		0,
+		0- 5U
+	);
+
+	if (TestStartParam1.GetReplayNum() != 0)
+	{
+		AddError(TEXT("Replay into future shouldn't have any replay nuumber count."));
+	}
+
+	if (!TestStartParam1.IsReplayIntoFuture())
+	{
+		AddError(TEXT("Why isn't this replay into future?"));
+	}
 
 	return true;
 }

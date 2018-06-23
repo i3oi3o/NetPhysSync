@@ -14,6 +14,7 @@
 #include "FNPS_ServerPawnPrediction.h"
 #include "DrawDebugHelpers.h"
 #include "INetPhysSyncParam.h"
+#include "FTickIterator.h"
 
 #if !(UE_BUILD_SHIPPING)
 #include "Components/BoxComponent.h"
@@ -385,14 +386,22 @@ void UNPS_MovementComponent::TickReplayStart(const FReplayStartParam& param)
 				const FSavedClientRigidBodyState& ReplayState = 
 					ClientPrediction->GetRigidBodyState(param.StartReplayTickIndex);
 
-				int32 DiffTick = FNPS_StaticHelperFunction
-					::CalculateBufferArrayIndex(param.CurrentTickIndex, 
-												param.StartReplayTickIndex);
+				FTickIterator TickIterator
+				(
+					param.CurrentTickIndex,
+					param.StartReplayTickIndex,
+					ETickIteratorEndRange::EXCLUSIVE_END
+				);
 
-				for (int32 i = 0; i < DiffTick /*Exclude Replay Tick*/; ++i)
+				ensureMsgf(TickIterator.GetDir() != ETickIteratorDir::BACKWARD,
+					TEXT("Why iterator is not forward."));
+
+				for (; TickIterator; ++TickIterator)
 				{
+					ensureMsgf(*TickIterator != param.StartReplayTickIndex,
+						TEXT("Why is start replay tick index inclusive in loop?"));
 					ClientPrediction->SaveRigidBodyState(ReplayState, 
-						param.CurrentTickIndex+i);
+						*TickIterator);
 				}
 
 				ClientPrediction->GetRigidBodyState
@@ -407,18 +416,31 @@ void UNPS_MovementComponent::TickReplayStart(const FReplayStartParam& param)
 				const FBufferInfo BufferInfo = ClientPrediction->GetStateBufferInfo();
 				const FSavedClientRigidBodyState FillState(RigidDynamic);
 
-				int32 DiffTick = FNPS_StaticHelperFunction
-					::CalculateBufferArrayIndex(BufferInfo.BufferLastTickIndex+1,
-												param.StartReplayTickIndex);
+				FTickIterator TickIterator
+				(
+					BufferInfo.BufferLastTickIndex+1,
+					param.StartReplayTickIndex,
+					ETickIteratorEndRange::INCLUSIVE_END
+				);
 
-				for (int32 i = 0; i <= DiffTick /*Include Replay Tick*/; ++i)
+				ensureMsgf(TickIterator.GetDir() == ETickIteratorDir::BACKWARD,
+					TEXT("Why iterator is not forward."));
+
+				for (;TickIterator; ++TickIterator)
 				{
 					ClientPrediction->SaveRigidBodyState
 					(
 						FillState, 
-						BufferInfo.BufferLastTickIndex + 1 + i
+						*TickIterator
 					);
 				}
+
+				ensureMsgf
+				(
+					ClientPrediction->GetStateBufferInfo().BufferLastTickIndex ==
+					param.StartReplayTickIndex,
+					TEXT("Doesn't fill start replay tick idex.")
+				);
 			}
 		}
 		else
